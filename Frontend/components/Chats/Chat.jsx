@@ -7,21 +7,23 @@ import {
   Image,
   ScrollView
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { Users } from '../../lib/data';
 import Search from './Search';
 import Header from './Header';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
-export default function Chat(){
+export default function Chat() {
+  const navigation = useNavigation();  // Initialize navigation
 
-  const Item = ({name, image, message, time}) => (
+  const Item = ({ id, name, image, message, time }) => (
     <View>
       <TouchableOpacity
-        activeOpacity={0.6}>
+        activeOpacity={0.6}
+        onPress={() => navigation.navigate('Chatting', { userId: id, name, image })}  // Navigate to Chatting
+      >
         <View style={styles.userCtn}>
-          <Image style={styles.image}
-          source={image}
-          borderRadius={50} resizeMode='cover'/>
+          <Image style={styles.image} source={image} borderRadius={50} resizeMode='cover' />
 
           <View style={styles.msgCtn}>
             <View style={styles.userDetail}>
@@ -37,33 +39,30 @@ export default function Chat(){
 
   return (
     <View style={styles.container}>
-        <ScrollView contentInsetAdjustmentBehavior="automatic">
-          <Header />
-          <View style={styles.chatCtn}>
-              <FlatList
-                  data={Users}
-                  renderItem={({item}) => 
-                  <Item name={item.name} message={item.message} image={item.image} time={item.time}/>}
-                  keyExtractor={item => item.id}
-                  horizontal={false}
-                  scrollEnabled={false}
-                  ListHeaderComponent={Search}
-                />
-          </View>
-        </ScrollView>
-
-        <View style={styles.newUpdate}>
-            <View style={styles.pen}>
-              {/* <FontAwesome name="pencil" size={24} color="white" /> */}
-              <Image style={{width: 30, height: 30}} source={require('../../assets/images/ai.png')}/>
-            </View>
-            <View style={styles.msg}>
-              <MaterialCommunityIcons name="message-plus" size={28} color="#011513" />
-              {/* <MaterialIcons name="add-ic-call" size={20} color="#011513" /> */}
-            </View>
+      <ScrollView contentInsetAdjustmentBehavior="automatic">
+        <Header />
+        <View style={styles.chatCtn}>
+          <FlatList
+            data={Users}
+            renderItem={({ item }) => 
+              <Item id={item.id} name={item.name} message={item.message} image={item.image} time={item.time} />}
+            keyExtractor={item => item.id}
+            horizontal={false}
+            scrollEnabled={false}
+            ListHeaderComponent={Search}
+          />
         </View>
+      </ScrollView>
+
+      <View style={styles.newUpdate}>
+        <View style={styles.pen}>
+          <Image style={{ width: 30, height: 30 }} source={require('../../assets/images/ai.png')} />
+        </View>
+        <View style={styles.msg}>
+          <MaterialCommunityIcons name="message-plus" size={28} color="#011513" />
+        </View>
+      </View>
     </View>
-    
   );
 }
 

@@ -7,6 +7,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import StatusScreen from './components/setting/StatusScreen';
 import VideoPlayer from './components/setting/VideoPlayer';
 import History from './components/Calls/History';
+import Chatting from './components/Chats/Chatting';
 
 const Stack = createStackNavigator();
 
@@ -21,6 +22,7 @@ export default function App() {
         <Stack.Screen name="Status" component={StatusScreen} />
         <Stack.Screen name="VideoPlayer" component={VideoPlayer} />
         <Stack.Screen name="History" component={History} />
+        <Stack.Screen name="Chatting" component={Chatting} />
       </Stack.Navigator>
     </NavigationContainer>
   );
