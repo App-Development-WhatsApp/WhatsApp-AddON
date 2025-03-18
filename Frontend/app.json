@@ -1,4 +1,40 @@
 {
-  "name": "WhatsApp",
-  "displayName": "WhatsApp"
+  "expo": {
+    "name": "WhatsApp",
+    "slug": "WhatsApp",
+    "version": "1.0.0",
+    "owner": "sim_codes",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "jsEngine": "hermes",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.anonymous.WhatsApp"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.anonymous.WhatsApp"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "415ec8ee-39e7-447a-8eb2-dfb3b591b7b0"
+      }
+    }
+  }
 }
