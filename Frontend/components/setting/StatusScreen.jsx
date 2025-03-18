@@ -31,17 +31,15 @@ export default function StatusScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Stories Archive</Text>
-      <FlatList
-        data={videoData}
-        keyExtractor={(item) => item.id}
-        numColumns={3}
-        renderItem={({ item }) => (
+      <View style={styles.titleBar}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+        <Text style={styles.backText}>←</Text>
+        </TouchableOpacity>
+        <Text style={styles.title}>Status Archive</Text>
+      </View>
+      <FlatList style={styles.section} data={videoData} keyExtractor={(item) => item.id} numColumns={3} renderItem={({ item }) => (
           <View style={styles.videoWrapper}>
-            <TouchableOpacity
-              style={styles.videoItem}
-              onPress={() => navigation.navigate("VideoPlayer", { videoUrl: item.url })}
-            >
+            <TouchableOpacity style={styles.videoItem} onPress={() => navigation.navigate("VideoPlayer", { videoUrl: item.url })}>
               <Video
                 source={{ uri: item.url }}
                 style={styles.thumbnail}
@@ -51,7 +49,6 @@ export default function StatusScreen() {
               />
             </TouchableOpacity>
 
-            {/* 3-dot Menu */}
             <TouchableOpacity
               style={styles.menuButton}
               onPress={(event) => openMenu(event)}
@@ -85,23 +82,40 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#121212",
-    padding: 10,
   },
-  header: {
-    fontSize: 26,
-    fontWeight: "bold",
-    color: "white",
-    marginBottom: 10,
+  titleBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 15,
+    paddingHorizontal: 15,
+    backgroundColor: '#1C1C1C',
+  },
+  backButton: {
+    paddingRight: 15,
+  },
+  backText: {
+    fontSize: 30,
+    color: 'white',
+  },
+  title: {
+    paddingTop: 10,
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: 'white',
+  },
+  section:{
+    padding: 10
   },
   videoWrapper: {
-    width: "32%", // Slightly increased size
+    width: "31%",
     margin: 5,
     borderRadius: 8,
     overflow: "hidden",
-    backgroundColor: "#1F1F1F",
+    backgroundColor: "#0a2a2d",
     position: "relative",
     borderWidth: 2,
-    borderColor: "#3A3A3A",
+    borderColor: "white",
+    padding: 5
   },
   videoItem: {
     width: "100%",
@@ -109,7 +123,7 @@ const styles = StyleSheet.create({
   },
   thumbnail: {
     width: "100%",
-    height: 170, // Slightly increased height
+    height: 150, // Slightly increased height
   },
   menuButton: {
     position: "absolute",

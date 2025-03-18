@@ -1,8 +1,19 @@
 import React, { useState } from "react";
-import { View,KeyboardAvoidingView, Platform, Text, Modal, StyleSheet, Image, FlatList, TextInput, TouchableOpacity } from "react-native";
+import {
+  View,
+  KeyboardAvoidingView,
+  Platform,
+  Text,
+  Modal,
+  StyleSheet,
+  Image,
+  FlatList,
+  TextInput,
+  TouchableOpacity,
+} from "react-native";
 import { useRoute } from "@react-navigation/native";
 import { MaterialCommunityIcons, FontAwesome, Entypo } from "@expo/vector-icons";
-import EmojiPicker from 'react-native-emoji-picker';
+import EmojiPicker from "react-native-emoji-picker-staltz"; // ✅ Updated import
 
 export default function Chatting() {
   const route = useRoute();
@@ -11,7 +22,6 @@ export default function Chatting() {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [message, setMessage] = useState("");
 
-  // Dummy Messages
   const messages = [
     { id: "1", text: "Hey! How are you?", sender: "me" },
     { id: "2", text: "I am good! What about you?", sender: "them" },
@@ -44,21 +54,25 @@ export default function Chatting() {
 
       {/* 🔹 Chat Messages */}
       <KeyboardAvoidingView 
-  behavior={Platform.OS === "ios" ? "padding" : "height"} 
-  style={{ flex: 1 }}
->
-
-      <FlatList
-        data={messages}
-        renderItem={({ item }) => (
-            <View style={[styles.messageBubble, item.sender === "me" ? styles.myMessage : styles.theirMessage]}>
-            <Text style={styles.messageText}>{item.text}</Text>
-          </View>
-        )}
-        keyExtractor={(item) => item.id}
-        style={styles.messagesContainer}
+        behavior={Platform.OS === "ios" ? "padding" : "height"} 
+        style={{ flex: 1 }}
+      >
+        <FlatList
+          data={messages}
+          renderItem={({ item }) => (
+            <View
+              style={[
+                styles.messageBubble,
+                item.sender === "me" ? styles.myMessage : styles.theirMessage,
+              ]}
+            >
+              <Text style={styles.messageText}>{item.text}</Text>
+            </View>
+          )}
+          keyExtractor={(item) => item.id}
+          style={styles.messagesContainer}
         />
-        </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
 
       {/* 🔹 Input Bar */}
       <View style={styles.inputContainer}>
@@ -96,14 +110,15 @@ export default function Chatting() {
 
       {/* 🔹 Emoji Picker Modal */}
       <Modal visible={showEmojiPicker} transparent={true} animationType="slide">
-        {/* <View style={{ backgroundColor: "white", position: "absolute", bottom: 0, width: "100%" }}> */}
+        <View style={styles.emojiPickerContainer}>
           <EmojiPicker
-            onEmojiClick={(emoji) => {
-              setMessage((prev) => prev + emoji.emoji);
+            onEmojiSelected={(emoji) => {
+              setMessage((prev) => prev + emoji);
               setShowEmojiPicker(false);
             }}
+            enableSearch
           />
-        {/* </View> */}
+        </View>
       </Modal>
     </View>
   );
@@ -152,7 +167,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     borderRadius: 20,
   },
-  input: { flex: 1, padding: 10, color: "white" },
+  input: { flex: 1, padding: 10, color: "white", maxHeight: 40 },
   inputIcon: { marginLeft: 10 },
 
   // ✅ Send Button

@@ -270,3 +270,16 @@ export const Users = [
         time: '08:10',
     },
 ]
+
+
+export const contacts = [
+    { id: 1, name: "Cool Mama", phone: "+91 90557 84785" },
+    { id: 2, name: "Darsan Tai", phone: "+91 94163 00794" },
+    { id: 3, name: "Digital Advertising", phone: "+91 63677 64080" },
+    { id: 4, name: "Fakirchand", phone: "+91 70096 83125" },
+    { id: 5, name: "Home 🏡", phone: "+91 166 729 6796" },
+    { id: 6, name: "Jitender Tau 2", phone: "+91 79887 33506" },
+    { id: 7, name: "Nani", phone: "+91 86070 54357" },
+    { id: 8, name: "Nani Ji", phone: "+91 86070 54357, +91 93500..." },
+    { id: 9, name: "Pops", phone: "+91 90557 50070" },
+  ];  

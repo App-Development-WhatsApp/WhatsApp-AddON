@@ -21,23 +21,25 @@ export default function SettingsScreen({ navigation }) {
 
       {/* Settings Options */}
       <View style={styles.settingsList}>
-        <SettingsItem icon={<Feather name="key" size={22} color="white" />} text="Account" subText="Security notifications, change number" />
-        <SettingsItem icon={<FontAwesome5 name="lock" size={22} color="white" />} text="Privacy" subText="Block contacts, disappearing messages" />
-        <SettingsItem icon={<MaterialIcons name="emoji-emotions" size={22} color="white" />} text="Avatar" subText="Create, edit, profile photo" />
-        <SettingsItem icon={<MaterialIcons name="format-list-bulleted" size={22} color="white" />} text="Lists" subText="Manage people and groups" />
-        <SettingsItem icon={<MaterialIcons name="chat" size={22} color="white" />} text="Chats" subText="Theme, wallpapers, chat history" />
-        
-        {/* ✅ Navigate to Status Screen */}
-        <SettingsItem 
-          icon={<MaterialIcons name="storage" size={22} color="white" />} 
-          text="Status" 
-          subText="Status history" 
-          onPress={() => navigation.navigate('Status')} 
-        />
+        <SettingsItem icon={<Feather name="key" size={22} color="white" />} text="Account" subText="Security notifications, change number" onPress={() => navigation.navigate('Account')}/>
+        <SettingsItem icon={<FontAwesome5 name="lock" size={22} color="white" />} text="Privacy" subText="Block contacts, disappearing messages" onPress={() => navigation.navigate('Privacy')} />
+        <SettingsItem icon={<MaterialIcons name="emoji-emotions" size={22} color="white" />} text="Avatar" subText="Create, edit, profile photo" onPress={() => navigation.navigate('Avatar')}/>
+        <SettingsItem icon={<MaterialIcons name="format-list-bulleted" size={22} color="white" />} text="Lists" subText="Manage people and groups" onPress={() => navigation.navigate('List')}/>
+        <SettingsItem icon={<MaterialIcons name="chat" size={22} color="white" />} text="Chats" subText="Theme, wallpapers, chat history" onPress={() => navigation.navigate('ChatSetting')}/>
+        <SettingsItem icon={<MaterialIcons name="storage" size={22} color="white" />} text="Status" subText="Status history" onPress={() => navigation.navigate('Status')} />
+        <SettingsItem icon={<Ionicons name="notifications-outline" size={22} color="white" />} text="Notifications" subText="Message, group & call tones" onPress={() => navigation.navigate('Notification')} />
+        <SettingsItem icon={<MaterialIcons name="storage" size={22} color="white" />} text="Storage and data" subText="Network usage, auto-download" onPress={() => navigation.navigate('Storage')}/>
+        <SettingsItem icon={<Entypo name="globe" size={22} color="white" />} text="App language" subText="English (device's language)" onPress={() => navigation.navigate('AppLanguage')}/>
+        <SettingsItem icon={<Feather name="help-circle" size={22} color="white" />} text="Help" subText="Help center, contact us, privacy policy" onPress={() => navigation.navigate('help')}/>
+        <SettingsItem icon={<Feather name="user-plus" size={22} color="white" />} text="Invite a friend" onPress={() => navigation.navigate('Invite')}/>
+        <SettingsItem icon={<Feather name="refresh-ccw" size={22} color="white" />} text="App updates" onPress={() => navigation.navigate('AppUpdate')}/>
 
-        <SettingsItem icon={<Ionicons name="notifications-outline" size={22} color="white" />} text="Notifications" subText="Message, group & call tones" />
-        <SettingsItem icon={<MaterialIcons name="storage" size={22} color="white" />} text="Storage and data" subText="Network usage, auto-download" />
-        <SettingsItem icon={<Entypo name="globe" size={22} color="white" />} text="App language" subText="English (device's language)" />
+        <View style={{ marginTop: 20, paddingHorizontal: 15 }}>
+          <Text style={{ color: '#888', fontSize: 14, marginBottom: 10 }}>Also from Meta</Text>
+          <SettingsItem icon={<FontAwesome5 name="instagram" size={22} color="white" />} text="Open Instagram" />
+          <SettingsItem icon={<FontAwesome5 name="facebook" size={22} color="white" />} text="Open Facebook" />
+          <SettingsItem icon={<FontAwesome5 name="thread" size={22} color="white" />} text="Open Threads" />
+        </View>
       </View>
     </ScrollView>
   );
