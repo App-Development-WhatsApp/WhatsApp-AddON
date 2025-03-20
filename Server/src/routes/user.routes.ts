@@ -11,6 +11,7 @@ import {
   // updateUserCoverImage,
   // getuserChannelProfile,
   // getWatchHistory,
+  uploadProfilePic
 } from "../controllers/user.controller";
 import { upload } from "../middlewares/multer.middleware";
 import { verifyJWT } from "../middlewares/auth.middleware";
@@ -19,6 +20,7 @@ const router = Router();
 
 router.route("/register").post(upload.single("profilePic"), registerUser);
 
+router.route("/UploadPic").post(verifyJWT,upload.single("profilePic"), uploadProfilePic);
 // router.route("/login").post(loginUser);
 
 // // logout is the controller for logout route and verifyJWT is the method want to run before perform logout

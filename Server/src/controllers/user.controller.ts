@@ -3,16 +3,19 @@ import { ApiError } from "../utils/APIError";
 import { ApiResponse } from "../utils/APIResponse";
 //  this user can interact with mongodb because it has made a connection
 import { User } from "../models/user.model";
-import { uploadOnCloudinary } from "../utils/cloudinary";
+import { deleteFromCloudinary, uploadOnCloudinary } from "../utils/cloudinary";
 import jwt from "jsonwebtoken";
 // import { subscription } from "../models/subscription.model";
 import mongoose from "mongoose";
+import fs from "fs";
+import path from "path";
 
 import { Types } from "mongoose";
 
-const generateAccessAndRefreshTokens = async (userId: Types.ObjectId) => {
+const generateAccessAndRefreshTokens = async (userId: string) => {
   try {
     const user = await User.findById(userId);
+    console.log(user);
     if (!user) {
       throw new ApiError(404, "User not found");
     }
@@ -21,7 +24,6 @@ const generateAccessAndRefreshTokens = async (userId: Types.ObjectId) => {
     const refreshToken = user.generateRefreshToken();
 
     user.refreshToken = refreshToken;
-    // We are using validateBeforeSave to avoid validation checks on fields like password
     await user.save({ validateBeforeSave: false });
 
     return { accessToken, refreshToken };
@@ -36,11 +38,11 @@ const generateAccessAndRefreshTokens = async (userId: Types.ObjectId) => {
 
 // --------------------------Register---------------------------
 export const registerUser = asyncHandler(async (req, res) => {
-  const { username, fullName, phoneNumber } = req.body;
+  const { username, phoneNumber, description } = req.body;
 
   // Validate required fields
-  if ([fullName, username, phoneNumber].some((field) => field?.trim() === "")) {
-    throw new ApiError(400, "All fields are required");
+  if ([username, phoneNumber].some((field) => field?.trim() === "")) {
+    throw new ApiError(400, "username, phoneNumber are required");
   }
 
   // Check if username or phone number already exists
@@ -51,29 +53,24 @@ export const registerUser = asyncHandler(async (req, res) => {
   }
 
   // Create user first without image
-  const newUser = await User.create({ username: username.toLowerCase(), fullName, phoneNumber });
+  const newUser = await User.create({ username: username.toLowerCase(), description, phoneNumber });
 
-  // Handle Image Upload (Optional)
-  if (req.file) {
-    const avatarLocalPath = req.file.path;
-    console.log("Avatar Local Path:", avatarLocalPath);
+  const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(newUser._id.toString());
+  console.log(accessToken);
+  console.log(refreshToken);
+  res.cookie("refreshToken", refreshToken, {
+    httpOnly: true, // Prevents access via JavaScript (secure)
+    secure: process.env.NODE_ENV === "production", // Ensures cookie is only sent over HTTPS in production
+    sameSite: "strict", // Prevents CSRF attacks
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days expiry
+  });
 
-    // Upload to Cloudinary
-    const avatar = await uploadOnCloudinary(avatarLocalPath);
-
-    if (!avatar) {
-      throw new ApiError(400, "Failed to upload avatar on Cloudinary");
-    }
-
-    // Update user with profile picture URL
-    await User.findByIdAndUpdate(newUser._id, { profilePic: avatar.secure_url });
-  }
-
-  return res.status(201).json(new ApiResponse(200, "User registered successfully"));
+  // Send response
+  return res.status(201).json(new ApiResponse(200, "User registered successfully", accessToken));
 });
-
-export const uploadProfilePic = asyncHandler(async (req:any, res) => {
-  const userId = req.user?._id; // Assuming verifyJWT middleware attaches user ID
+// ---------------------------Update Profile---------------------------
+export const uploadProfilePic = asyncHandler(async (req: any, res) => {
+  const userId = req.user?._id; // Get user ID from verifyJWT middleware
 
   if (!userId) {
     throw new ApiError(401, "Unauthorized");
@@ -83,7 +80,23 @@ export const uploadProfilePic = asyncHandler(async (req:any, res) => {
     throw new ApiError(400, "No file uploaded");
   }
 
-  // Upload file to Cloudinary
+  // Find the user to check if they already have a profile picture
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  // If user has a profile picture, delete the existing one from Cloudinary
+  if (user.profilePic) {
+    // Extract public_id from Cloudinary URL
+    const publicId = user.profilePic.split("/").pop()?.split(".")[0];
+    
+    if (publicId) {
+      await deleteFromCloudinary(publicId);
+    }
+  }
+
+  // Upload new profile picture to Cloudinary
   const avatarLocalPath = req.file.path;
   const avatar = await uploadOnCloudinary(avatarLocalPath);
 
@@ -91,98 +104,46 @@ export const uploadProfilePic = asyncHandler(async (req:any, res) => {
     throw new ApiError(400, "Failed to upload avatar on Cloudinary");
   }
 
-  // Update user profile picture URL
-  await User.findByIdAndUpdate(userId, { profilePic: avatar.secure_url });
+  // Update user profile picture URL in the database
+  user.profilePic = avatar.secure_url;
+  await user.save();
 
-  return res.status(200).json({ message: "Profile picture updated successfully", avatarUrl: avatar.secure_url });
+  return res.status(200).json({
+    message: "Profile picture updated successfully",
+    avatarUrl: avatar.secure_url,
+  });
 });
 
 
 
-// // ------------------------------Login------------------------
-// const loginUser = asyncHandler(async (req, res) => {
-//   // data from req->body
-//   // Username email
-//   //  find the user
-//   // password check
-//   // get access and refresh token
-//   // send cookie
 
-//   const { username, email, password } = req.body;
-//   if (!(username || email)) {
-//     throw new ApiError(400, "Username and Password are required");
-//   }
-//   // or operator find the user by email or username any one of it if found then give response
-//   const user = await User.findOne({
-//     $or: [{ username }, { email }],
-//   });
+// ----------------------------LOgOut-------------------------
+const logoutUser = asyncHandler(async (req, res) => {
+  // Here we are using middleware to get access id at the time of logout and accessing cookie by req
+  User.findByIdAndUpdate(
+    req.user._id,
+    {
+      $set: {
+        refreshToken: undefined,
+      },
+    },
+    {
+      new: true,
+    }
+  );
 
-//   if (!user) {
-//     throw new ApiError(404, "User does not exist");
-//   }
-//   // we use (User ) when we are talking about mongodb inbuild functions and use(user ) when we are using our made user
-//   const isPasswordValid = await user.isPasswordCorrect(password);
-//   if (!isPasswordValid) {
-//     throw new ApiError(401, "INvalid User Credential");
-//   }
-//   const { accessToken, refreshToken } = await generateAccessAndRefereshTokens(
-//     user._id
-//   );
+  const options = {
+    // by true this cookkies is only accessable from server side
+    httpOnly: true,
+    secure: true,
+  };
+  return res
+    .status(200)
+    .clearCookie("accessToken", options)
+    .clearCookie("refreshToken", options)
+    .json(new ApiResponse(200, {}, "user Logged Out Successfully"));
+});
 
-//   const loggedInUser = await User.findById(user._id).select(
-//     "-password -refreshToken"
-//   );
-//   // Makiing cookies
-//   // By default cookies is changable from frontend
-//   const options = {
-//     // by true this cookkies is only accessable and modifiable   from server side
-//     httpOnly: true,
-//     secure: true,
-//   };
-
-//   return res
-//     .status(200)
-//     .cookie("accessToken", accessToken, options)
-//     .cookie("refreshToken", refreshToken, options)
-//     .json(
-//       new ApiResponse(
-//         200,
-//         {
-//           user: loggedInUser,
-//           accessToken,
-//           refreshToken,
-//         },
-//         "User Logged in successfully"
-//       )
-//     );
-// });
-
-// // ----------------------------LOgOut-------------------------
-// const logoutUser = asyncHandler(async (req, res) => {
-//   // Here we are using middleware to get access id at the time of logout and accessing cookie by req
-//   User.findByIdAndUpdate(
-//     req.user._id,
-//     {
-//       $set: {
-//         refreshToken: undefined,
-//       },
-//     },
-//     {
-//       new: true,
-//     }
-//   );
-
-//   const options = {
-//     // by true this cookkies is only accessable from server side
-//     httpOnly: true,
-//     secure: true,
-//   };
-//   return res
-//     .status(200)
-//     .clearCookie("accessToken", options)
-//     .clearCookie("refreshToken", options)
-//     .json(new ApiResponse(200, {}, "user Logged Out Successfully"));
-// });
 // // ----------------------------Refresh Token---------------------------------
 // const refreshAccessToken = asyncHandler(async (req, res) => {
 //   const incomingrefreshToken =
@@ -227,54 +188,13 @@ export const uploadProfilePic = asyncHandler(async (req:any, res) => {
 //   }
 // });
 
-// // ----------------------------changeCurrentPassword ---------------------------------
-
-// const changeCurrentPassword = asyncHandler(async (req, res) => {
-//   const { oldPassword, newPassword } = req.body;
-//   // password change kar pa raha hai to wo login to hai malab middleware se wo req.body le sakta hai
-//   const user = await User.findById(req.body.user?._id);
-//   const isPasswordCorrect = await user.isPasswordCorrect(oldPassword);
-
-//   if (!isPasswordCorrect) throw new ApiError(400, "Invalid Old Password");
-
-//   user.password = newPassword;
-//   user.save({ validateBeforeSave: false });
-
-//   return res
-//     .status(200)
-//     .json(new ApiResponse(200, {}, "Password Changed Successfully"));
-// });
-
 // // ----------------------------getCurrentUser ---------------------------------
 
-// const getCurrentUser = asyncHandler(async (req, res) => {
-//   return res
-//     .status(200)
-//     .json(new ApiResponse(200, req.body.user, "Current user fetched Successfully"));
-// });
-
-// // ----------------------------updateAccountdetails ---------------------------------
-
-// const updateAccountdetails = asyncHandler(async (req, res) => {
-//   const { fullName, email } = req.body;
-//   if (!fullName || !email) {
-//     throw new ApiError(400, "alll field are required");
-//   }
-//   const user = User.findByIdAndUpdate(
-//     req.body.user?._id,
-//     {
-//       $set: {
-//         fullName,
-//         email: email,
-//       },
-//     },
-//     { new: true }
-//   ).select("-password");
-
-//   return res
-//     .status(200)
-//     .json(new ApiResponse(200, user, "Account details updated successfully"));
-// });
+const getCurrentUser = asyncHandler(async (req, res) => {
+  return res
+    .status(200)
+    .json(new ApiResponse(200, req.body.user, "Current user fetched Successfully"));
+});
 
 // // ----------------------------updateUserAvatar ---------------------------------
 
@@ -458,16 +378,16 @@ export const uploadProfilePic = asyncHandler(async (req:any, res) => {
 //     );
 // });
 
-// export {
-//   registerUser,
-//   loginUser,
-//   logoutUser,
-//   refreshAccessToken,
-//   changeCurrentPassword,
-//   getCurrentUser,
-//   updateAccountdetails,
-//   updateUserAvatar,
-//   updateUserCoverImage,
-//   getuserChannelProfile,
-//   getWatchHistory,
-// };
+export {
+  //   registerUser,
+  //   loginUser,
+  //   logoutUser,
+  //   refreshAccessToken,
+  //   changeCurrentPassword,
+  //   getCurrentUser,
+  //   updateAccountdetails,
+  // updateUserAvatar,
+  //   updateUserCoverImage,
+  //   getuserChannelProfile,
+  //   getWatchHistory,
+};

@@ -19,14 +19,21 @@ const uploadOnCloudinary = async (localFilePath: string): Promise<any | null> =>
       resource_type: "auto", // auto means for every type of file
     });
 
-    // File has been uploaded successfully
     console.log("File is uploaded successfully on Cloudinary", response.url);
-
+    
     // Remove the locally saved temporary file after successful upload
-    fs.unlinkSync(localFilePath);
+    if (fs.existsSync(localFilePath)) {
+      fs.unlink(localFilePath, (err) => {
+        if (err) console.error("Error deleting local file:", err);
+        else console.log("Local file deleted:", localFilePath);
+      });
+    } else {
+      console.warn("File not found for deletion:", localFilePath);
+    }
+
 
     return response;
-  } catch (error:any) {
+  } catch (error: any) {
     // Remove the locally saved temporary file in case of failure
     if (localFilePath) {
       fs.unlinkSync(localFilePath);
@@ -38,5 +45,13 @@ const uploadOnCloudinary = async (localFilePath: string): Promise<any | null> =>
     return null;
   }
 };
+const deleteFromCloudinary = async (publicId: string): Promise<any | null> => {
+  try {
+    await cloudinary.uploader.destroy(publicId);
+    return true;
+  } catch (error) {
+    console.error("Error deleting image from Cloudinary:", error);
+  }
+};
 
-export { uploadOnCloudinary };
+export { uploadOnCloudinary, deleteFromCloudinary };
