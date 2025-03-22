@@ -37,6 +37,7 @@ const generateAccessAndRefreshTokens = async (userId: Types.ObjectId) => {
 // --------------------------Register---------------------------
 export const registerUser = asyncHandler(async (req, res) => {
   const { username, fullName, phoneNumber } = req.body;
+  console.log(username)
 
   // Validate required fields
   if ([fullName, username, phoneNumber].some((field) => field?.trim() === "")) {
@@ -51,23 +52,23 @@ export const registerUser = asyncHandler(async (req, res) => {
   }
 
   // Create user first without image
-  const newUser = await User.create({ username: username.toLowerCase(), fullName, phoneNumber });
+  // const newUser = await User.create({ username: username.toLowerCase(), fullName, phoneNumber });
 
   // Handle Image Upload (Optional)
-  if (req.file) {
-    const avatarLocalPath = req.file.path;
-    console.log("Avatar Local Path:", avatarLocalPath);
+  // if (req.file) {
+  //   const avatarLocalPath = req.file.path;
+  //   console.log("Avatar Local Path:", avatarLocalPath);
 
-    // Upload to Cloudinary
-    const avatar = await uploadOnCloudinary(avatarLocalPath);
+  //   // Upload to Cloudinary
+  //   const avatar = await uploadOnCloudinary(avatarLocalPath);
 
-    if (!avatar) {
-      throw new ApiError(400, "Failed to upload avatar on Cloudinary");
-    }
+  //   if (!avatar) {
+  //     throw new ApiError(400, "Failed to upload avatar on Cloudinary");
+  //   }
 
-    // Update user with profile picture URL
-    await User.findByIdAndUpdate(newUser._id, { profilePic: avatar.secure_url });
-  }
+  //   // Update user with profile picture URL
+  //   await User.findByIdAndUpdate(newUser._id, { profilePic: avatar.secure_url });
+  // }
 
   return res.status(201).json(new ApiResponse(200, "User registered successfully"));
 });

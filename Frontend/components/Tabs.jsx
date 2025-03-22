@@ -1,16 +1,45 @@
-import { Text, Animated, View, StyleSheet,
-    TouchableOpacity, Image } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, ActivityIndicator } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
+import { useNavigation } from '@react-navigation/native';
 import Chat from './Chats/Chat';
 import Updates from './Updates/Updates';
 import Communities from './Communities/Communities';
 import Calls from './Calls/Calls';
+
 import { MaterialIcons, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 
 const Tab = createMaterialTopTabNavigator();
 
 export default function MyTabs() {
-  return (
+  const navigation = useNavigation();
+  const [loading, setLoading] = useState(true);
+  const [authenticated, setAuthenticated] = useState(false);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const token = await AsyncStorage.getItem('accessToken'); // Get token from storage
+      if (!token) {
+        navigation.replace('Login'); // Redirect if no token
+      } else {
+        setAuthenticated(true); // Allow access to tabs
+      }
+      setLoading(false);
+    };
+
+    checkAuth();
+  }, []);
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#00ff00" />
+      </View>
+    );
+  }
+
+  return authenticated ? (
     <Tab.Navigator
       initialRouteName="Chats"
       tabBarPosition="bottom"
@@ -25,20 +54,21 @@ export default function MyTabs() {
         options={{ 
             tabBarLabel: 'Chats',
             tabBarIndicator: () => (
-                <View style={{left:22, top: 8, height: 33, width: 60, transition: 'ease-in-out .5', backgroundColor: 'rgba(95, 252, 123,0.2)', borderRadius: 20}} />
+                <View style={{left:22, top: 8, height: 33, width: 60, backgroundColor: 'rgba(95, 252, 123,0.2)', borderRadius: 20}} />
             ),
-        tabBarIcon: () => (
-            <MaterialCommunityIcons name="message-text-outline" size={24} color="white" />
-        ),
+            tabBarIcon: () => (
+                <MaterialCommunityIcons name="message-text-outline" size={24} color="white" />
+            ),
         }}
       />
       <Tab.Screen
         name="Updates"
         component={Updates}
-        options={{ tabBarLabel: 'Updates' ,
-        tabBarIndicator: () => (
-            <View style={{left:125, top: 8, height: 33, width: 60, backgroundColor: 'rgba(95, 252, 123,0.2)', borderRadius: 20}} />
-        ),
+        options={{ 
+            tabBarLabel: 'Updates',
+            tabBarIndicator: () => (
+                <View style={{left:125, top: 8, height: 33, width: 60, backgroundColor: 'rgba(95, 252, 123,0.2)', borderRadius: 20}} />
+            ),
             tabBarIcon: () => (
                 <MaterialIcons name="downloading" size={24} color="white" />
             ),
@@ -47,10 +77,11 @@ export default function MyTabs() {
       <Tab.Screen
         name="Communities"
         component={Communities}
-        options={{ tabBarLabel: 'Communities' ,
-        tabBarIndicator: () => (
-            <View style={{left:227, top: 8, height: 33, width: 60, backgroundColor: 'rgba(95, 252, 123,0.2)', borderRadius: 20}} />
-        ),
+        options={{ 
+            tabBarLabel: 'Communities',
+            tabBarIndicator: () => (
+                <View style={{left:227, top: 8, height: 33, width: 60, backgroundColor: 'rgba(95, 252, 123,0.2)', borderRadius: 20}} />
+            ),
             tabBarIcon: () => (
                 <MaterialCommunityIcons name="account-group" size={24} color="white" />
             ),
@@ -59,33 +90,29 @@ export default function MyTabs() {
       <Tab.Screen
         name="Calls"
         component={Calls}
-        options={{ tabBarLabel: 'Call' ,
-        tabBarIndicator: () => (
-            <View style={{left:328, top: 8, height: 33, width: 60, backgroundColor: 'rgba(95, 252, 123,0.2)', borderRadius: 20}} />
-        ),
+        options={{ 
+            tabBarLabel: 'Call',
+            tabBarIndicator: () => (
+                <View style={{left:328, top: 8, height: 33, width: 60, backgroundColor: 'rgba(95, 252, 123,0.2)', borderRadius: 20}} />
+            ),
             tabBarIcon: () => (
                 <Ionicons name="call-outline" size={24} color="white" />
             ),
         }}
       />
     </Tab.Navigator>
-  );
+  ) : null;
 }
 
-const styles = StyleSheet.create({
-    tab: {
+const styles = {
+  tab: {
     backgroundColor: '#011513',
     height: 70,
-    },
-    icon: {
-        alignSelf: 'center',
-        width: 30,
-        height: 30,
-    },
-    title: {
-        textAlign: 'center',
-        fontSize: 12,
-        fontWeight: 'bold',
-        color: 'white',
-    },
-})
+  },
+  title: {
+    textAlign: 'center',
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: 'white',
+  },
+};
