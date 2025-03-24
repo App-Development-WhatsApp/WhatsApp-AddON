@@ -4,7 +4,6 @@ import { ApiResponse } from "../utils/APIResponse";
 //  this user can interact with mongodb because it has made a connection
 import { User } from "../models/user.model";
 import { uploadOnCloudinary } from "../utils/cloudinary";
-import jwt from "jsonwebtoken";
 // import { subscription } from "../models/subscription.model";
 import mongoose from "mongoose";
 
@@ -36,24 +35,25 @@ const generateAccessAndRefreshTokens = async (userId: Types.ObjectId) => {
 
 // --------------------------Register---------------------------
 export const registerUser = asyncHandler(async (req, res) => {
-  const { username, fullName, phoneNumber } = req.body.username;
+  const { username, fullName, phoneNumber } = req.body;
   // console.log(req.body.username)
-  console.log(req.file)
+  console.log(req.body.username)
 
   // Validate required fields
   if ([fullName, username, phoneNumber].some((field) => field?.trim() === "")) {
-    throw new ApiError(400, "All fields are required");
+    return new ApiError(400, "All fields are required");
   }
 
   // Check if username or phone number already exists
-  const existedUser = await User.findOne({ $or: [{ phoneNumber }] });
+  const userId = await User.findOne({ phoneNumber }).select("_id");
 
-  if (existedUser) {
-    throw new ApiError(409, "Username already exists");
+  console.log("userid->",userId)
+  if (userId) {
+    throw new ApiError(400, "User Llready exist");
   }
 
   // Create user first without image
-  // const newUser = await User.create({ username: username.toLowerCase(), fullName, phoneNumber });
+  const newUser = await User.create({ username: username, fullName, phoneNumber });
 
   // Handle Image Upload (Optional)
   if (req.file) {
@@ -68,10 +68,32 @@ export const registerUser = asyncHandler(async (req, res) => {
     }
 
     // Update user with profile picture URL
-    // await User.findByIdAndUpdate(newUser._id, { profilePic: avatar.secure_url });
+    await User.findByIdAndUpdate(newUser._id, { profilePic: avatar.secure_url });
   }
+  const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(
+    newUser._id
+  );
 
-  return res.status(201).json(new ApiResponse(200, "User registered successfully"));
+  const loggedInUser = await User.findById(newUser._id).select(
+    " -refreshToken"
+  );
+  // Makiing cookies
+  // By default cookies is changable from frontend
+  const options = {
+    // by true this cookkies is only accessable and modifiable   from server side
+    httpOnly: true,
+    secure: true,
+  };
+  console.log(accessToken)
+
+  return res.json(new ApiResponse(
+    200,
+    "User Logged in successfully",
+    {
+      user: loggedInUser,
+      accessToken
+    },
+  ))
 });
 
 export const uploadProfilePic = asyncHandler(async (req: any, res) => {
@@ -252,7 +274,7 @@ export const uploadProfilePic = asyncHandler(async (req: any, res) => {
 export const getCurrentUser = asyncHandler(async (req, res) => {
   return res
     .status(200)
-    .json(new ApiResponse(200, req.body.user, "Current user fetched Successfully"));
+    .json(new ApiResponse(200, req.user, "Current user fetched Successfully"));
 });
 
 // // ----------------------------updateAccountdetails ---------------------------------

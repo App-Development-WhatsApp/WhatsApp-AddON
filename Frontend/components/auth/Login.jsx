@@ -1,21 +1,27 @@
 import React, { useState, useEffect } from "react";
-import { View, TextInput, Button, Text, Alert, Image, TouchableOpacity, StyleSheet, BackHandler } from "react-native";
-import * as DocumentPicker from 'expo-document-picker';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { 
+    View, TextInput, Button, Text, Alert, Image, 
+    TouchableOpacity, StyleSheet, BackHandler, ActivityIndicator 
+} from "react-native";
+import * as DocumentPicker from "expo-document-picker";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { login } from "../../Services/AuthServices";
+
 const LoginScreen = ({ navigation }) => {
     const [fullName, setFullName] = useState("");
     const [username, setUsername] = useState("");
     const [phoneNumber, setPhoneNumber] = useState("");
     const [profilePic, setProfilePic] = useState(null);
+    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         const checkAuth = async () => {
-            const token = await AsyncStorage.getItem('accessToken');
+            const token = await AsyncStorage.getItem("accessToken");
             if (token) {
-                navigation.replace("Chat");
+                navigation.replace("Main");
             }
         };
+
         checkAuth();
 
         const backAction = () => {
@@ -31,52 +37,60 @@ const LoginScreen = ({ navigation }) => {
     const pickImage = async () => {
         try {
             const result = await DocumentPicker.getDocumentAsync({
-                type: 'image/*', // Allow only image files
+                type: "image/*", // Allow only image files
                 copyToCacheDirectory: true,
             });
 
-            if (result.canceled) {
-                console.log('Image selection was canceled');
+            if (result.type === "cancel") {
+                console.log("Image selection was canceled");
                 return;
             }
 
-            setProfilePic(result.assets[0].uri); // Fix: Set the profile picture state correctly
+            const imageUri = result.assets[0].uri;
+            console.log("Selected Image URI:", imageUri);
+            setProfilePic(imageUri);
         } catch (error) {
-            console.error('Error picking image:', error);
+            console.error("Error picking image:", error);
+            Alert.alert("Error", "Failed to select image. Please try again.");
         }
     };
 
     const handleLogin = async () => {
-        if (!fullName || !username || !phoneNumber || !profilePic) {
+        if (!fullName || !username || !phoneNumber) {
             Alert.alert("Error", "Please fill in all fields and select a profile picture.");
             return;
         }
+
+        setLoading(true); // Show loading indicator
+
         const formData = new FormData();
         formData.append("fullName", fullName);
         formData.append("username", username);
         formData.append("phoneNumber", phoneNumber);
 
-        // Convert the image URI into a file object
-        const filename = profilePic.split('/').pop();
-        const match = /\.(\w+)$/.exec(filename);
-        const fileType = match ? `image/${match[1]}` : `image`;
+        if (profilePic) {
+            const filename = profilePic.split("/").pop();
+            const match = /\.(\w+)$/.exec(filename);
+            const fileType = match ? `image/${match[1]}` : "image";
 
-        formData.append("profilePic", {
-            uri: profilePic,
-            name: filename,
-            type: fileType
-        });
+            formData.append("profilePic", {
+                uri: profilePic,
+                name: filename,
+                type: fileType,
+            });
+        }
 
-        // Alert.alert("Working");
         const result = await login(formData);
 
-        // if (result.success) {
-        //     await AsyncStorage.setItem('accessToken', result.token);
-        //     Alert.alert("Success", "Logged in successfully");
-        //     navigation.replace("Chat");
-        // } else {
-        //     Alert.alert("Error", result.message);
-        // }
+        setLoading(false); // Hide loading indicator
+
+        if (result.success && result.data.accessToken) {
+            await AsyncStorage.setItem("accessToken", result.data.accessToken);
+            Alert.alert("Success", "Logged in successfully!");
+            navigation.replace("Main");
+        } else {
+            Alert.alert("Login Failed", result.message || "An error occurred. Please try again.");
+        }
     };
 
     return (
@@ -96,7 +110,11 @@ const LoginScreen = ({ navigation }) => {
             <TextInput value={username} onChangeText={setUsername} placeholder="Username" style={styles.input} />
             <TextInput value={phoneNumber} onChangeText={setPhoneNumber} keyboardType="phone-pad" placeholder="Phone Number" style={styles.input} />
 
-            <Button title="Login" onPress={handleLogin} color="#007bff" />
+            {loading ? (
+                <ActivityIndicator size="large" color="#007bff" />
+            ) : (
+                <Button title="Login" onPress={handleLogin} color="#007bff" />
+            )}
         </View>
     );
 };
@@ -105,9 +123,9 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         padding: 20,
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: '#f8f9fa',
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: "#f8f9fa",
     },
     imagePicker: {
         alignItems: "center",
@@ -127,13 +145,13 @@ const styles = StyleSheet.create({
         alignItems: "center",
     },
     input: {
-        width: '100%',
+        width: "100%",
         borderBottomWidth: 1,
-        borderColor: '#ccc',
+        borderColor: "#ccc",
         marginBottom: 15,
         padding: 10,
         borderRadius: 5,
-        backgroundColor: '#fff',
+        backgroundColor: "#fff",
     },
 });
 

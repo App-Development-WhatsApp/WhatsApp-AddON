@@ -41,7 +41,7 @@ const userSchema = new Schema<IUser>({
 // **Method to generate access token**
 userSchema.methods.generateAccessToken = function (): string {
   return jwt.sign({ userId: this._id }, process.env.ACCESS_TOKEN_SECRET!, {
-    expiresIn: "15m",
+    expiresIn: "40d",
   });
 };
 
