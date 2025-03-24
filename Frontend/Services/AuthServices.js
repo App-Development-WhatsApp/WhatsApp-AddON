@@ -2,7 +2,7 @@ import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Alert } from "react-native";
 
-const API_URL = "http://localhost:5000/api/v1/users"; // Replace with your backend URL
+const API_URL = "http://10.10.15.72:5000/api/v1/users"; // Replace with your backend URL
 
 
 export const checkAuth = async () => {
@@ -15,23 +15,12 @@ export const checkAuth = async () => {
 };
 
 
-// Register User
-export const register = async (email, password) => {
+export const login = async (formData) => {
     try {
-        await axios.post(`${API_URL}/register`, { email, password });
-        return { success: true, message: "Registered successfully" };
-    } catch (error) {
-        return { success: false, message: error.response?.data?.message || "Registration failed" };
-    }
-};
-
-export const login = async (username, fullName, phoneNumber, profilePic) => {
-    try {
-        // console.log("Sending request to:", `${API_URL}/register`);
-        // console.log("Payload:", { username, fullName, phoneNumber, profilePic });
-
-        const response = await axios.post(`${API_URL}/register`, {
-            username, fullName, phoneNumber, profilePic
+        const response = await axios.post(`${API_URL}/register`, formData, {
+            headers: {
+                "Content-Type": "multipart/form-data",
+            },
         });
 
         console.log("Response:", response.data); // Log response
@@ -42,7 +31,6 @@ export const login = async (username, fullName, phoneNumber, profilePic) => {
         return { success: false, message: error.response?.data?.message || "Login failed" };
     }
 };
-
 
 // Get User Profile
 export const getProfile = async () => {

@@ -5,7 +5,7 @@ import {
   registerUser,
   // refreshAccessToken,
   // changeCurrentPassword,
-  // getCurrentUser,
+  getCurrentUser,
   // updateAccountdetails,
   // updateUserAvatar,
   // updateUserCoverImage,
@@ -19,13 +19,12 @@ const router = Router();
 
 router.route("/register").post(upload.single("profilePic"), registerUser);
 
-// router.route("/login").post(loginUser);
 
 // // logout is the controller for logout route and verifyJWT is the method want to run before perform logout
 // router.route("/logout").post(verifyJWT, logoutUser);
 // router.route("/refresh-token").post(refreshAccessToken);
 // router.route("/change-password").post(verifyJWT, changeCurrentPassword);
-// router.route("/current-user").post(verifyJWT, getCurrentUser);
+router.route("/current-user").post(verifyJWT, getCurrentUser);
 // router.route("/update-account").patch(verifyJWT, updateAccountdetails);
 // router
 //   .route("/avatar")

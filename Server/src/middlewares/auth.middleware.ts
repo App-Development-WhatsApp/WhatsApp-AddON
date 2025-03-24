@@ -9,8 +9,11 @@ interface DecodedToken {
   _id: string;
 }
 
+export interface customRequest extends Request{
+  user?: any;
+}
 export const verifyJWT = asyncHandler(
-  async (req: Request, _: Response, next: NextFunction): Promise<void> => {
+  async (req: customRequest, _: Response, next: NextFunction): Promise<void> => {
     try {
       const token =
         req.cookies?.accessToken || req.header("Authorization")?.replace("Bearer ", "");

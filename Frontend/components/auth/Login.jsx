@@ -3,7 +3,6 @@ import { View, TextInput, Button, Text, Alert, Image, TouchableOpacity, StyleShe
 import * as DocumentPicker from 'expo-document-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { login } from "../../Services/AuthServices";
-
 const LoginScreen = ({ navigation }) => {
     const [fullName, setFullName] = useState("");
     const [username, setUsername] = useState("");
@@ -48,9 +47,29 @@ const LoginScreen = ({ navigation }) => {
     };
 
     const handleLogin = async () => {
+        if (!fullName || !username || !phoneNumber || !profilePic) {
+            Alert.alert("Error", "Please fill in all fields and select a profile picture.");
+            return;
+        }
+        const formData = new FormData();
+        formData.append("fullName", fullName);
+        formData.append("username", username);
+        formData.append("phoneNumber", phoneNumber);
+
+        // Convert the image URI into a file object
+        const filename = profilePic.split('/').pop();
+        const match = /\.(\w+)$/.exec(filename);
+        const fileType = match ? `image/${match[1]}` : `image`;
+
+        formData.append("profilePic", {
+            uri: profilePic,
+            name: filename,
+            type: fileType
+        });
+
         // Alert.alert("Working");
-        const result = await login({ fullName, username, phoneNumber, profilePic });
-        
+        const result = await login(formData);
+
         // if (result.success) {
         //     await AsyncStorage.setItem('accessToken', result.token);
         //     Alert.alert("Success", "Logged in successfully");
