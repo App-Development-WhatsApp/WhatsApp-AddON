@@ -33,6 +33,7 @@ export default function Chat() {
       try {
         // Load user info
         const userInfo = await loadUserInfo();
+        console.log(userInfo,"------------------");
         if (userInfo && userInfo.friends) {
           setUserData(userInfo)
           // if (netInfo.isConnected) {

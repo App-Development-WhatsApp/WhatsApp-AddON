@@ -8,6 +8,7 @@ import { uploadOnCloudinary } from "../utils/cloudinary";
 import mongoose from "mongoose";
 
 import { Types } from "mongoose";
+import { Chat } from "../models/Chat.model";
 
 const generateAccessAndRefreshTokens = async (userId: Types.ObjectId) => {
   try {
@@ -17,13 +18,11 @@ const generateAccessAndRefreshTokens = async (userId: Types.ObjectId) => {
     }
 
     const accessToken = user.generateAccessToken();
-    const refreshToken = user.generateRefreshToken();
 
-    user.refreshToken = refreshToken;
     // We are using validateBeforeSave to avoid validation checks on fields like password
     await user.save({ validateBeforeSave: false });
 
-    return { accessToken, refreshToken };
+    return accessToken;
   } catch (error) {
     throw new ApiError(
       500,
@@ -47,7 +46,7 @@ export const registerUser = asyncHandler(async (req, res) => {
   const userId = await User.findOne({ phoneNumber }).select("_id");
 
   if (userId) {
-    throw new ApiError(400, "User Llready exist");
+    throw new ApiError(400, "User Already exist");
   }
 
   // Create user first without image
@@ -229,18 +228,22 @@ export const GetAllChattedUsers = asyncHandler(async (req, res) => {
     console.log(userId);
 
     // Fetch the user first
-    const user = await User.findById(userId).select("contacts");
+    const user = await User.findById(userId).select("chats");
     if (!user) {
       return res.status(404).json(new ApiError(404, "User not found"));
     }
 
     // Fetch the contacts (friends) of the user
-    const friends = await User.find({ _id: { $in: user.contacts } })
-      .select("username profilePic _id lastSeen online");
+
+    const chatIds = user.chats.map(chat => chat); // Extract chat IDs
+
+    const chats = await Chat.find({ _id: { $in: chatIds } })
+      .select("participants lastMessage updatedAt"); // Select only required fields
 
     return res
       .status(200)
-      .json(new ApiResponse(200, "All users fetched successfully", friends));
+      .json(new ApiResponse(200, "All chats fetched successfully", {chats,}));
+
   } catch (error: any) {
     return res.status(500).json(new ApiError(500, "Internal server error", error.message));
   }

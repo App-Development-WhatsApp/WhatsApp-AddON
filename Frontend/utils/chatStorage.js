@@ -22,6 +22,7 @@ export const saveUserInfo = async (user) => {
     console.error("Error saving user info:", error);
   }
 };
+
 export const loadUserInfo = async () => {
     try {
       const data = await FileSystem.readAsStringAsync(userFilePath);

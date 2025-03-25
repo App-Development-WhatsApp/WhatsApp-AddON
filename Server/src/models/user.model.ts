@@ -6,8 +6,9 @@ interface IUser extends Document {
   phoneNumber: string;
   username: string;
   profilePic: string;
-  refreshToken?: string;
   about: string;
+  friends: mongoose.Types.ObjectId[];
+  chats:mongoose.Types.ObjectId [];
   contacts: mongoose.Types.ObjectId[];
   groups: mongoose.Types.ObjectId[];
   communities: mongoose.Types.ObjectId[];
@@ -16,7 +17,7 @@ interface IUser extends Document {
   online: boolean;
   status: { media?: string; text?: string; timestamp?: Date }[];
   callLogs: mongoose.Types.ObjectId[];
-  isVerified: boolean
+  isVerified: boolean;
   generateAccessToken(): string;
   generateRefreshToken(): string;
 }
@@ -25,10 +26,10 @@ const userSchema = new Schema<IUser>({
   phoneNumber: { type: String, required: true, unique: true },
   username: { type: String, required: true },
   profilePic: { type: String, default: "" },
-  refreshToken: { type: String },
   about: { type: String, default: "Hey there! I am using WhatsApp." },
-  contacts: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+  friends: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   groups: [{ type: mongoose.Schema.Types.ObjectId, ref: "Group" }],
+  chats: [ { type: mongoose.Schema.Types.ObjectId, ref: "Chat" }],
   communities: [{ type: mongoose.Schema.Types.ObjectId, ref: "Community" }],
   followedChannels: [{ type: mongoose.Schema.Types.ObjectId, ref: "Channel" }], // Channels the user follows
   lastSeen: { type: Date, default: Date.now },
