@@ -24,13 +24,12 @@ export default function Chat() {
 
   useEffect(() => {
     const fetchUserProfile = async () => {
-      const user=await getProfile();
-      if (user.success) {
-        setUserData(user.user);
+      const res = await getProfile();
+      if (res.success) {
+        setUserData(res.user);
       }
       setLoading
-      (false);
-      
+        (false);
     }
 
     fetchUserProfile();
@@ -87,9 +86,12 @@ export default function Chat() {
           <Image style={{ width: 30, height: 30 }} source={require('../../assets/images/ai.png')} />
         </View>
         <View style={styles.msg}>
-          <MaterialCommunityIcons name="message-plus" size={28} color="#011513" />
+          <TouchableOpacity onPress={() => navigation.navigate('Contacts')}>
+            <MaterialCommunityIcons name="message-plus" size={28} color="#011513" />
+          </TouchableOpacity>
         </View>
       </View>
+
     </View>
   );
 }

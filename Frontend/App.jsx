@@ -23,7 +23,7 @@ import HelpScreen from "./components/setting/HelpScreen";
 import InviteFriendScreen from "./components/setting/InviteFriendScreen";
 import AppUpdateScreen from "./components/setting/AppUpdateScreen";
 import LoginScreen from "./components/auth/Login";
-
+import Contacts from "./components/AllContacts/Contacts";
 const Stack = createStackNavigator();
 
 export default function App() {
@@ -60,6 +60,7 @@ export default function App() {
         <Stack.Screen name="VideoPlayer" component={VideoPlayer} />
         <Stack.Screen name="History" component={History} />
         <Stack.Screen name="Chatting" component={Chatting} />
+        <Stack.Screen name="Contacts" component={Contacts} />
         <Stack.Screen name="Account" component={AccountScreen} />
         <Stack.Screen name="Privacy" component={PrivacyScreen} />
         <Stack.Screen name="Avatar" component={AvatarScreen} />

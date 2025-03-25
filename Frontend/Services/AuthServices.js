@@ -2,7 +2,7 @@ import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Alert } from "react-native";
 
-const API_URL = "http://192.168.21.25:5000/api/v1/users"; // Replace with your backend URL
+const API_URL = "http://192.168.0.100:5000/api/v1/users"; // Replace with your backend URL
 
 export const checkAuth = async () => {
     try {
@@ -63,14 +63,27 @@ export const getProfile = async () => {
     try {
         const token = await AsyncStorage.getItem("accessToken");
         if (!token) return { success: false, message: "Unauthorized: No token found" };
-
+        console.log(token)
         const response = await axios.get(`${API_URL}/current-user`, {
             headers: { Authorization: `Bearer ${token}` },
         });
-        console.log(response)
+        console.log(response.data.data)
 
-        return { success: true, user: response.data.user };
+        return { success: true, user: response.data.data };
     } catch (error) {
         return { success: false, message: "Unauthorized" };
+    }
+};
+
+
+export const getAllUsers = async () => {
+    try {
+        const response = await axios.get(`${API_URL}/getAllUsers`);
+        // console.log(response.data.data)
+
+        return { success: true, user: response.data.data };
+    } catch (error) {
+        console.log(error.message)
+        return { success: false, message: error.message };
     }
 };

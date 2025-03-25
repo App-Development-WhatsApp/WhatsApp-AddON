@@ -47,7 +47,6 @@ export const registerUser = asyncHandler(async (req, res) => {
   // Check if username or phone number already exists
   const userId = await User.findOne({ phoneNumber }).select("_id");
 
-  console.log("userid->",userId)
   if (userId) {
     throw new ApiError(400, "User Llready exist");
   }
@@ -58,7 +57,7 @@ export const registerUser = asyncHandler(async (req, res) => {
   // Handle Image Upload (Optional)
   if (req.file) {
     const avatarLocalPath = req.file.path;
-    console.log("Avatar Local Path:", avatarLocalPath);
+    // console.log("Avatar Local Path:", avatarLocalPath);
 
     // Upload to Cloudinary
     const avatar = await uploadOnCloudinary(avatarLocalPath);
@@ -122,64 +121,6 @@ export const uploadProfilePic = asyncHandler(async (req: any, res) => {
 });
 
 
-
-// // ------------------------------Login------------------------
-// const loginUser = asyncHandler(async (req, res) => {
-//   // data from req->body
-//   // Username email
-//   //  find the user
-//   // password check
-//   // get access and refresh token
-//   // send cookie
-
-//   const { username, email, password } = req.body;
-//   if (!(username || email)) {
-//     throw new ApiError(400, "Username and Password are required");
-//   }
-//   // or operator find the user by email or username any one of it if found then give response
-//   const user = await User.findOne({
-//     $or: [{ username }, { email }],
-//   });
-
-//   if (!user) {
-//     throw new ApiError(404, "User does not exist");
-//   }
-//   // we use (User ) when we are talking about mongodb inbuild functions and use(user ) when we are using our made user
-//   const isPasswordValid = await user.isPasswordCorrect(password);
-//   if (!isPasswordValid) {
-//     throw new ApiError(401, "INvalid User Credential");
-//   }
-//   const { accessToken, refreshToken } = await generateAccessAndRefereshTokens(
-//     user._id
-//   );
-
-//   const loggedInUser = await User.findById(user._id).select(
-//     "-password -refreshToken"
-//   );
-//   // Makiing cookies
-//   // By default cookies is changable from frontend
-//   const options = {
-//     // by true this cookkies is only accessable and modifiable   from server side
-//     httpOnly: true,
-//     secure: true,
-//   };
-
-//   return res
-//     .status(200)
-//     .cookie("accessToken", accessToken, options)
-//     .cookie("refreshToken", refreshToken, options)
-//     .json(
-//       new ApiResponse(
-//         200,
-//         {
-//           user: loggedInUser,
-//           accessToken,
-//           refreshToken,
-//         },
-//         "User Logged in successfully"
-//       )
-//     );
-// });
 
 // // ----------------------------LOgOut-------------------------
 // const logoutUser = asyncHandler(async (req, res) => {
@@ -274,7 +215,14 @@ export const uploadProfilePic = asyncHandler(async (req: any, res) => {
 export const getCurrentUser = asyncHandler(async (req, res) => {
   return res
     .status(200)
-    .json(new ApiResponse(200, req.user, "Current user fetched Successfully"));
+    .json(new ApiResponse(200, "Current user fetched Successfully", req.user));
+});
+export const GetAllUsers = asyncHandler(async (req, res) => {
+  const users = await User.find({}, "username profilePic phoneNumber _id");
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, "All users fetched successfully", users));
 });
 
 // // ----------------------------updateAccountdetails ---------------------------------

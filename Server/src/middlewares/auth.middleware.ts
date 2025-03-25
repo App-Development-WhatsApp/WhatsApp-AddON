@@ -23,13 +23,13 @@ export const verifyJWT = asyncHandler(
       }
 
       // Decode the token
-      const decodedToken = jwt.verify(
+      const decodedToken:any = jwt.verify(
         token,
         process.env.ACCESS_TOKEN_SECRET as string
       ) as DecodedToken; // Type assertion for the decoded token
-
-      const user = await User.findById(decodedToken._id).select("-password -refreshToken");
-
+      console.log(decodedToken)
+      const user = await User.findById(decodedToken.userId).select("-password -refreshToken");
+      console.log(user);
       if (!user) {
         throw new ApiError(401, "Invalid Access Token");
       }
