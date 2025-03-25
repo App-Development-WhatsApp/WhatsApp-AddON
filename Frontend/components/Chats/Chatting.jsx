@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   KeyboardAvoidingView,
@@ -14,7 +14,7 @@ import {
 import { useRoute } from "@react-navigation/native";
 import { MaterialCommunityIcons, FontAwesome, Entypo } from "@expo/vector-icons";
 import EmojiPicker from "react-native-emoji-picker-staltz"; // ✅ Updated import
-import { saveChatMessage } from "../../utils/chatStorage";
+import { loadUserInfo, saveChatMessage } from "../../utils/chatStorage";
 
 const sendMessage = async () => {
   const message = {
@@ -29,10 +29,32 @@ const sendMessage = async () => {
 
 export default function Chatting() {
   const route = useRoute();
-  const { name, image } = route.params;
+  const { name, image, id } = route.params;
 
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [chats, setChats] = useState([]);
+
+
+  useEffect(() => {
+    setLoading(true);
+    const LoadChattingOfUser = async () => {
+      try {
+        // Load user info
+        const Chats = await getChattingHistory(id);
+        console.log(Chats)
+        setChats(Chats);
+        setLoading(false);
+      } catch (error) {
+        console.log("Error loading user data:", error.message);
+        setLoading(false);
+      }
+    }
+
+    LoadChattingOfUser();
+
+  }, [id,chats]);
 
   const messages = [
     { id: "1", text: "Hey! How are you?", sender: "me" },
@@ -85,7 +107,7 @@ export default function Chatting() {
           style={styles.messagesContainer}
         />
       </KeyboardAvoidingView>
-{/* --------------------------------------------- */}
+      {/* --------------------------------------------- */}
       {/* 🔹 Input Bar */}
       <View style={styles.inputContainer}>
         {/* Emoji Button */}

@@ -4,20 +4,6 @@ import { Alert } from "react-native";
 
 const API_URL = "http://192.168.137.1:5000/api/v1/users"; // Replace with your backend URL
 
-export const checkAuth = async () => {
-    try {
-        const token = await AsyncStorage.getItem("token");
-        if (!token) return false;
-
-        const response = await axios.get(`${API_URL}/auth-check`, {
-            headers: { Authorization: `Bearer ${token}` },
-        });
-
-        return response.data.authenticated;
-    } catch (error) {
-        return false;
-    }
-};
 
 export const login = async (formData) => {
     try {

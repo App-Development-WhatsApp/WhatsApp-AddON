@@ -229,21 +229,21 @@ export const GetAllChattedUsers = asyncHandler(async (req, res) => {
     console.log(userId);
 
     // Fetch the user first
-    const user = await User.findById(userId).select("chats");
+    const user = await User.findById(userId).select("friends");
     if (!user) {
       return res.status(404).json(new ApiError(404, "User not found"));
     }
 
     // Fetch the contacts (friends) of the user
 
-    const chatIds = user.chats.map(chat => chat); // Extract chat IDs
+    const friendIds = user.friends.map(friend => friend); // Extract chat IDs
 
-    const chats = await Chat.find({ _id: { $in: chatIds } })
-      .select("participants lastMessage updatedAt"); // Select only required fields
+    const friends = await User.find({ _id: { $in: friendIds } })
+      .select("_id profilePic userName lastSeen online status updatedAt"); // Select only required fields
 
     return res
       .status(200)
-      .json(new ApiResponse(200, "All chats fetched successfully", {chats,}));
+      .json(new ApiResponse(200, "All chats fetched successfully", friends));
 
   } catch (error: any) {
     return res.status(500).json(new ApiError(500, "Internal server error", error.message));

@@ -18,11 +18,11 @@ import Header from './Header';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { getProfile } from '../../Services/AuthServices';
 import { loadUserInfo } from '../../utils/chatStorage';
-// import { useNetInfo } from "@react-native-community/netinfo"; // Detect network status
+import { useNetInfo } from "@react-native-community/netinfo"; // Detect network status
 
 
 export default function Chat() {
-  // const netInfo = useNetInfo(); // Check network status
+  const netInfo = useNetInfo(); // Check network status
   const navigation = useNavigation();
   const [loading, setLoading] = useState(true);
   const [userData, setUserData] = useState(null);
@@ -36,16 +36,15 @@ export default function Chat() {
         // console.log(userInfo,"------------------");
         if (userInfo) {
           setUserData(userInfo)
-          // if (netInfo.isConnected) {
-          //   // Fetch from API if online
-          //   const friendsData = await fetchFriendsDetails(userInfo.friends);
-          //   setFriends(friendsData);
-          // } else {
+          if (netInfo.isConnected) {
+            // Fetch from API if online
+             await fetchAndSaveFriends(userInfo._id);
+          }
           // Load from local storage if offline
           console.log("---9876564")
           const friendsData = await loadChatsOffline();
           setFriends(friendsData);
-          // }
+          console.log(friendsData)
         } else {
           navigation.replace("Login");
         }
@@ -60,7 +59,7 @@ export default function Chat() {
 
 
 
-  }, []);
+  }, [netInfo.isConnected]);
 
   const Item = ({ id, name, image, message, time }) => (
     <View>
