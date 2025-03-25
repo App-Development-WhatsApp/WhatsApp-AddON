@@ -9,7 +9,7 @@ import {
   ScrollView,
   ActivityIndicator
 } from 'react-native';
-import loadFriendsOffline from '../../utils/loadFriendsOffline';
+import loadChatsOffline from '../../utils/chatStorage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { Users } from '../../lib/data';
@@ -18,11 +18,11 @@ import Header from './Header';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { getProfile } from '../../Services/AuthServices';
 import { loadUserInfo } from '../../utils/chatStorage';
-import { useNetInfo } from "@react-native-community/netinfo"; // Detect network status
+// import { useNetInfo } from "@react-native-community/netinfo"; // Detect network status
 
 
 export default function Chat() {
-  const netInfo = useNetInfo(); // Check network status
+  // const netInfo = useNetInfo(); // Check network status
   const navigation = useNavigation();
   const [loading, setLoading] = useState(true);
   const [userData, setUserData] = useState(null);
@@ -33,8 +33,8 @@ export default function Chat() {
       try {
         // Load user info
         const userInfo = await loadUserInfo();
-        console.log(userInfo,"------------------");
-        if (userInfo && userInfo.friends) {
+        // console.log(userInfo,"------------------");
+        if (userInfo) {
           setUserData(userInfo)
           // if (netInfo.isConnected) {
           //   // Fetch from API if online
@@ -42,27 +42,25 @@ export default function Chat() {
           //   setFriends(friendsData);
           // } else {
           // Load from local storage if offline
-          const friendsData = await loadFriendsOffline(userInfo._id);
+          console.log("---9876564")
+          const friendsData = await loadChatsOffline();
           setFriends(friendsData);
           // }
         } else {
           navigation.replace("Login");
         }
+        setLoading(false);
       } catch (error) {
-        console.log("Error loading user data:", error);
+        console.log("Error loading user data:", error.message);
+        setLoading(false);
       }
     };
 
     loadUserAndFriends();
 
 
-    const getFriends = async () => {
-      const res = await getProfile();
-      console.log(res);
-    }
 
-
-  }, [netInfo.isConnected]);
+  }, []);
 
   const Item = ({ id, name, image, message, time }) => (
     <View>

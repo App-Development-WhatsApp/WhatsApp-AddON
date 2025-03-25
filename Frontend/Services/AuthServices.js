@@ -2,7 +2,7 @@ import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Alert } from "react-native";
 
-const API_URL = "http://192.168.0.100:5000/api/v1/users"; // Replace with your backend URL
+const API_URL = "http://192.168.137.1:5000/api/v1/users"; // Replace with your backend URL
 
 export const checkAuth = async () => {
     try {

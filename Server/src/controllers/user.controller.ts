@@ -78,6 +78,7 @@ export const registerUser = asyncHandler(async (req, res) => {
     httpOnly: true,
     secure: true,
   };
+  console.log(loggedInUser)
 
   return res.json(new ApiResponse(
     200,

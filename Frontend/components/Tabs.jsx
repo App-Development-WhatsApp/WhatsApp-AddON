@@ -9,6 +9,7 @@ import Communities from './Communities/Communities';
 import Calls from './Calls/Calls';
 
 import { MaterialIcons, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { loadUserInfo } from '../utils/chatStorage';
 
 const Tab = createMaterialTopTabNavigator();
 
@@ -19,12 +20,12 @@ export default function MyTabs() {
 
   useEffect(() => {
     const checkAuth = async () => {
-      const token = await AsyncStorage.getItem('accessToken'); // Get token from storage
-      if (!token) {
-        navigation.replace('Login'); // Redirect if no token
-      } else {
-        setAuthenticated(true); // Allow access to tabs
-      }
+      const userInfo = await loadUserInfo();
+              if (userInfo) {
+                setAuthenticated(true);
+              } else {
+                navigation.replace("Login");
+              }
       setLoading(false);
     };
 

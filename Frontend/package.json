@@ -11,6 +11,7 @@
   "dependencies": {
     "@expo/metro-runtime": "~4.0.1",
     "@react-native-async-storage/async-storage": "^2.1.2",
+    "@react-native-community/netinfo": "^11.4.1",
     "@react-navigation/core": "^6.4.16",
     "@react-navigation/material-top-tabs": "^6.6.13",
     "@react-navigation/native": "^6.1.18",
@@ -32,6 +33,7 @@
     "react-native-emoji-picker": "^0.2.2",
     "react-native-emoji-picker-staltz": "^1.0.0",
     "react-native-fast-image": "^8.6.3",
+    "react-native-fs": "^2.20.0",
     "react-native-gesture-handler": "^2.12.0",
     "react-native-localize": "^3.4.1",
     "react-native-pager-view": "6.5.1",
@@ -44,6 +46,9 @@
   },
   "devDependencies": {
     "@babel/core": "^7.20.0"
+  },
+  "expo": {
+    "bridgeless": false
   },
   "private": true
 }
