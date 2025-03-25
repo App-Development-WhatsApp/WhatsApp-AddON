@@ -14,6 +14,18 @@ import {
 import { useRoute } from "@react-navigation/native";
 import { MaterialCommunityIcons, FontAwesome, Entypo } from "@expo/vector-icons";
 import EmojiPicker from "react-native-emoji-picker-staltz"; // ✅ Updated import
+import { saveChatMessage } from "../../utils/chatStorage";
+
+const sendMessage = async () => {
+  const message = {
+    sender: "user_123",
+    receiver: "user_456",
+    text: "Hello, how are you?",
+    timestamp: Date.now(),
+  };
+
+  await saveChatMessage("user_123", "user_456", message);
+};
 
 export default function Chatting() {
   const route = useRoute();
@@ -53,8 +65,8 @@ export default function Chatting() {
       </View>
 
       {/* 🔹 Chat Messages */}
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === "ios" ? "padding" : "height"} 
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
       >
         <FlatList
@@ -73,7 +85,7 @@ export default function Chatting() {
           style={styles.messagesContainer}
         />
       </KeyboardAvoidingView>
-
+{/* --------------------------------------------- */}
       {/* 🔹 Input Bar */}
       <View style={styles.inputContainer}>
         {/* Emoji Button */}

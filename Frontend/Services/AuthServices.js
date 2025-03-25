@@ -21,12 +21,10 @@ export const checkAuth = async () => {
 
 export const login = async (formData) => {
     try {
-        // console.log("Logging in...");
         const response = await axios.post(`${API_URL}/register`, formData, {
             headers: { 'Content-Type': 'application/json' }
         });
 
-        // console.log("Response Data:", response.data.data);
 
         if (response.data.success) {
             return { success: true, data: response.data.data };
@@ -82,6 +80,17 @@ export const getAllUsers = async () => {
         // console.log(response.data.data)
 
         return { success: true, user: response.data.data };
+    } catch (error) {
+        console.log(error.message)
+        return { success: false, message: error.message };
+    }
+};
+export const getAllChattedUsers = async (userId) => {
+    try {
+        const response = await axios.get(`${API_URL}/getAllChattedUsers`,userId);
+        console.log(response.data.data)
+
+        return { success: true, users: response.data.data.friends };
     } catch (error) {
         console.log(error.message)
         return { success: false, message: error.message };

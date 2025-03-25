@@ -6,7 +6,8 @@ import {
   // refreshAccessToken,
   // changeCurrentPassword,
   getCurrentUser,
-  GetAllUsers
+  GetAllUsers,
+  GetAllChattedUsers
   // updateAccountdetails,
   // updateUserAvatar,
   // updateUserCoverImage,
@@ -20,6 +21,9 @@ const router = Router();
 
 router.route("/register").post(upload.single("profilePic"), registerUser);
 router.route("/getAllUsers").get(GetAllUsers);
+router.route("/getAllChattedUsers").get(GetAllChattedUsers);
+
+
 
 
 // // logout is the controller for logout route and verifyJWT is the method want to run before perform logout

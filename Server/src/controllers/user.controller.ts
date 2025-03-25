@@ -37,7 +37,6 @@ const generateAccessAndRefreshTokens = async (userId: Types.ObjectId) => {
 export const registerUser = asyncHandler(async (req, res) => {
   const { username, fullName, phoneNumber } = req.body;
   // console.log(req.body.username)
-  console.log(req.body.username)
 
   // Validate required fields
   if ([fullName, username, phoneNumber].some((field) => field?.trim() === "")) {
@@ -69,9 +68,6 @@ export const registerUser = asyncHandler(async (req, res) => {
     // Update user with profile picture URL
     await User.findByIdAndUpdate(newUser._id, { profilePic: avatar.secure_url });
   }
-  const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(
-    newUser._id
-  );
 
   const loggedInUser = await User.findById(newUser._id).select(
     " -refreshToken"
@@ -83,14 +79,12 @@ export const registerUser = asyncHandler(async (req, res) => {
     httpOnly: true,
     secure: true,
   };
-  console.log(accessToken)
 
   return res.json(new ApiResponse(
     200,
     "User Logged in successfully",
     {
       user: loggedInUser,
-      accessToken
     },
   ))
 });
@@ -217,6 +211,9 @@ export const getCurrentUser = asyncHandler(async (req, res) => {
     .status(200)
     .json(new ApiResponse(200, "Current user fetched Successfully", req.user));
 });
+
+// // ----------------------------GetAllUsers ---------------------------------
+
 export const GetAllUsers = asyncHandler(async (req, res) => {
   const users = await User.find({}, "username profilePic phoneNumber _id");
 
@@ -224,6 +221,31 @@ export const GetAllUsers = asyncHandler(async (req, res) => {
     .status(200)
     .json(new ApiResponse(200, "All users fetched successfully", users));
 });
+// // ----------------------------GetAll ChattedUser ---------------------------------
+
+export const GetAllChattedUsers = asyncHandler(async (req, res) => {
+  try {
+    const { userId } = req.body;
+    console.log(userId);
+
+    // Fetch the user first
+    const user = await User.findById(userId).select("contacts");
+    if (!user) {
+      return res.status(404).json(new ApiError(404, "User not found"));
+    }
+
+    // Fetch the contacts (friends) of the user
+    const friends = await User.find({ _id: { $in: user.contacts } })
+      .select("username profilePic _id lastSeen online");
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, "All users fetched successfully", friends));
+  } catch (error: any) {
+    return res.status(500).json(new ApiError(500, "Internal server error", error.message));
+  }
+});
+
 
 // // ----------------------------updateAccountdetails ---------------------------------
 

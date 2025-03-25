@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { 
-    View, TextInput, Button, Text, Alert, Image, 
-    TouchableOpacity, StyleSheet, BackHandler, ActivityIndicator 
+import {
+    View, TextInput, Button, Text, Alert, Image,
+    TouchableOpacity, StyleSheet, BackHandler, ActivityIndicator
 } from "react-native";
 import * as DocumentPicker from "expo-document-picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { login } from "../../Services/AuthServices";
+import { loadUserInfo, saveUserInfo } from "../../utils/chatStorage";
 
 const LoginScreen = ({ navigation }) => {
     const [fullName, setFullName] = useState("");
@@ -16,9 +17,12 @@ const LoginScreen = ({ navigation }) => {
 
     useEffect(() => {
         const checkAuth = async () => {
-            const token = await AsyncStorage.getItem("accessToken");
-            if (token) {
+            const userInfo = await loadUserInfo();
+            if (userInfo) {
+                console.log("User found:", userInfo);
                 navigation.replace("Main");
+            } else {
+                console.log("No user found, redirect to login.");
             }
         };
 
@@ -84,8 +88,8 @@ const LoginScreen = ({ navigation }) => {
 
         setLoading(false); // Hide loading indicator
 
-        if (result.success && result.data.accessToken) {
-            await AsyncStorage.setItem("accessToken", result.data.accessToken);
+        if (result.success && result.data.user) {
+            saveUserInfo(result.data.user);
             Alert.alert("Success", "Logged in successfully!");
             navigation.replace("Main");
         } else {

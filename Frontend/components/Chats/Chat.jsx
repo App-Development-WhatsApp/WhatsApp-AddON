@@ -9,6 +9,7 @@ import {
   ScrollView,
   ActivityIndicator
 } from 'react-native';
+import loadFriendsOffline from '../../utils/loadFriendsOffline';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { Users } from '../../lib/data';
@@ -16,24 +17,51 @@ import Search from './Search';
 import Header from './Header';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { getProfile } from '../../Services/AuthServices';
+import { loadUserInfo } from '../../utils/chatStorage';
+import { useNetInfo } from "@react-native-community/netinfo"; // Detect network status
+
 
 export default function Chat() {
+  const netInfo = useNetInfo(); // Check network status
   const navigation = useNavigation();
   const [loading, setLoading] = useState(true);
   const [userData, setUserData] = useState(null);
-
+  const [friends, setFriends] = useState([]);
   useEffect(() => {
-    const fetchUserProfile = async () => {
-      const res = await getProfile();
-      if (res.success) {
-        setUserData(res.user);
+
+    const loadUserAndFriends = async () => {
+      try {
+        // Load user info
+        const userInfo = await loadUserInfo();
+        if (userInfo && userInfo.friends) {
+          setUserData(userInfo)
+          // if (netInfo.isConnected) {
+          //   // Fetch from API if online
+          //   const friendsData = await fetchFriendsDetails(userInfo.friends);
+          //   setFriends(friendsData);
+          // } else {
+          // Load from local storage if offline
+          const friendsData = await loadFriendsOffline(userInfo._id);
+          setFriends(friendsData);
+          // }
+        } else {
+          navigation.replace("Login");
+        }
+      } catch (error) {
+        console.log("Error loading user data:", error);
       }
-      setLoading
-        (false);
+    };
+
+    loadUserAndFriends();
+
+
+    const getFriends = async () => {
+      const res = await getProfile();
+      console.log(res);
     }
 
-    fetchUserProfile();
-  }, []);
+
+  }, [netInfo.isConnected]);
 
   const Item = ({ id, name, image, message, time }) => (
     <View>
