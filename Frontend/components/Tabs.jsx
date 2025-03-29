@@ -15,29 +15,29 @@ const Tab = createMaterialTopTabNavigator();
 export default function MyTabs() {
   const navigation = useNavigation();
   const [loading, setLoading] = useState(true);
-  const [authenticated, setAuthenticated] = useState(false);
+  const [authenticated, setAuthenticated] = useState(true);
 
-  useEffect(() => {
-    const checkAuth = async () => {
-      const token = await AsyncStorage.getItem('accessToken'); // Get token from storage
-      if (!token) {
-        navigation.replace('Login'); // Redirect if no token
-      } else {
-        setAuthenticated(true); // Allow access to tabs
-      }
-      setLoading(false);
-    };
+  // useEffect(() => {
+  //   const checkAuth = async () => {
+  //     const token = await AsyncStorage.getItem('accessToken'); // Get token from storage
+  //     if (!token) {
+  //       navigation.replace('Login'); // Redirect if no token
+  //     } else {
+  //       setAuthenticated(true); // Allow access to tabs
+  //     }
+  //     setLoading(false);
+  //   };
 
-    checkAuth();
-  }, []);
+  //   checkAuth();
+  // }, []);
 
-  if (loading) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#00ff00" />
-      </View>
-    );
-  }
+  // if (loading) {
+  //   return (
+  //     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+  //       <ActivityIndicator size="large" color="#00ff00" />
+  //     </View>
+  //   );
+  // }
 
   return authenticated ? (
     <Tab.Navigator

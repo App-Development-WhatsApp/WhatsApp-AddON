@@ -23,6 +23,7 @@ import HelpScreen from "./components/setting/HelpScreen";
 import InviteFriendScreen from "./components/setting/InviteFriendScreen";
 import AppUpdateScreen from "./components/setting/AppUpdateScreen";
 import LoginScreen from "./components/auth/Login";
+import StatusViewer from "./components/Updates/StatusViewer";
 
 const Stack = createStackNavigator();
 
@@ -50,10 +51,10 @@ export default function App() {
     );
   }
 
+  // <Stack.Screen name="Login" component={LoginScreen} />
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Main" component={MyTabs} />
         <Stack.Screen name="Settings" component={SettingsScreen} />
         <Stack.Screen name="Status" component={StatusScreen} />
@@ -71,6 +72,7 @@ export default function App() {
         <Stack.Screen name="help" component={HelpScreen} />
         <Stack.Screen name="Invite" component={InviteFriendScreen} />
         <Stack.Screen name="AppUpdate" component={AppUpdateScreen} />
+        <Stack.Screen name="StatusViewer" component={StatusViewer} />
       </Stack.Navigator>
     </NavigationContainer>
   );

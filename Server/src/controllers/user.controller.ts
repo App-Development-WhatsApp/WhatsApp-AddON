@@ -38,7 +38,7 @@ const generateAccessAndRefreshTokens = async (userId: Types.ObjectId) => {
 export const registerUser = asyncHandler(async (req, res) => {
   const { username, fullName, phoneNumber } = req.body.username;
   // console.log(req.body.username)
-  console.log(req.file)
+  console.log(req.body)
 
   // Validate required fields
   if ([fullName, username, phoneNumber].some((field) => field?.trim() === "")) {

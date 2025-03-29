@@ -1,104 +1,76 @@
-import React, {useState} from 'react';
-import {
-  StyleSheet,
-  Text,
-  View,
-  FlatList,
-  TouchableOpacity,
-  Image,
-  ScrollView
-} from 'react-native';
-import { Users } from '../../lib/data';
+import React from "react";
+import { View, Text, TouchableOpacity, Image, FlatList, StyleSheet, Dimensions } from "react-native";
+import { useNavigation } from "@react-navigation/native";
 
-export default function Status() {
+const statuses = [
+  { id: "1", name: "Sahil", profile: require("../../assets/images/tomi.png"), thumbnail: require("../../assets/images/blank.jpeg"), video: "https://www.w3schools.com/html/mov_bbb.mp4" },
+  { id: "2", name: "Sajal", profile: require("../../assets/images/samuel.jpg"), thumbnail: require("../../assets/images/blank.jpeg"), video: "https://www.w3schools.com/html/mov_bbb.mp4" }
+];
 
-  const Item = ({name, image, message, time}) => (
+const screenWidth = Dimensions.get("window").width;
 
-    <View>
-      <TouchableOpacity style={styles.userCtn}
-        activeOpacity={0.6}>
-          <Image style={styles.image}
-          source={image}
-          borderRadius={50} resizeMode='cover'/>
-          <Text style={styles.name}>{name}</Text>
-      </TouchableOpacity>
-    </View>
-  );
+export default function StatusList() {
+  const navigation = useNavigation();
 
   return (
     <View style={styles.container}>
-        <Text style={styles.title}>Status</Text>
+      <FlatList
+        horizontal
+        data={statuses}
+        keyExtractor={(item) => item.id}
+        showsHorizontalScrollIndicator={false}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            style={styles.statusBox}
+            onPress={() => navigation.navigate("StatusViewer", { video: item.video, name: item.name })}
+          >
+            {/* Status Thumbnail with Border */}
+            <View style={styles.statusThumbnail}>
+              <Image source={item.thumbnail} style={styles.thumbnail} />
 
-        <ScrollView contentInsetAdjustmentBehavior="automatic" 
-        horizontal={true} contentContainerStyle={styles.statusCtn}
-        showsHorizontalScrollIndicator={false}>
-            <View style={styles.my}>
-                <Image style={styles.image}
-                source={require('../../assets/images/samuel.jpg')}
-                borderRadius={50} resizeMode='cover'/>
-                <Text style={styles.name}>My status</Text>
+              {/* Profile Image in Corner */}
+              <View style={styles.profileContainer}>
+                <Image source={item.profile} style={styles.profileImage} />
+              </View>
             </View>
 
-            <View style={styles.chatCtn}>
-                <FlatList
-                    data={Users}
-                    renderItem={({item}) => 
-                    <Item name={item.name} message={item.message} image={item.image} time={item.time}/>}
-                    keyExtractor={item => item.id}
-                    horizontal={true}
-                    scrollEnabled={false}
-                    />
-            </View>
-        </ScrollView>
+            {/* Username Below Thumbnail */}
+            <Text style={styles.name}>{item.name}</Text>
+          </TouchableOpacity>
+        )}
+      />
     </View>
-    
   );
 }
 
 const styles = StyleSheet.create({
-    container: {
-      flex: 1,
-        marginTop: 10,
-        borderBottomWidth: 2,
-        borderBottomColor: '#043f39',
-    },
-    my: {
-        padding: 2,
-        alignItems: 'center',
-        gap:5
-    },
-  statusCtn: {
-    height: 100,
-    flexDirection: 'row',
-    gap: 25,
-    alignItems: 'center',
-    alignContent: 'center',
+  container: { paddingVertical: 10},
+  
+  statusBox: { alignItems: "center", marginRight: 10 },
+  
+  statusThumbnail: {
+    width: screenWidth * 0.2, // Dynamic width based on screen size
+    height: screenWidth * 0.35,
+    borderRadius: 10,
+    overflow: "hidden",
+    borderWidth: 2,
+    borderColor: "green",
+    position: "relative"
   },
-    chatCtn: {
-        marginTop: 20,
-    },
-    userCtn: {
-      flexDirection: 'column',
-      alignItems: 'center',
-      marginRight: 25,
-    },
-    userDetail: {
-      gap: 5,
-    },
-    name: {
-      fontWeight: 'bold',
-      fontSize: 15,
-      color: 'white',
-    },
-    image: {
-        width: 55,
-        height: 55,
-        borderWidth: 2,
-        borderColor: '#25D366',
-    },
-    title: {
-        fontWeight: 'bold',
-        color: '#fff',
-        fontSize: 30,
-    }
+  
+  thumbnail: { width: "100%", height: "100%", resizeMode: "cover" },
+  
+  profileContainer: {
+    position: "absolute",
+    top: 5,
+    left: 5,
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: "#000",
+    overflow: "hidden"
+  },
+  
+  profileImage: { width: 30, height: 30, borderRadius: 15 },
+  
+  name: { color: "white", marginTop: 5, fontSize: 12 }
 });
