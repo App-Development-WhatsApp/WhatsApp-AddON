@@ -83,7 +83,7 @@ const LoginScreen = ({ navigation }) => {
                 type: fileType,
             });
         }
-
+        console.log("Logging.. start")
         const result = await login(formData);
 
         setLoading(false); // Hide loading indicator

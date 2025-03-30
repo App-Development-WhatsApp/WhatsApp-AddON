@@ -38,7 +38,6 @@ export default function SettingsScreen({ navigation }) {
           <Text style={{ color: '#888', fontSize: 14, marginBottom: 10 }}>Also from Meta</Text>
           <SettingsItem icon={<FontAwesome5 name="instagram" size={22} color="white" />} text="Open Instagram" />
           <SettingsItem icon={<FontAwesome5 name="facebook" size={22} color="white" />} text="Open Facebook" />
-          <SettingsItem icon={<FontAwesome5 name="thread" size={22} color="white" />} text="Open Threads" />
         </View>
       </View>
     </ScrollView>
