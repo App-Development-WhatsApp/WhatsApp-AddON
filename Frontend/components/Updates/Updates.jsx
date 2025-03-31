@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { use, useEffect, useMemo, useState } from 'react';
 import {
   StyleSheet,
   View,
@@ -12,26 +12,43 @@ import Status from './Status';
 import Channels from './Channel';
 import FindChannels from './FindChannels';
 import Menu from '../Menu/Menu';
+import { loadUserInfo } from '../../utils/chatStorage';
 
 export default function Updates() {
+  const [user,setUser]=useState(null);
+
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        const userInfo = await loadUserInfo();
+        console.log("User Info:", userInfo);
+        setUser(userInfo)
+      } catch (error) {
+        console.error("Error loading user info:", error);
+      }
+    }
+    if(!user){
+      loadUser();
+    }
+  })
   return (
     <View style={styles.container}>
-      
+
       {/* Header Section */}
       <View style={styles.headerCtn}>
         <Text style={styles.logo}>Updates</Text>
         <View style={styles.iconCtn}>
           <Feather name="search" size={24} color="white" />
-          <Menu/ >
+          <Menu />
         </View>
       </View>
 
       {/* Scrollable Content */}
-      <ScrollView 
-        contentContainerStyle={styles.scrollContainer} 
+      <ScrollView
+        contentContainerStyle={styles.scrollContainer}
         showsVerticalScrollIndicator={false}
       >
-        <Status />
+        <Status  user={user}/>
         <Channels />
         <FindChannels />
       </ScrollView>
