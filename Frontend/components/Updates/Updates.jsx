@@ -1,66 +1,106 @@
 import React from 'react';
 import {
   StyleSheet,
-  Text,
   View,
-  TextInput
+  Text,
+  ScrollView,
+  StatusBar,
+  TouchableOpacity
 } from 'react-native';
-import UpdatesHeader from './UpdatesHeader';
-import Footer from '../Footer';
+import { Feather, MaterialIcons, FontAwesome } from '@expo/vector-icons';
 import Status from './Status';
-import { MaterialIcons, FontAwesome } from '@expo/vector-icons';
 import Channels from './Channel';
 import FindChannels from './FindChannels';
+import Menu from '../Menu/Menu';
 
-export default function Updates(){
-
+export default function Updates() {
   return (
     <View style={styles.container}>
-        <UpdatesHeader />
+      
+      {/* Header Section */}
+      <View style={styles.headerCtn}>
+        <Text style={styles.logo}>Updates</Text>
+        <View style={styles.iconCtn}>
+          <Feather name="search" size={24} color="white" />
+          <Menu/ >
+        </View>
+      </View>
 
+      {/* Scrollable Content */}
+      <ScrollView 
+        contentContainerStyle={styles.scrollContainer} 
+        showsVerticalScrollIndicator={false}
+      >
         <Status />
         <Channels />
         <FindChannels />
+      </ScrollView>
 
-        <View style={styles.newUpdate}>
-            <View style={styles.pen}>
-              <FontAwesome name="pencil" size={24} color="white" />
-            </View>
-            <View style={styles.cam}>
-              <MaterialIcons name="add-ic-call" size={20} color="#011513" />
-            </View>
-        </View>
+      {/* Floating Buttons */}
+      <View style={styles.newUpdate}>
+        <TouchableOpacity style={styles.pen}>
+          <FontAwesome name="pencil" size={20} color="white" />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.cam}>
+          <MaterialIcons name="photo-camera" size={24} color="#011513" />
+        </TouchableOpacity>
+      </View>
+
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        padding: 10,
-        backgroundColor: '#011513',
-    },
-    newUpdate: {
-      position: 'absolute',
-      bottom: 20,
-      right: 20,
-      gap: 20,
-      alignItems: 'center',
+  container: {
+    flex: 1,
+    paddingTop: StatusBar.currentHeight + 10,
+    backgroundColor: '#121212',
+  },
+  headerCtn: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#202020',
+  },
+  logo: {
+    color: 'white',
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  iconCtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  scrollContainer: {
+    flexGrow: 1,
+    paddingBottom: 100, // Prevents last item from being hidden
+  },
+  newUpdate: {
+    position: 'absolute',
+    bottom: 20,
+    right: 20,
+    gap: 12,
+    alignItems: 'center',
   },
   pen: {
     borderRadius: 10,
-      backgroundColor: '#365563',
-      width: 40,
-      height: 40,
-      alignItems: 'center',
-      justifyContent: 'center',
+    backgroundColor: '#2E3135',
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   cam: {
-      borderRadius: 15,
-      backgroundColor: 'rgb(95, 252, 123)',
-      width: 50,
-      height: 50,
-      alignItems: 'center',
-      justifyContent: 'center',
+    borderRadius: 20,
+    backgroundColor: '#25D366',
+    width: 55,
+    height: 55,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
+

@@ -86,7 +86,7 @@ export const CallHistory = [
     {
         "id": "a1b2c3d4",
         "UserId": "user-101",
-        "name": "Samuel",
+        "name": "Sahil",
         "image": require('../assets/images/samuel.jpg'),
         "type": "call",
         "datetime": [
@@ -97,7 +97,7 @@ export const CallHistory = [
     {
         "id": "e5f6g7h8",
         "UserId": "user-101",
-        "name": "Samuel",
+        "name": "Sahil",
         "image": require('../assets/images/samuel.jpg'),
         "type": "video",
         "datetime": [
@@ -108,7 +108,7 @@ export const CallHistory = [
     {
         "id": "i9j1k2l3",
         "UserId": "user-102",
-        "name": "Emma",
+        "name": "Sajal",
         "image": require('../assets/images/blank.jpeg'),
         "type": "call",
         "datetime": [
@@ -119,7 +119,7 @@ export const CallHistory = [
     {
         "id": "m4n5o6p7",
         "UserId": "user-103",
-        "name": "John",
+        "name": "Riya",
         "image": require('../assets/images/blank.jpeg'),
         "type": "video",
         "datetime": [
@@ -130,7 +130,7 @@ export const CallHistory = [
     {
         "id": "q8r9s1t2",
         "UserId": "user-104",
-        "name": "Alice",
+        "name": "Rizil",
         "image": require('../assets/images/blank.jpeg'),
         "type": "call",
         "datetime": [
@@ -141,7 +141,7 @@ export const CallHistory = [
     {
         "id": "u3v4w5x6",
         "UserId": "user-102",
-        "name": "Emma",
+        "name": "Sajal",
         "image": require('../assets/images/blank.jpeg'),
         "type": "video",
         "datetime": [
@@ -152,7 +152,7 @@ export const CallHistory = [
     {
         "id": "y7z8a9b1",
         "UserId": "user-105",
-        "name": "Michael",
+        "name": "Raju",
         "image": require('../assets/images/blank.jpeg'),
         "type": "call",
         "datetime": [
@@ -163,7 +163,7 @@ export const CallHistory = [
     {
         "id": "c2d3e4f5",
         "UserId": "user-106",
-        "name": "Sophia",
+        "name": "Shivam",
         "image": require('../assets/images/blank.jpeg'),
         "type": "video",
         "datetime": [

@@ -12,49 +12,15 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { useRoute } from "@react-navigation/native";
-import { MaterialCommunityIcons, FontAwesome, Entypo } from "@expo/vector-icons";
-import EmojiPicker from "react-native-emoji-picker-staltz"; // ✅ Updated import
-import { loadUserInfo, saveChatMessage } from "../../utils/chatStorage";
-
-const sendMessage = async () => {
-  const message = {
-    sender: "user_123",
-    receiver: "user_456",
-    text: "Hello, how are you?",
-    timestamp: Date.now(),
-  };
-
-  await saveChatMessage("user_123", "user_456", message);
-};
+import { MaterialCommunityIcons, FontAwesome, Entypo, Ionicons } from "@expo/vector-icons";
+import EmojiPicker from "react-native-emoji-picker-staltz";
 
 export default function Chatting() {
   const route = useRoute();
   const { name, image, id } = route.params;
-
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [message, setMessage] = useState("");
-  const [loading, setLoading] = useState(false);
   const [chats, setChats] = useState([]);
-
-
-  useEffect(() => {
-    setLoading(true);
-    const LoadChattingOfUser = async () => {
-      try {
-        // Load user info
-        const Chats = await getChattingHistory(id);
-        console.log(Chats)
-        setChats(Chats);
-        setLoading(false);
-      } catch (error) {
-        console.log("Error loading user data:", error.message);
-        setLoading(false);
-      }
-    }
-
-    LoadChattingOfUser();
-
-  }, [id,chats]);
 
   const messages = [
     { id: "1", text: "Hey! How are you?", sender: "me" },
@@ -65,28 +31,29 @@ export default function Chatting() {
 
   return (
     <View style={styles.container}>
-      {/* 🔹 Chat Header */}
+      {/* Header */}
       <View style={styles.header}>
+        <TouchableOpacity style={styles.backButton}>
+          <Ionicons name="arrow-back" size={24} color="white" />
+        </TouchableOpacity>
         <View style={styles.userInfo}>
           <Image source={image} style={styles.profileImage} />
           <Text style={styles.name}>{name}</Text>
         </View>
-
-        {/* Icons for Call, Video, and Menu */}
         <View style={styles.iconContainer}>
-          <TouchableOpacity style={styles.icon}>
+          <TouchableOpacity>
             <FontAwesome name="phone" size={22} color="white" />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.icon}>
+          <TouchableOpacity>
             <MaterialCommunityIcons name="video" size={26} color="white" />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.icon}>
+          <TouchableOpacity>
             <Entypo name="dots-three-vertical" size={22} color="white" />
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* 🔹 Chat Messages */}
+      {/* Messages */}
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
@@ -107,16 +74,14 @@ export default function Chatting() {
           style={styles.messagesContainer}
         />
       </KeyboardAvoidingView>
-      {/* --------------------------------------------- */}
-      {/* 🔹 Input Bar */}
-      <View style={styles.inputContainer}>
-        {/* Emoji Button */}
-        <TouchableOpacity onPress={() => setShowEmojiPicker(true)}>
-          <MaterialCommunityIcons name="emoticon-happy" size={24} color="white" />
-        </TouchableOpacity>
 
-        {/* Input Box with Camera & File Inside */}
+      {/* Input Bar */}
+      <View style={styles.inputContainer}>
         <View style={styles.inputWrapper}>
+          <TouchableOpacity style={styles.inputIconLeft} onPress={() => setShowEmojiPicker(true)}>
+            <MaterialCommunityIcons name="emoticon-happy" size={24} color="white" />
+          </TouchableOpacity>
+
           <TextInput
             style={styles.input}
             placeholder="Type a message..."
@@ -125,24 +90,18 @@ export default function Chatting() {
             onChangeText={setMessage}
           />
 
-          {/* Camera Icon */}
-          <TouchableOpacity style={styles.inputIcon}>
-            <MaterialCommunityIcons name="camera" size={24} color="white" />
-          </TouchableOpacity>
-
-          {/* File Attachment Icon */}
-          <TouchableOpacity style={styles.inputIcon}>
+          <TouchableOpacity style={styles.inputIconRight}>
             <MaterialCommunityIcons name="attachment" size={24} color="white" />
           </TouchableOpacity>
         </View>
 
-        {/* Send Button */}
         <TouchableOpacity style={styles.sendButton}>
           <MaterialCommunityIcons name="send" size={24} color="white" />
         </TouchableOpacity>
       </View>
 
-      {/* 🔹 Emoji Picker Modal */}
+
+      {/* Emoji Picker */}
       <Modal visible={showEmojiPicker} transparent={true} animationType="slide">
         <View style={styles.emojiPickerContainer}>
           <EmojiPicker
@@ -159,31 +118,24 @@ export default function Chatting() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#011513", padding: 10 },
-
-  // 🔹 Header
+  container: { flex: 1, backgroundColor: "#0b141a" },
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     padding: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#1f3b3e",
+    backgroundColor: "#202c33",
   },
-  userInfo: { flexDirection: "row", alignItems: "center" },
-  profileImage: { width: 50, height: 50, borderRadius: 25, marginRight: 10 },
-  name: { fontSize: 20, fontWeight: "bold", color: "white" },
-  iconContainer: { flexDirection: "row", gap: 15 },
-  icon: { padding: 5 },
-
-  // 🔹 Messages
-  messagesContainer: { flex: 1, marginTop: 10 },
-  messageBubble: { padding: 10, borderRadius: 10, marginVertical: 5, maxWidth: "70%" },
-  myMessage: { alignSelf: "flex-end", backgroundColor: "rgb(95, 252, 123)" },
-  theirMessage: { alignSelf: "flex-start", backgroundColor: "#1f3b3e" },
-  messageText: { color: "white", fontSize: 16 },
-
-  // 🔹 Input Bar
+  backButton: { marginRight: 10 },
+  userInfo: { flexDirection: "row", alignItems: "center", flex: 1 },
+  profileImage: { width: 40, height: 40, borderRadius: 20, marginRight: 10 },
+  name: { fontSize: 18, color: "white" },
+  iconContainer: { flexDirection: "row", gap: 15, alignItems: "center"},
+  messagesContainer: { flex: 1, padding: 10 },
+  messageBubble: { padding: 10, borderRadius: 10, marginVertical: 5, maxWidth: "75%" },
+  myMessage: { alignSelf: "flex-end", backgroundColor: "#005c4b" },
+  theirMessage: { alignSelf: "flex-start", backgroundColor: "#202c33" },
+  messageText: { color: "white" },
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -191,28 +143,36 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: "#1f3b3e",
   },
-
-  // ✅ Input with Camera & File Icons Inside
   inputWrapper: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#233040",
-    paddingHorizontal: 10,
+    paddingHorizontal: 40, // Space for icons
     borderRadius: 20,
+    position: "relative",
   },
-  input: { flex: 1, padding: 10, color: "white", maxHeight: 40 },
-  inputIcon: { marginLeft: 10 },
-
-  // ✅ Send Button
+  input: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    color: "white",
+    fontSize: 16,
+  },
+  inputIconLeft: {
+    position: "absolute",
+    left: 10,
+  },
+  inputIconRight: {
+    position: "absolute",
+    right: 10,
+  },
   sendButton: {
     marginLeft: 10,
     backgroundColor: "rgb(95, 252, 123)",
     padding: 10,
     borderRadius: 20,
   },
-
-  // ✅ Emoji Picker Modal
   emojiPickerContainer: {
     backgroundColor: "white",
     padding: 20,

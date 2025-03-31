@@ -83,7 +83,7 @@ export default function MenuBar() {
 
 const styles = StyleSheet.create({
   container: { position: "relative" },
-  icon: { padding: 10 },
+  icon: { padding: 5 },
   overlay: { flex: 1, justifyContent: "flex-start", alignItems: "flex-end", paddingTop: 50, paddingRight: 10 },
   menu: { backgroundColor: "#1F1F1F", paddingVertical: 10, paddingHorizontal: 12, borderRadius: 8, elevation: 5, width: 180 },
   menuItem: { paddingVertical: 12, borderBottomWidth: 0.5, borderBottomColor: "#333" },

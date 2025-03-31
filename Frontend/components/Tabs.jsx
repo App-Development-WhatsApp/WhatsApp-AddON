@@ -1,13 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { View, ActivityIndicator } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { View, ActivityIndicator, Animated } from 'react-native';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import { useNavigation } from '@react-navigation/native';
 import Chat from './Chats/Chat';
 import Updates from './Updates/Updates';
 import Communities from './Communities/Communities';
 import Calls from './Calls/Calls';
-
 import { MaterialIcons, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { loadUserInfo } from '../utils/chatStorage';
 
@@ -17,15 +15,16 @@ export default function MyTabs() {
   const navigation = useNavigation();
   const [loading, setLoading] = useState(true);
   const [authenticated, setAuthenticated] = useState(false);
+  const animatedValue = new Animated.Value(0);
 
   useEffect(() => {
     const checkAuth = async () => {
       const userInfo = await loadUserInfo();
-              if (userInfo) {
-                setAuthenticated(true);
-              } else {
-                navigation.replace("Login");
-              }
+      if (userInfo) {
+        setAuthenticated(true);
+      } else {
+        navigation.replace("Login");
+      }
       setLoading(false);
     };
 
@@ -44,76 +43,81 @@ export default function MyTabs() {
     <Tab.Navigator
       initialRouteName="Chats"
       tabBarPosition="bottom"
-      screenOptions={{
+      screenOptions={({ route }) => ({
         tabBarLabelStyle: styles.title,
         tabBarStyle: styles.tab,
-      }}
+        tabBarIcon: ({ focused }) => {
+          let iconName;
+          let IconComponent;
+
+          switch (route.name) {
+            case 'Chats':
+              IconComponent = MaterialCommunityIcons;
+              iconName = 'message-text-outline';
+              break;
+            case 'Updates':
+              IconComponent = MaterialIcons;
+              iconName = 'downloading';
+              break;
+            case 'Community':
+              IconComponent = MaterialCommunityIcons;
+              iconName = 'account-group';
+              break;
+            case 'Calls':
+              IconComponent = Ionicons;
+              iconName = 'call-outline';
+              break;
+          }
+
+          return (
+            <View style={{ alignItems: 'center' }}>
+              <IconComponent name={iconName} size={24} color={focused ? 'white' : '#888'} />
+              {route.name === "Updates" && focused && (
+                <View style={styles.greenDot} />
+              )}
+            </View>
+          );
+        },
+        tabBarIndicatorStyle: {
+          position: 'absolute',
+          bottom: 48,
+          height: 35,
+          width: 60,
+          left: '5.2%',
+          backgroundColor: 'rgba(95, 252, 123, 0.2)',
+          borderRadius: 20,
+        },        
+        tabBarPressOpacity: 1,
+      })}
     >
-      <Tab.Screen
-        name="Chats"
-        component={Chat}
-        options={{ 
-            tabBarLabel: 'Chats',
-            tabBarIndicator: () => (
-                <View style={{left:22, top: 8, height: 33, width: 60, backgroundColor: 'rgba(95, 252, 123,0.2)', borderRadius: 20}} />
-            ),
-            tabBarIcon: () => (
-                <MaterialCommunityIcons name="message-text-outline" size={24} color="white" />
-            ),
-        }}
-      />
-      <Tab.Screen
-        name="Updates"
-        component={Updates}
-        options={{ 
-            tabBarLabel: 'Updates',
-            tabBarIndicator: () => (
-                <View style={{left:125, top: 8, height: 33, width: 60, backgroundColor: 'rgba(95, 252, 123,0.2)', borderRadius: 20}} />
-            ),
-            tabBarIcon: () => (
-                <MaterialIcons name="downloading" size={24} color="white" />
-            ),
-        }}
-      />
-      <Tab.Screen
-        name="Communities"
-        component={Communities}
-        options={{ 
-            tabBarLabel: 'Communities',
-            tabBarIndicator: () => (
-                <View style={{left:227, top: 8, height: 33, width: 60, backgroundColor: 'rgba(95, 252, 123,0.2)', borderRadius: 20}} />
-            ),
-            tabBarIcon: () => (
-                <MaterialCommunityIcons name="account-group" size={24} color="white" />
-            ),
-        }}
-      />
-      <Tab.Screen
-        name="Calls"
-        component={Calls}
-        options={{ 
-            tabBarLabel: 'Call',
-            tabBarIndicator: () => (
-                <View style={{left:328, top: 8, height: 33, width: 60, backgroundColor: 'rgba(95, 252, 123,0.2)', borderRadius: 20}} />
-            ),
-            tabBarIcon: () => (
-                <Ionicons name="call-outline" size={24} color="white" />
-            ),
-        }}
-      />
+      <Tab.Screen name="Chats" component={Chat} />
+      <Tab.Screen name="Updates" component={Updates} />
+      <Tab.Screen name="Community" component={Communities} />
+      <Tab.Screen name="Calls" component={Calls} />
     </Tab.Navigator>
   ) : null;
 }
 
 const styles = {
   tab: {
-    backgroundColor: '#011513',
-    height: 70,
+    backgroundColor: '#121212',
+    height: 90,
+    elevation: 0, // Removes shadow on Android
+    shadowOpacity: 0, // Removes shadow on iOS
   },
   title: {
     textAlign: 'center',
     fontSize: 12,
     fontWeight: 'bold',
     color: 'white',
+  },
+  greenDot: {
+    position: 'absolute',
+    top: 0,
+    right: -6,
+    width: 8,
+    height: 8,
+    backgroundColor: 'rgb(95, 252, 123)',
+    borderRadius: 4,
   },
 };

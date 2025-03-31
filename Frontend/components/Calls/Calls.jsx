@@ -1,18 +1,19 @@
+import React from 'react';
 import {
   StyleSheet,
   Text,
   View,
   Image,
+  StatusBar,
   ScrollView,
   TouchableOpacity,
   FlatList
 } from 'react-native';
-import CallsHeader from './CallsHeader';
-import { Ionicons, Feather, MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
+import { Ionicons, Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { CallHistory } from '../../lib/data';
 import { useNavigation } from '@react-navigation/native';
+import Menu from '../Menu/Menu';
 
-// Group calls by user and keep only the latest
 const getLatestCalls = () => {
   const uniqueCalls = {};
   CallHistory.forEach(call => {
@@ -27,9 +28,18 @@ const getLatestCalls = () => {
   return Object.values(uniqueCalls);
 };
 
-const Item = ({ id, name, image, datetime, type, status, missed, UserId }) => {
-  const navigation = useNavigation();
+const CallsHeader = () => (
+    <View style={styles.headerCtn}>
+        <Text style={styles.logo}>Calls</Text>
+        <View style={styles.iconCtn}>
+            <Feather name="search" size={24} color="white" />
+            <Menu />
+        </View>
+    </View>
+);
 
+const Item = ({ id, name, image, datetime, status, missed, UserId }) => {
+  const navigation = useNavigation();
   return (
       <TouchableOpacity
           activeOpacity={0.6}
@@ -39,29 +49,41 @@ const Item = ({ id, name, image, datetime, type, status, missed, UserId }) => {
           <View style={styles.userCtn}>
               <Image style={styles.image} source={image} borderRadius={50} resizeMode='cover' />
               <View style={styles.msgCtn}>
-                  <View style={styles.userDetail}>
-                      <Text style={styles.name}>{name}</Text>
-                      <View style={styles.statusCtn}>
-                          <MaterialCommunityIcons 
-                              name={status === 'incoming' ? "arrow-bottom-left" : "arrow-top-right"} 
-                              size={24} 
-                              color={missed ? '#ba0c2f' : "rgb(95, 252, 123)"} 
-                          />
-                          <Text style={styles.textSub}>{datetime.slice(-1)[0].time}</Text>
-                      </View>
+                  <Text style={styles.name}>{name}</Text>
+                  <View style={styles.statusCtn}>
+                      <MaterialCommunityIcons 
+                          name={status === 'incoming' ? "arrow-bottom-left" : "arrow-top-right"} 
+                          size={15} 
+                          color={missed ? '#ba0c2f' : "rgb(95, 252, 123)"} 
+                      />
+                      <Text style={styles.textSub}>{datetime.slice(-1)[0].time}</Text>
                   </View>
-                  {type === 'call' ? <Ionicons name="call-outline" size={24} color="rgb(95, 252, 123)" /> : <Feather name="video" size={24} color="rgb(95, 252, 123)" />}
               </View>
+              <Ionicons name="call-outline" size={20} color="rgb(95, 252, 123)" />
           </View>
       </TouchableOpacity>
   );
 };
 
+const FavoriteItem = ({ name, image }) => (
+    <View style={styles.favoriteItem}>
+        <Image style={styles.favoriteImage} source={image} borderRadius={50} resizeMode='cover' />
+        <Text style={styles.favoriteName}>{name}</Text>
+    </View>
+);
+
 export default function Calls() {
   return (
       <View style={styles.container}>
           <CallsHeader />
-          <ScrollView contentInsetAdjustmentBehavior="automatic">
+          <ScrollView>
+              <View style={styles.favoritesContainer}>
+                  <Text style={styles.sectionTitle}>Favorites</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                      <FavoriteItem name="Sahil" image={require('../../assets/images/samuel.jpg')} />
+                      <FavoriteItem name="Sajal" image={require('../../assets/images/tomi.png')} />
+                  </ScrollView>
+              </View>
               <FlatList
                   data={getLatestCalls()}
                   renderItem={({ item }) => <Item {...item} />}
@@ -69,99 +91,111 @@ export default function Calls() {
                   style={styles.FlatlistStyle}
               />
           </ScrollView>
+          <TouchableOpacity style={styles.newCall}>
+              <Ionicons name="call" size={30} color="black" />
+          </TouchableOpacity>
       </View>
   );
 }
 
-
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        padding: 10,
-        backgroundColor: '#011513',
+        backgroundColor: '#121212',
+    },
+    logo: {
+        color: 'white',
+        fontSize: 25,
+        fontWeight: 'bold',
+    },
+    headerCtn: {
+        paddingTop: StatusBar.currentHeight,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: 15,
+        paddingBottom: 10,
+        borderBottomWidth: 0.5,
+        borderBottomColor: '#2a373a',
     },
     iconCtn: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: 50,
-        width: 50,
-        backgroundColor: 'rgb(95, 252, 123)',
-        borderRadius: 50,
-    },
-    textCtn: {
-        flexDirection: 'column',
-    },
-    FlatlistStyle: {
-      marginTop: 30
-    },
-    linkCtn: {
-        marginTop: 40,
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 18,
+        gap: 5,
     },
-    text: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: 'white'
+    FlatlistStyle: {
+      marginTop: 5,
     },
     textSub: {
-        color: '#cbd5c0'
-    },
-    chatCtn: {
-        marginTop: 20,
+        color: '#889b9f',
+        fontSize: 13,
     },
     userCtn: {
       flexDirection: 'row',
-      gap: 15,
       alignItems: 'center',
-      marginBottom: 25,
+      paddingVertical: 10,
+      paddingHorizontal: 15,
     },
     statusCtn: {
         flexDirection: 'row',
+        alignItems: 'center',
         gap: 5,
-        alignItems: 'center'
-    },
-    touch: {
-      backgroundColor: 'red',
     },
     msgCtn: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      width: '80%',
-    },
-    userDetail: {
-    //   gap: 1,
+      flex: 1,
+      justifyContent: 'center',
     },
     name: {
       fontWeight: 'bold',
-      fontSize: 20,
-      color: 'white',
-    },
-    message: {
-      fontSize: 12,
+      fontSize: 16,
       color: 'white',
     },
     image: {
-        width: 55,
-        height: 55,
+        width: 45,
+        height: 45,
+        borderRadius: 50,
+        marginRight: 10
+    },
+    touchable: {
+      borderRadius: 10,
+      paddingVertical: 5,
     },
     newCall: {
         backgroundColor: 'rgb(95, 252, 123)',
-        width: 50,
-        height: 50,
-        borderRadius: 10,
+        width: 55,
+        height: 55,
+        borderRadius: 50,
         alignItems: 'center',
         justifyContent: 'center',
         position: 'absolute',
         bottom: 20,
         right: 20,
     },
-    touchable: {
-      borderRadius: 10,
-      padding: 5,
+    favoritesContainer: {
+        paddingHorizontal: 15,
+        paddingVertical: 10,
+        paddingBottom: 10,
+        borderBottomWidth: 1,
+        borderBottomColor: '#202020',
     },
-    touchablePressed: {
-      backgroundColor: 'rgba(255, 255, 255, 0.1)', // Light highlight effect
+    sectionTitle: {
+        color: 'white',
+        fontSize: 18,
+        fontWeight: 'bold',
+        marginBottom: 10,
+    },
+    favoriteItem: {
+        alignItems: 'center',
+        marginRight: 15,
+    },
+    favoriteImage: {
+        width: 55,
+        height: 55,
+        borderRadius: 50,
+    },
+    favoriteName: {
+        color: 'white',
+        marginTop: 5,
+        fontSize: 14,
     },
 });

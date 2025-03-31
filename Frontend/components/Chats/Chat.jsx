@@ -6,17 +6,18 @@ import {
   FlatList,
   TouchableOpacity,
   Image,
-  ActivityIndicator
+  TextInput,
+  ActivityIndicator,
+  StatusBar
 } from 'react-native';
 import * as FileSystem from 'expo-file-system';
 import { useNavigation } from '@react-navigation/native';
 import { useNetInfo } from "@react-native-community/netinfo";
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import Search from './Search';
-import Header from './Header';
+import { MaterialCommunityIcons, Feather, Entypo } from '@expo/vector-icons';
 import { getProfile } from '../../Services/AuthServices';
+import Menu from '../Menu/Menu';
 
-const friendsFilePath = FileSystem.documentDirectory + "friendsInfo.json"; // Correct file path for friends
+const friendsFilePath = FileSystem.documentDirectory + "friendsInfo.json";
 
 export default function Chat() {
   const netInfo = useNetInfo();
@@ -28,14 +29,12 @@ export default function Chat() {
   useEffect(() => {
     const loadUserAndFriends = async () => {
       try {
-        // Load stored friends from local file
         const fileExists = await FileSystem.getInfoAsync(friendsFilePath);
         if (fileExists.exists) {
           const storedData = await FileSystem.readAsStringAsync(friendsFilePath);
           setFriends(JSON.parse(storedData) || []);
         }
 
-        // Fetch profile data from server if online
         if (netInfo.isConnected) {
           const profileData = await getProfile();
           if (profileData) {
@@ -52,14 +51,11 @@ export default function Chat() {
     loadUserAndFriends();
   }, [netInfo.isConnected]);
 
-  // Navigate to chat screen and update friends list
   const handleChatPress = async (id, name, image) => {
     navigation.navigate('Chatting', { userId: id, name, image });
 
-    // Ensure user is added to friends list
     try {
       let storedFriends = [];
-
       const fileExists = await FileSystem.getInfoAsync(friendsFilePath);
       if (fileExists.exists) {
         const fileData = await FileSystem.readAsStringAsync(friendsFilePath);
@@ -99,32 +95,46 @@ export default function Chat() {
 
   return (
     <View style={styles.container}>
+      <StatusBar backgroundColor="#121212" barStyle="light-content" />
+
+      {/* Header Section */}
+      <View style={styles.headerCtn}>
+        <Text style={styles.logo}>WhatsApp</Text>
+        <View style={styles.iconCtn}>
+          <Feather name="camera" size={24} color="white" />
+          <Menu />
+        </View>
+      </View>
+
+      {/* Search Bar */}
+      <View style={styles.searchCtn}>
+        <Feather name="search" size={20} color="#b4c7c5" style={styles.searchIcon} />
+        <TextInput
+          style={styles.searchInp}
+          placeholder='Ask Meta AI or Search'
+          placeholderTextColor='#b4c7c5'
+        />
+      </View>
+
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#00ff00" />
           <Text style={styles.loadingText}>Fetching data...</Text>
         </View>
       ) : (
-        <>
-          <Header />
-          <FlatList
-            data={friends}
-            renderItem={({ item }) => <Item {...item} />}
-            keyExtractor={(item) => String(item.userId)}
-            ListHeaderComponent={Search}
-            ListEmptyComponent={<Text style={styles.emptyText}>No recent chats</Text>}
-          />
-        </>
+        <FlatList
+          data={friends}
+          renderItem={({ item }) => <Item {...item} />}
+          keyExtractor={(item) => String(item.userId)}
+          ListEmptyComponent={<Text style={styles.emptyText}>No recent chats</Text>}
+        />
       )}
+
+      {/* Floating Action Button */}
       <View style={styles.newUpdate}>
-        <View style={styles.pen}>
-          <Image style={{ width: 30, height: 30 }} source={require('../../assets/images/ai.png')} />
-        </View>
-        <View style={styles.msg}>
-          <TouchableOpacity onPress={() => navigation.navigate('Contacts')}>
-            <MaterialCommunityIcons name="message-plus" size={28} color="#011513" />
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity style={styles.msg} onPress={() => navigation.navigate('Contacts')}>
+          <MaterialCommunityIcons name="message-plus" size={28} color="#011513" />
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -133,8 +143,42 @@ export default function Chat() {
 const styles = StyleSheet.create({
   container: {
     padding: 10,
-    backgroundColor: '#011513',
-    height: '100%'
+    backgroundColor: '#121212',
+    height: '100%',
+  },
+  headerCtn: {
+    marginTop: StatusBar.currentHeight,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  logo: {
+    color: 'white',
+    fontSize: 30, // Adjusted font size
+    fontWeight: 'bold',
+  },
+  iconCtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  searchCtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#202020',
+    borderRadius: 40,
+    paddingHorizontal: 15,
+    paddingVertical: 4,
+    marginTop: 10,
+    marginBottom: 25,
+  },
+  searchIcon: {
+    marginRight: 10,
+  },
+  searchInp: {
+    flex: 1,
+    fontSize: 16,
+    color: '#b4c7c5',
   },
   userCtn: {
     flexDirection: 'row',
@@ -152,38 +196,29 @@ const styles = StyleSheet.create({
   },
   name: {
     fontWeight: 'bold',
-    fontSize: 20,
+    fontSize: 18,
     color: 'white',
   },
   message: {
-    fontSize: 13,
-    color: '#cbd5c0'
+    fontSize: 14,
+    color: '#cbd5c0',
   },
   time: {
-    fontSize: 13,
-    color: '#cbd5c0'
+    fontSize: 12,
+    color: '#cbd5c0',
   },
   image: {
-    width: 55,
-    height: 55,
+    width: 50,
+    height: 50,
   },
   newUpdate: {
     position: 'absolute',
     bottom: 20,
     right: 20,
-    gap: 20,
     alignItems: 'center',
-  },
-  pen: {
-    borderRadius: 10,
-    backgroundColor: '#233040',
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   msg: {
-    borderRadius: 15,
+    borderRadius: 50,
     backgroundColor: 'rgb(95, 252, 123)',
     width: 60,
     height: 60,
@@ -193,17 +228,17 @@ const styles = StyleSheet.create({
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
-    alignItems: 'center'
+    alignItems: 'center',
   },
   loadingText: {
     marginTop: 10,
     color: '#cbd5c0',
-    fontSize: 16
+    fontSize: 16,
   },
   emptyText: {
     textAlign: 'center',
     marginTop: 20,
     color: '#cbd5c0',
-    fontSize: 16
-  }
+    fontSize: 16,
+  },
 });
