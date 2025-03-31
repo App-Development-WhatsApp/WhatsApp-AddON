@@ -63,7 +63,7 @@ export const getProfile = async () => {
 export const getAllUsers = async () => {
     try {
         const response = await axios.get(`${API_URL}/getAllUsers`);
-        // console.log(response.data.data)
+        console.log(response.data.data)
 
         return { success: true, user: response.data.data };
     } catch (error) {
