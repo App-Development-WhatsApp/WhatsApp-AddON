@@ -9,78 +9,114 @@ import {
     ScrollView,
     ActivityIndicator
 } from 'react-native';
+import * as FileSystem from 'expo-file-system';
 import { useNavigation } from '@react-navigation/native';
-// import { Users } from '../../lib/data';
 import Header from '../Chats/Header';
 import Search from '../Chats/Search';
 import { getAllUsers } from '../../Services/AuthServices';
 
+const friendsFilePath = FileSystem.documentDirectory + "friendsInfo.json"; // Correct file path for storing friends
+
 export default function Contacts() {
     const navigation = useNavigation();
     const [loading, setLoading] = useState(false);
-    const [Users, setUsers] = useState([]);
-    useEffect(() => {
-        const getUsers = async () => {
-            setLoading(true)
-            try {
-                const res = await getAllUsers()
-                // console.log(res.user)
-                setUsers(res.user);
-                setLoading(false)
-            } catch (err) {
-                console.log(err)
-                setLoading(false)
-            }
-        }
-        getUsers()
-    }, [])
+    const [users, setUsers] = useState([]);
+    const [friends, setFriends] = useState([]);
 
-    const Item = ({ id, name, image }) => (
-        <View>
-            <TouchableOpacity
-                activeOpacity={0.6}
-                onPress={() => navigation.navigate('Chatting', { userId: id, name, image })}
-            >
+    useEffect(() => {
+        const fetchUsers = async () => {
+            setLoading(true);
+            try {
+                const res = await getAllUsers();
+                if (res.success) {
+                    setUsers(res.users);
+                }
+            } catch (err) {
+                console.error("Error fetching users:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        const loadFriends = async () => {
+            try {
+                const fileExists = await FileSystem.getInfoAsync(friendsFilePath);
+                if (fileExists.exists) {
+                    const storedData = await FileSystem.readAsStringAsync(friendsFilePath);
+                    setFriends(JSON.parse(storedData) || []);
+                }
+            } catch (error) {
+                console.error("Error loading friends:", error);
+            }
+        };
+
+        fetchUsers();
+        loadFriends();
+    }, []);
+
+    const handleChatPress = async (id, name, image) => {
+        try {
+            let storedFriends = [];
+
+            const fileExists = await FileSystem.getInfoAsync(friendsFilePath);
+            if (fileExists.exists) {
+                const fileData = await FileSystem.readAsStringAsync(friendsFilePath);
+                storedFriends = JSON.parse(fileData) || [];
+            }
+
+            // Check if user is already in the friends list
+            if (!storedFriends.some(user => user.userId === id)) {
+                const newUser = { userId: id, userName: name, image, message: "Say hi!", time: "Now" };
+                storedFriends.push(newUser);
+
+                await FileSystem.writeAsStringAsync(friendsFilePath, JSON.stringify(storedFriends, null, 2));
+                setFriends(storedFriends); // Update local state
+            }
+
+            navigation.navigate('Chatting', { userId: id, name, image });
+
+        } catch (error) {
+            console.error("Error adding user to friends:", error);
+        }
+    };
+
+    const Item = ({ userId, userName, image }) => {
+        const validImage = image ? { uri: image } : require('../../assets/images/blank.jpeg');
+
+        return (
+            <TouchableOpacity onPress={() => handleChatPress(userId, userName, image)}>
                 <View style={styles.userCtn}>
                     <Image
                         style={styles.image}
-                        source={image ?{
-                            uri: image
-                        } : require('../../assets/images/blank.jpeg')}
+                        source={validImage}
                         borderRadius={50}
                         resizeMode="cover"
-                        onError={(e) => console.log("Image Load Err:", e.nativeEvent.error)}
                     />
-
                     <View style={styles.msgCtn}>
-                        <View style={styles.userDetail}>
-                            <Text style={styles.name}>{name}</Text>
-                        </View>
+                        <Text style={styles.name}>{userName}</Text>
                     </View>
                 </View>
             </TouchableOpacity>
-        </View>
-    );
-
+        );
+    };
 
     return (
         <View style={styles.container}>
             {loading ? (
-                // Show Loading Spinner
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color="#00ff00" />
-                    <Text style={styles.loadingText}>Fetching profile...</Text>
+                    <Text style={styles.loadingText}>Fetching profiles...</Text>
                 </View>
             ) : (
                 <ScrollView contentInsetAdjustmentBehavior="automatic">
                     <Header />
                     <View style={styles.chatCtn}>
                         <FlatList
-                            data={Users}
-                            renderItem={({ item }) =>
-                                <Item key={item._id}  id={item._id} name={item.username} image={item.profilePic} />
-                            }
-                            keyExtractor={item => item.id}
+                            data={users}
+                            renderItem={({ item }) => (
+                                <Item key={item._id} userId={item._id} userName={item.username} image={item.profilePic} />
+                            )}
+                            keyExtractor={item => item._id}
                             horizontal={false}
                             scrollEnabled={false}
                             ListHeaderComponent={Search}
@@ -112,44 +148,14 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         width: '80%',
     },
-    userDetail: {
-        gap: 5,
-    },
     name: {
         fontWeight: 'bold',
         fontSize: 20,
         color: 'white',
     },
-    message: {
-        fontSize: 13,
-        color: '#cbd5c0'
-    },
     image: {
         width: 55,
         height: 55,
-    },
-    newUpdate: {
-        position: 'absolute',
-        bottom: 20,
-        right: 20,
-        gap: 20,
-        alignItems: 'center',
-    },
-    pen: {
-        borderRadius: 10,
-        backgroundColor: '#233040',
-        width: 40,
-        height: 40,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    msg: {
-        borderRadius: 15,
-        backgroundColor: 'rgb(95, 252, 123)',
-        width: 60,
-        height: 60,
-        alignItems: 'center',
-        justifyContent: 'center',
     },
     loadingContainer: {
         flex: 1,

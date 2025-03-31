@@ -6,107 +6,116 @@ import {
   FlatList,
   TouchableOpacity,
   Image,
-  ScrollView,
   ActivityIndicator
 } from 'react-native';
-import loadChatsOffline from '../../utils/chatStorage';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as FileSystem from 'expo-file-system';
 import { useNavigation } from '@react-navigation/native';
-import { Users } from '../../lib/data';
+import { useNetInfo } from "@react-native-community/netinfo";
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Search from './Search';
 import Header from './Header';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { getProfile } from '../../Services/AuthServices';
-import { loadUserInfo } from '../../utils/chatStorage';
-import { useNetInfo } from "@react-native-community/netinfo"; // Detect network status
 
+const friendsFilePath = FileSystem.documentDirectory + "friendsInfo.json"; // Correct file path for friends
 
 export default function Chat() {
-  const netInfo = useNetInfo(); // Check network status
+  const netInfo = useNetInfo();
   const navigation = useNavigation();
   const [loading, setLoading] = useState(true);
   const [userData, setUserData] = useState(null);
   const [friends, setFriends] = useState([]);
-  useEffect(() => {
 
+  useEffect(() => {
     const loadUserAndFriends = async () => {
       try {
-        // Load user info
-        const userInfo = await loadUserInfo();
-        // console.log(userInfo,"------------------");
-        if (userInfo) {
-          setUserData(userInfo)
-          if (netInfo.isConnected) {
-            // Fetch from API if online
-             await fetchAndSaveFriends(userInfo._id);
-          }
-          // Load from local storage if offline
-          console.log("---9876564")
-          const friendsData = await loadChatsOffline();
-          setFriends(friendsData);
-          console.log(friendsData)
-        } else {
-          navigation.replace("Login");
+        // Load stored friends from local file
+        const fileExists = await FileSystem.getInfoAsync(friendsFilePath);
+        if (fileExists.exists) {
+          const storedData = await FileSystem.readAsStringAsync(friendsFilePath);
+          setFriends(JSON.parse(storedData) || []);
         }
-        setLoading(false);
+
+        // Fetch profile data from server if online
+        if (netInfo.isConnected) {
+          const profileData = await getProfile();
+          if (profileData) {
+            setUserData(profileData);
+          }
+        }
       } catch (error) {
-        console.log("Error loading user data:", error.message);
+        console.error("Error loading data:", error);
+      } finally {
         setLoading(false);
       }
     };
 
     loadUserAndFriends();
-
-
-
   }, [netInfo.isConnected]);
 
-  const Item = ({ id, name, image, message, time }) => (
-    <View>
-      <TouchableOpacity
-        activeOpacity={0.6}
-        onPress={() => navigation.navigate('Chatting', { userId: id, name, image })}
-      >
+  // Navigate to chat screen and update friends list
+  const handleChatPress = async (id, name, image) => {
+    navigation.navigate('Chatting', { userId: id, name, image });
+
+    // Ensure user is added to friends list
+    try {
+      let storedFriends = [];
+
+      const fileExists = await FileSystem.getInfoAsync(friendsFilePath);
+      if (fileExists.exists) {
+        const fileData = await FileSystem.readAsStringAsync(friendsFilePath);
+        storedFriends = JSON.parse(fileData) || [];
+      }
+
+      if (!storedFriends.some(friend => friend.userId === id)) {
+        const newUser = { userId: id, userName: name, image, message: "Say hi!", time: "Now" };
+        storedFriends.push(newUser);
+
+        await FileSystem.writeAsStringAsync(friendsFilePath, JSON.stringify(storedFriends, null, 2));
+        setFriends(storedFriends);
+      }
+    } catch (error) {
+      console.error("Error updating friends list:", error);
+    }
+  };
+
+  const Item = ({ userId, userName, image, message, time }) => {
+    const validImage = image ? { uri: image } : require('../../assets/images/blank.jpeg');
+
+    return (
+      <TouchableOpacity activeOpacity={0.6} onPress={() => handleChatPress(userId, userName, image)}>
         <View style={styles.userCtn}>
-          <Image style={styles.image} source={image} borderRadius={50} resizeMode='cover' />
+          <Image style={styles.image} source={validImage} borderRadius={50} resizeMode='cover' />
           <View style={styles.msgCtn}>
             <View style={styles.userDetail}>
-              <Text style={styles.name}>{name}</Text>
+              <Text style={styles.name}>{userName}</Text>
               <Text style={styles.message}>{message}</Text>
             </View>
-            <Text style={styles.message}>{time}</Text>
+            <Text style={styles.time}>{time}</Text>
           </View>
         </View>
       </TouchableOpacity>
-    </View>
-  );
+    );
+  };
 
   return (
     <View style={styles.container}>
       {loading ? (
-        // Show Loading Spinner
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#00ff00" />
-          <Text style={styles.loadingText}>Fetching profile...</Text>
+          <Text style={styles.loadingText}>Fetching data...</Text>
         </View>
       ) : (
-        <ScrollView contentInsetAdjustmentBehavior="automatic">
+        <>
           <Header />
-          <View style={styles.chatCtn}>
-            <FlatList
-              data={Users}
-              renderItem={({ item }) =>
-                <Item id={item.id} name={item.name} message={item.message} image={item.image} time={item.time} />
-              }
-              keyExtractor={item => item.id}
-              horizontal={false}
-              scrollEnabled={false}
-              ListHeaderComponent={Search}
-            />
-          </View>
-        </ScrollView>
+          <FlatList
+            data={friends}
+            renderItem={({ item }) => <Item {...item} />}
+            keyExtractor={(item) => String(item.userId)}
+            ListHeaderComponent={Search}
+            ListEmptyComponent={<Text style={styles.emptyText}>No recent chats</Text>}
+          />
+        </>
       )}
-
       <View style={styles.newUpdate}>
         <View style={styles.pen}>
           <Image style={{ width: 30, height: 30 }} source={require('../../assets/images/ai.png')} />
@@ -117,7 +126,6 @@ export default function Chat() {
           </TouchableOpacity>
         </View>
       </View>
-
     </View>
   );
 }
@@ -127,9 +135,6 @@ const styles = StyleSheet.create({
     padding: 10,
     backgroundColor: '#011513',
     height: '100%'
-  },
-  chatCtn: {
-    marginTop: 20,
   },
   userCtn: {
     flexDirection: 'row',
@@ -151,6 +156,10 @@ const styles = StyleSheet.create({
     color: 'white',
   },
   message: {
+    fontSize: 13,
+    color: '#cbd5c0'
+  },
+  time: {
     fontSize: 13,
     color: '#cbd5c0'
   },
@@ -188,6 +197,12 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 10,
+    color: '#cbd5c0',
+    fontSize: 16
+  },
+  emptyText: {
+    textAlign: 'center',
+    marginTop: 20,
     color: '#cbd5c0',
     fontSize: 16
   }

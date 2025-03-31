@@ -1,46 +1,71 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Modal, Pressable } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Modal, Pressable, Alert } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import SettingsScreen from '../setting/SettingsScreen'; // Import the Settings screen
-import { useNavigation } from '@react-navigation/native'; // 👈 Import navigation
+import { useNavigation } from '@react-navigation/native';
+import * as FileSystem from "expo-file-system";
+
+const userFilePath = FileSystem.documentDirectory + "userInfo.json";
+const friendsFilePath = FileSystem.documentDirectory + "friendsInfo.json"; // Cached friend list
 
 export default function MenuBar() {
   const [menuVisible, setMenuVisible] = useState(false);
+  const navigation = useNavigation();
 
-  const toggleMenu = () => setMenuVisible(!menuVisible);
-  const navigation = useNavigation(); // 👈 Get navigation object
+  // Logout Function
+  const handleLogout = async () => {
+    Alert.alert(
+      "Logout",
+      "Are you sure you want to logout?",
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "Logout", 
+          onPress: async () => {
+            try {
+              console.log("Handling logout...");
+              // Delete user and friends JSON files
+              const filesToDelete = [userFilePath, friendsFilePath];
 
+              for (const file of filesToDelete) {
+                const fileInfo = await FileSystem.getInfoAsync(file);
+                if (fileInfo.exists) {
+                  await FileSystem.deleteAsync(file);
+                }
+              }
 
+              console.log("User data deleted. Redirecting to login...");
+              navigation.replace("Login"); // Navigate to Login screen
+            } catch (error) {
+              console.error("Logout error:", error);
+            }
+          } 
+        }
+      ]
+    );
+  };
 
-  // ✅ Define menuItems inside the function so it can access setShowSettings
   const menuItems = [
-    { label: 'New Group' },
-    { label: 'New Broadcast' },
-    { label: 'Linked Devices' },
-    { label: 'Starred Messages' },
-    { label: 'Settings', action: () => navigation.navigate('Settings') }, // Open Settings
+    { label: "New Group" },
+    { label: "New Broadcast" },
+    { label: "Linked Devices" },
+    { label: "Starred Messages" },
+    { label: "Settings", action: () => navigation.navigate("Settings") },
+    { label: "Logout", action: handleLogout } // 👈 Logout button
   ];
 
   return (
     <View style={styles.container}>
-      {/* Three Dots Icon */}
-      <TouchableOpacity onPress={toggleMenu} style={styles.icon}>
+      <TouchableOpacity onPress={() => setMenuVisible(true)} style={styles.icon}>
         <Feather name="more-vertical" size={24} color="white" />
       </TouchableOpacity>
 
-      {/* Menu Modal */}
-      <Modal
-        transparent
-        animationType="fade"
-        visible={menuVisible}
-        onRequestClose={() => setMenuVisible(false)}
-      >
+      <Modal transparent animationType="fade" visible={menuVisible} onRequestClose={() => setMenuVisible(false)}>
         <Pressable style={styles.overlay} onPress={() => setMenuVisible(false)}>
           <View style={styles.menu}>
             {menuItems.map((item, index) => (
               <TouchableOpacity
                 key={index}
-                style={styles.menuItem}
+                style={[styles.menuItem, index === menuItems.length - 1 && { borderBottomWidth: 0 }]} // No border on last item
                 onPress={() => {
                   setMenuVisible(false);
                   if (item.action) item.action();
@@ -57,34 +82,10 @@ export default function MenuBar() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    position: 'relative',
-  },
-  icon: {
-    padding: 10,
-  },
-  overlay: {
-    flex: 1,
-    justifyContent: 'flex-start',
-    alignItems: 'flex-end',
-    paddingTop: 50,
-    paddingRight: 10,
-  },
-  menu: {
-    backgroundColor: '#1F1F1F',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    elevation: 5,
-    width: 180,
-  },
-  menuItem: {
-    paddingVertical: 12,
-    borderBottomWidth: 0.5,
-    borderBottomColor: '#333',
-  },
-  menuText: {
-    color: 'white',
-    fontSize: 16,
-  },
+  container: { position: "relative" },
+  icon: { padding: 10 },
+  overlay: { flex: 1, justifyContent: "flex-start", alignItems: "flex-end", paddingTop: 50, paddingRight: 10 },
+  menu: { backgroundColor: "#1F1F1F", paddingVertical: 10, paddingHorizontal: 12, borderRadius: 8, elevation: 5, width: 180 },
+  menuItem: { paddingVertical: 12, borderBottomWidth: 0.5, borderBottomColor: "#333" },
+  menuText: { color: "white", fontSize: 16 }
 });

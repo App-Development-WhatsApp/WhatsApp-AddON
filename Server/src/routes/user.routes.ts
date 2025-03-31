@@ -7,7 +7,8 @@ import {
   // changeCurrentPassword,
   getCurrentUser,
   GetAllUsers,
-  GetAllChattedUsers
+  GetAllChattedUsers,
+  getFriends, 
   // updateAccountdetails,
   // updateUserAvatar,
   // updateUserCoverImage,
@@ -19,9 +20,10 @@ import { verifyJWT } from "../middlewares/auth.middleware";
 
 const router = Router();
 
-router.route("/register").post(upload.single("profilePic"), registerUser);
+router.route("/login").post(upload.single("profilePic"), registerUser);
 router.route("/getAllUsers").get(GetAllUsers);
 router.route("/getAllChattedUsers").get(GetAllChattedUsers);
+router.route("/friends/:userId").post(getFriends);
 
 
 

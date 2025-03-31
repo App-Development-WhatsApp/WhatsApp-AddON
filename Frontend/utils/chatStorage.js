@@ -1,40 +1,33 @@
 import { getAllChattedUsers } from '../Services/AuthServices';
-
-/**
- * Saves user (friend) information locally
- * @param {string} userId - Friend's ID
- * @param {object} userInfo - User details { id, name, profilePic }
- */
 import * as FileSystem from "expo-file-system";
 
 const userFilePath = FileSystem.documentDirectory + "userInfo.json";
 const friendsFilePath = FileSystem.documentDirectory + "friendsInfo.json"; // Store friends' details
-const chatsFilePath = FileSystem.documentDirectory + "ChatsInfo.json"; // Store friends' details
+const chatsFilePath = FileSystem.documentDirectory + "ChatsInfo.json"; // Store chats info
 
 export const getUserChatFilePath = async (userId) => {
     try {
-        // Load user info (assuming it returns an object with _id)
-        const userInfo = await loadUserInfo(); // Ensure this function is asynchronous if needed
+        const userInfo = await loadUserInfo();
+        if (!userInfo || !userInfo._id) {
+            console.error("User info not found or invalid.");
+            return null;
+        }
+
         const fileName = `${userInfo._id}-${userId}.json`;
         const filePath = FileSystem.documentDirectory + fileName;
 
-        // Check if file exists
         const fileInfo = await FileSystem.getInfoAsync(filePath);
-
-        if (fileInfo.exists) {
-            console.log("File exists:", filePath);
-            return filePath;
-        } else {
+        if (!fileInfo.exists) {
             console.log("File does not exist, creating new one...");
-            await FileSystem.writeAsStringAsync(filePath, JSON.stringify({}));
-            return filePath;
+            await FileSystem.writeAsStringAsync(filePath, JSON.stringify({ messages: [] }));
         }
+
+        return filePath;
     } catch (error) {
         console.error("Error handling user file:", error);
         return null;
     }
 };
-
 
 // Function to read JSON file
 export const readJsonFile = async (filePath) => {
@@ -43,13 +36,11 @@ export const readJsonFile = async (filePath) => {
         if (fileInfo.exists) {
             const content = await FileSystem.readAsStringAsync(filePath);
             return JSON.parse(content);
-        } else {
-            return { messages: [] }; // Return empty messages array if file doesn't exist
         }
     } catch (error) {
         console.error("Error reading JSON file:", error);
-        return { messages: [] };
     }
+    return [];
 };
 
 // Function to write JSON file
@@ -63,11 +54,13 @@ export const writeJsonFile = async (filePath, data) => {
 
 // Function to add a message
 export const addMessage = async (userId, message) => {
-    const filePath = await getUserFilePath(userId);
+    const filePath = await getUserChatFilePath(userId);
+    if (!filePath) return null;
+
     const data = await readJsonFile(filePath);
 
     const newMessage = {
-        id: Date.now().toString(), // Unique message ID
+        id: Date.now().toString(),
         text: message,
         timestamp: new Date().toISOString(),
     };
@@ -79,7 +72,9 @@ export const addMessage = async (userId, message) => {
 
 // Function to update a message
 export const updateMessage = async (userId, messageId, newText) => {
-    const filePath = await getUserFilePath(userId);
+    const filePath = await getUserChatFilePath(userId);
+    if (!filePath) return null;
+
     const data = await readJsonFile(filePath);
 
     const messageIndex = data.messages.findIndex((msg) => msg.id === messageId);
@@ -88,34 +83,22 @@ export const updateMessage = async (userId, messageId, newText) => {
         data.messages[messageIndex].timestamp = new Date().toISOString();
         await writeJsonFile(filePath, data);
         return data.messages[messageIndex];
-    } else {
-        console.error("Message not found");
-        return null;
     }
+    console.error("Message not found");
+    return null;
 };
 
 // Function to delete a message
 export const deleteMessage = async (userId, messageId) => {
-    const filePath = await getUserFilePath(userId);
+    const filePath = await getUserChatFilePath(userId);
+    if (!filePath) return null;
+
     const data = await readJsonFile(filePath);
 
-    const filteredMessages = data.messages.filter((msg) => msg.id !== messageId);
-    data.messages = filteredMessages;
+    data.messages = data.messages.filter((msg) => msg.id !== messageId);
     await writeJsonFile(filePath, data);
     return { success: true, message: "Message deleted" };
 };
-
-// Example Usage
-//   const userId = "12345";
-//   addMessage(userId, "Hello, this is my first message!")
-//     .then((msg) => console.log("Message Added:", msg));
-
-//   updateMessage(userId, "MESSAGE_ID", "Updated message text")
-//     .then((msg) => console.log("Message Updated:", msg));
-
-//   deleteMessage(userId, "MESSAGE_ID")
-//     .then((res) => console.log(res));
-
 
 export const saveUserInfo = async (user) => {
     try {
@@ -138,76 +121,79 @@ export const loadUserInfo = async () => {
 
 export const fetchAndSaveFriends = async (userId) => {
     try {
-        const response = getAllChattedUsers(userId);
-
+        const response = await fetch(`http://10.10.15.92:5000/api/v1/users/friends/${userId}`);
         const data = await response.json();
-        if (data.friends) {
-            await FileSystem.writeAsStringAsync(friendsFilePath, JSON.stringify(data.friends));
-        }
-    } catch (error) {
-        console.error("Error fetching friends:", error);
-    }
-};
+        const friends = data.friends || [];
 
-export const loadChatsOffline = async () => {
-    console.log("doing well")
-    try {
-        const data = await FileSystem.readAsStringAsync(chatsFilePath);
-        console.log("loda fatatt", data)
-        return data ? JSON.parse(data) : [];
+        // Save friends data to local JSON file
+        await FileSystem.writeAsStringAsync(friendsFilePath, JSON.stringify(friends, null, 2));
+        console.log("Friends info saved successfully!");
+
+        return friends;
     } catch (error) {
-        console.error("Error loading friends from local storage:", error);
+        console.error("Error fetching or saving friends:", error);
         return [];
     }
 };
 
-
-
-export const getChattingHistory = async (userId) => {
+// Load offline chats
+export const loadChatsOffline = async () => {
+    console.log("Loading offline chats...");
     try {
-        const response = await loadUserInfo(); // Ensure async function is awaited
-        const chattingfileName = `${userId}-${response._id}.json`;
-        const chattingfilepath = FileSystem.documentDirectory + chattingfileName;
-
-        // Check if file exists
-        const fileInfo = await FileSystem.getInfoAsync(chattingfilepath);
-
-        if (fileInfo.exists) {
-            console.log("File exists:", chattingfilepath);
-            const data = await FileSystem.readAsStringAsync(chattingfilepath);
-            return data ? JSON.parse(data) : { messages: [] };
-        } else {
-            console.log("File does not exist, creating new one...");
-            const initialData = { messages: [] };
-            await FileSystem.writeAsStringAsync(chattingfilepath, JSON.stringify(initialData, null, 2));
-            return initialData;
-        }
+        const data = await FileSystem.readAsStringAsync(chatsFilePath);
+        return data ? JSON.parse(data) : [];
     } catch (error) {
-        console.error("Error fetching chatting history:", error);
-        return { messages: [] }; // Return empty array on error
+        console.error("Error loading chats from local storage:", error);
+        return [];
     }
 };
 
+// Function to add a user to the friends list when a chat starts
+export const addUserToFriendsList = async (userId, userName) => {
+    try {
+        let friends = await readJsonFile(friendsFilePath);
+        
+        if (!Array.isArray(friends)) {
+            friends = [];
+        }
 
+        // Check if the user already exists in the friends list
+        const exists = friends.some(friend => friend.userId === userId);
+        if (!exists) {
+            friends.push({ userId, userName });
+            await writeJsonFile(friendsFilePath, friends);
+            console.log("User added to friends list:", userName);
+        }
+    } catch (error) {
+        console.error("Error adding user to friends list:", error);
+    }
+};
 
+// Function to get chatting history and add the user to friends list
+export const getChattingHistory = async (userId, userName) => {
+    try {
+        const userInfo = await loadUserInfo();
+        if (!userInfo || !userInfo._id) {
+            console.error("User info not found.");
+            return { messages: [] };
+        }
 
+        // Add the user to friends list
+        await addUserToFriendsList(userId, userName);
 
+        const chattingFileName = `${userInfo._id}-${userId}.json`;
+        const chattingFilePath = FileSystem.documentDirectory + chattingFileName;
 
+        const fileInfo = await FileSystem.getInfoAsync(chattingFilePath);
+        if (!fileInfo.exists) {
+            console.log("Chat file does not exist, creating new one...");
+            await FileSystem.writeAsStringAsync(chattingFilePath, JSON.stringify({ messages: [] }, null, 2));
+        }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        const data = await FileSystem.readAsStringAsync(chattingFilePath);
+        return data ? JSON.parse(data) : { messages: [] };
+    } catch (error) {
+        console.error("Error fetching chatting history:", error);
+        return { messages: [] };
+    }
+};

@@ -1,4 +1,5 @@
 import { asyncHandler } from "../utils/asyncHandler";
+import { Request, Response } from 'express';
 import { ApiError } from "../utils/APIError";
 import { ApiResponse } from "../utils/APIResponse";
 //  this user can interact with mongodb because it has made a connection
@@ -247,6 +248,23 @@ export const GetAllChattedUsers = asyncHandler(async (req, res) => {
 
   } catch (error: any) {
     return res.status(500).json(new ApiError(500, "Internal server error", error.message));
+  }
+});
+
+
+export const getFriends = asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+    const user = await User.findById(userId).populate('friends', 'username profilePic');
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json({ friends: user.friends });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
