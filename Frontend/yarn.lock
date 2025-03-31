@@ -3287,6 +3287,13 @@ expo-image-loader@~5.0.0:
   resolved "https://registry.npmjs.org/expo-image-loader/-/expo-image-loader-5.0.0.tgz"
   integrity sha512-Eg+5FHtyzv3Jjw9dHwu2pWy4xjf8fu3V0Asyy42kO+t/FbvW/vjUixpTjPtgKQLQh+2/9Nk4JjFDV6FwCnF2ZA==
 
+expo-image-manipulator@^13.0.6:
+  version "13.0.6"
+  resolved "https://registry.npmjs.org/expo-image-manipulator/-/expo-image-manipulator-13.0.6.tgz"
+  integrity sha512-Rz8Kcfx1xYm0AsIDi6zfKYUDnwCP8edgYXWb00KAkzOF8bDxwzTrnvESWhCiveM4IB3fojjLpNeENME34p3bzA==
+  dependencies:
+    expo-image-loader "~5.0.0"
+
 expo-image-picker@^16.0.6:
   version "16.0.6"
   resolved "https://registry.npmjs.org/expo-image-picker/-/expo-image-picker-16.0.6.tgz"
@@ -3294,10 +3301,20 @@ expo-image-picker@^16.0.6:
   dependencies:
     expo-image-loader "~5.0.0"
 
+expo-image@^2.0.7:
+  version "2.0.7"
+  resolved "https://registry.npmjs.org/expo-image/-/expo-image-2.0.7.tgz"
+  integrity sha512-kv40OIJOkItwznhdqFmKxTMC5O8GkpyTf8ng7Py4Hy6IBiH59dkeP6vUZQhzPhJOm5v1kZK4XldbskBosqzOug==
+
 expo-keep-awake@~14.0.3:
   version "14.0.3"
   resolved "https://registry.npmjs.org/expo-keep-awake/-/expo-keep-awake-14.0.3.tgz"
   integrity sha512-6Jh94G6NvTZfuLnm2vwIpKe3GdOiVBuISl7FI8GqN0/9UOg9E0WXXp5cDcfAG8bn80RfgLJS8P7EPUGTZyOvhg==
+
+expo-media-library@^17.0.6:
+  version "17.0.6"
+  resolved "https://registry.npmjs.org/expo-media-library/-/expo-media-library-17.0.6.tgz"
+  integrity sha512-LUnfrddmee1xLOkyG2NN1l9xQbtvMX3fbM1brEGHg0SKSndvjod3FQdhTzZEYAariqW2RSxQR8v1IsheIoLQXg==
 
 expo-modules-autolinking@2.0.8:
   version "2.0.8"

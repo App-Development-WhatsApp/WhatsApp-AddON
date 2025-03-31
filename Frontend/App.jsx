@@ -25,6 +25,7 @@ import AppUpdateScreen from "./components/setting/AppUpdateScreen";
 import LoginScreen from "./components/auth/Login";
 import Contacts from "./components/AllContacts/Contacts";
 import UploadStatusScreen from "./components/Updates/UploadStatusScreen";
+import UploadImageStatus from "./components/Updates/StatusApply.jsx/UploadImageStatus";
 const Stack = createStackNavigator();
 
 export default function App() {
@@ -65,6 +66,7 @@ export default function App() {
         <Stack.Screen name="Account" component={AccountScreen} />
         <Stack.Screen name="Privacy" component={PrivacyScreen} />
         <Stack.Screen name="UploadStatus" component={UploadStatusScreen} />
+        <Stack.Screen name="UploadImageStatus" component={UploadImageStatus} options={{ title: "Edit Status" }} />
         <Stack.Screen name="Avatar" component={AvatarScreen} />
         <Stack.Screen name="List" component={ListScreen} />
         <Stack.Screen name="ChatSetting" component={ChatScreen} />
