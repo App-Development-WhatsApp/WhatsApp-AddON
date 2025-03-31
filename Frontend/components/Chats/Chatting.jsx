@@ -18,9 +18,40 @@ import EmojiPicker from "react-native-emoji-picker-staltz";
 export default function Chatting() {
   const route = useRoute();
   const { name, image, id } = route.params;
+<<<<<<< HEAD
+=======
+  const { roomId, userId } = route.params;
+>>>>>>> 0758f6893c3e78697e2391bc284ed12ed4555fc8
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [message, setMessage] = useState("");
   const [chats, setChats] = useState([]);
+<<<<<<< HEAD
+=======
+  console.log(roomId, userId)
+  const currentUserId = "currentUser";
+
+  useEffect(() => {
+    setLoading(true);
+    const LoadChattingOfUser = async () => {
+      try {
+        // Load user info
+        const Chats = await getChattingHistory(id);
+        console.log(Chats)
+        setChats(Chats);
+        setLoading(false);
+      } catch (error) {
+        console.log("Error loading user data:", error.message);
+        setLoading(false);
+      }
+    }
+
+    LoadChattingOfUser();
+
+  }, [id,chats]);
+  useEffect(()=>{
+     
+  },[])
+>>>>>>> 0758f6893c3e78697e2391bc284ed12ed4555fc8
 
   const messages = [
     { id: "1", text: "Hey! How are you?", sender: "me" },

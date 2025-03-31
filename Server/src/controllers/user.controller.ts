@@ -11,26 +11,6 @@ import mongoose from "mongoose";
 import { Types } from "mongoose";
 import { Chat } from "../models/Chat.model";
 
-const generateAccessAndRefreshTokens = async (userId: Types.ObjectId) => {
-  try {
-    const user = await User.findById(userId);
-    if (!user) {
-      throw new ApiError(404, "User not found");
-    }
-
-    const accessToken = user.generateAccessToken();
-
-    // We are using validateBeforeSave to avoid validation checks on fields like password
-    await user.save({ validateBeforeSave: false });
-
-    return accessToken;
-  } catch (error) {
-    throw new ApiError(
-      500,
-      "Something went wrong while generating refresh and access token"
-    );
-  }
-};
 
 
 // --------------------------Register---------------------------
@@ -118,31 +98,15 @@ export const uploadProfilePic = asyncHandler(async (req: any, res) => {
 
 
 // // ----------------------------LOgOut-------------------------
-// const logoutUser = asyncHandler(async (req, res) => {
-//   // Here we are using middleware to get access id at the time of logout and accessing cookie by req
-//   User.findByIdAndUpdate(
-//     req.user._id,
-//     {
-//       $set: {
-//         refreshToken: undefined,
-//       },
-//     },
-//     {
-//       new: true,
-//     }
-//   );
+export const logoutUser = asyncHandler(async (req, res) => {
+  try {
+      await User.findByIdAndDelete(req.user.id);
+      res.status(200).json({ success: true, message: "User deleted successfully" });
+  } catch (error:any) {
+      res.status(500).json({ success: false, message: "Error deleting user", error: error.message });
+  }
+});
 
-//   const options = {
-//     // by true this cookkies is only accessable from server side
-//     httpOnly: true,
-//     secure: true,
-//   };
-//   return res
-//     .status(200)
-//     .clearCookie("accessToken", options)
-//     .clearCookie("refreshToken", options)
-//     .json(new ApiResponse(200, {}, "user Logged Out Successfully"));
-// });
 // // ----------------------------Refresh Token---------------------------------
 // const refreshAccessToken = asyncHandler(async (req, res) => {
 //   const incomingrefreshToken =
@@ -255,7 +219,7 @@ export const GetAllChattedUsers = asyncHandler(async (req, res) => {
 export const getFriends = asyncHandler(async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
-    const user = await User.findById(userId).populate('friends', 'username profilePic');
+    const user = await User.findById(userId).populate('friends', '_id username profilePic lastSeen online');
 
     if (!user) {
       return res.status(404).json({ message: 'User not found' });

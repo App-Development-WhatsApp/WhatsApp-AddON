@@ -10,14 +10,19 @@ import {
   ActivityIndicator,
   StatusBar
 } from 'react-native';
+import NetInfo from "@react-native-community/netinfo";
 import * as FileSystem from 'expo-file-system';
 import { useNavigation } from '@react-navigation/native';
 import { useNetInfo } from "@react-native-community/netinfo";
 import { MaterialCommunityIcons, Feather, Entypo } from '@expo/vector-icons';
 import { getProfile } from '../../Services/AuthServices';
+<<<<<<< HEAD
 import Menu from '../Menu/Menu';
 
 const friendsFilePath = FileSystem.documentDirectory + "friendsInfo.json";
+=======
+import { fetchAndSaveFriends, friendsFilePath, loadUserInfo } from '../../utils/chatStorage';
+>>>>>>> 0758f6893c3e78697e2391bc284ed12ed4555fc8
 
 export default function Chat() {
   const netInfo = useNetInfo();
@@ -25,21 +30,32 @@ export default function Chat() {
   const [loading, setLoading] = useState(true);
   const [userData, setUserData] = useState(null);
   const [friends, setFriends] = useState([]);
-
   useEffect(() => {
     const loadUserAndFriends = async () => {
       try {
+<<<<<<< HEAD
         const fileExists = await FileSystem.getInfoAsync(friendsFilePath);
         if (fileExists.exists) {
           const storedData = await FileSystem.readAsStringAsync(friendsFilePath);
           setFriends(JSON.parse(storedData) || []);
         }
+=======
+        // Load user info
+        const userInfo = await loadUserInfo();
+        setUserData(userInfo);
+
+        // Check network status
+        const netInfo = await NetInfo.fetch();
+>>>>>>> 0758f6893c3e78697e2391bc284ed12ed4555fc8
 
         if (netInfo.isConnected) {
-          const profileData = await getProfile();
-          if (profileData) {
-            setUserData(profileData);
-          }
+          // Online: Fetch fresh data and save it
+          const updatedFriends = await fetchAndSaveFriends(userInfo?.id);
+          setFriends(updatedFriends);
+        } else {
+          // Offline: Load saved friends from local storage
+          const savedFriends = await getSavedFriends();
+          setFriends(savedFriends);
         }
       } catch (error) {
         console.error("Error loading data:", error);
@@ -49,7 +65,7 @@ export default function Chat() {
     };
 
     loadUserAndFriends();
-  }, [netInfo.isConnected]);
+  }, []); // Runs once when the component mounts
 
   const handleChatPress = async (id, name, image) => {
     navigation.navigate('Chatting', { userId: id, name, image });
@@ -81,9 +97,10 @@ export default function Chat() {
       <TouchableOpacity activeOpacity={0.6} onPress={() => handleChatPress(userId, userName, image)}>
         <View style={styles.userCtn}>
           <Image style={styles.image} source={validImage} borderRadius={50} resizeMode='cover' />
+
           <View style={styles.msgCtn}>
             <View style={styles.userDetail}>
-              <Text style={styles.name}>{userName}</Text>
+              <Text style={styles.name}>{userName} </Text>
               <Text style={styles.message}>{message}</Text>
             </View>
             <Text style={styles.time}>{time}</Text>
