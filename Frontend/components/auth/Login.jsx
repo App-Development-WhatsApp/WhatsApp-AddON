@@ -88,9 +88,7 @@ const LoginScreen = ({ navigation }) => {
 
         setLoading(false); // Hide loading indicator
 
-        if (result.success && result.data.user) {
-            saveUserInfo(result.data.user);
-            Alert.alert("Success", "Logged in successfully!");
+        if (result.success) {
             navigation.replace("Main");
         } else {
             Alert.alert("Login Failed", result.message || "An error occurred. Please try again.");

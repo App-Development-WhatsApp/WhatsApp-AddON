@@ -1,7 +1,7 @@
 import { Router } from "express";
 import {
   // loginUser,
-  // logoutUser,
+  logoutUser,
   registerUser,
   // refreshAccessToken,
   // changeCurrentPassword,
@@ -24,6 +24,7 @@ router.route("/login").post(upload.single("profilePic"), registerUser);
 router.route("/getAllUsers").get(GetAllUsers);
 router.route("/getAllChattedUsers").get(GetAllChattedUsers);
 router.route("/friends/:userId").post(getFriends);
+router.route("/logout").post(logoutUser);
 
 
 

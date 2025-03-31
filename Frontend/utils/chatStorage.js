@@ -1,9 +1,9 @@
-import { getAllChattedUsers } from '../Services/AuthServices';
+import { API_URL, getAllChattedUsers } from '../Services/AuthServices';
 import * as FileSystem from "expo-file-system";
 
-const userFilePath = FileSystem.documentDirectory + "userInfo.json";
-const friendsFilePath = FileSystem.documentDirectory + "friendsInfo.json"; // Store friends' details
-const chatsFilePath = FileSystem.documentDirectory + "ChatsInfo.json"; // Store chats info
+export const userFilePath = FileSystem.documentDirectory + "userInfo.json";
+export const friendsFilePath = FileSystem.documentDirectory + "friendsInfo.json"; // Store friends' details
+export const chatsFilePath = FileSystem.documentDirectory + "ChatsInfo.json"; // Store chats info
 
 export const getUserChatFilePath = async (userId) => {
     try {
@@ -121,11 +121,31 @@ export const loadUserInfo = async () => {
 
 export const fetchAndSaveFriends = async (userId) => {
     try {
-        const response = await fetch(`http://10.10.15.92:5000/api/v1/users/friends/${userId}`);
+        const response = await fetch(`${API_URL}/friends/${userId}`);
         const data = await response.json();
-        const friends = data.friends || [];
+        let friends = data.friends || [];
 
-        // Save friends data to local JSON file
+        // Function to download an image and return the local file URI
+        const downloadImage = async (imageUrl, filename) => {
+            const fileUri = `${FileSystem.documentDirectory}${filename}`;
+            try {
+                const { uri } = await FileSystem.downloadAsync(imageUrl, fileUri);
+                return uri;
+            } catch (error) {
+                console.error("Error downloading image:", error);
+                return imageUrl; // Fallback to original URL if download fails
+            }
+        };
+
+        // Process each friend and download profile picture if needed
+        for (let i = 0; i < friends.length; i++) {
+            if (friends[i].profilePic.startsWith("https://res.cloudinary.com")) {
+                const fileName = `profile_${friends[i]._id}.jpg`;
+                friends[i].profilePic = await downloadImage(friends[i].profilePic, fileName);
+            }
+        }
+
+        // Save friends data with local image paths
         await FileSystem.writeAsStringAsync(friendsFilePath, JSON.stringify(friends, null, 2));
         console.log("Friends info saved successfully!");
 
@@ -136,64 +156,22 @@ export const fetchAndSaveFriends = async (userId) => {
     }
 };
 
-// Load offline chats
-export const loadChatsOffline = async () => {
-    console.log("Loading offline chats...");
+export const getSavedFriends = async () => {
     try {
-        const data = await FileSystem.readAsStringAsync(chatsFilePath);
-        return data ? JSON.parse(data) : [];
-    } catch (error) {
-        console.error("Error loading chats from local storage:", error);
-        return [];
-    }
-};
-
-// Function to add a user to the friends list when a chat starts
-export const addUserToFriendsList = async (userId, userName) => {
-    try {
-        let friends = await readJsonFile(friendsFilePath);
-        
-        if (!Array.isArray(friends)) {
-            friends = [];
-        }
-
-        // Check if the user already exists in the friends list
-        const exists = friends.some(friend => friend.userId === userId);
-        if (!exists) {
-            friends.push({ userId, userName });
-            await writeJsonFile(friendsFilePath, friends);
-            console.log("User added to friends list:", userName);
-        }
-    } catch (error) {
-        console.error("Error adding user to friends list:", error);
-    }
-};
-
-// Function to get chatting history and add the user to friends list
-export const getChattingHistory = async (userId, userName) => {
-    try {
-        const userInfo = await loadUserInfo();
-        if (!userInfo || !userInfo._id) {
-            console.error("User info not found.");
-            return { messages: [] };
-        }
-
-        // Add the user to friends list
-        await addUserToFriendsList(userId, userName);
-
-        const chattingFileName = `${userInfo._id}-${userId}.json`;
-        const chattingFilePath = FileSystem.documentDirectory + chattingFileName;
-
-        const fileInfo = await FileSystem.getInfoAsync(chattingFilePath);
+        // Check if the file exists
+        const fileInfo = await FileSystem.getInfoAsync(friendsFilePath);
         if (!fileInfo.exists) {
-            console.log("Chat file does not exist, creating new one...");
-            await FileSystem.writeAsStringAsync(chattingFilePath, JSON.stringify({ messages: [] }, null, 2));
+            console.log("No saved friends found.");
+            return [];
         }
 
-        const data = await FileSystem.readAsStringAsync(chattingFilePath);
-        return data ? JSON.parse(data) : { messages: [] };
+        // Read the file contents
+        const jsonString = await FileSystem.readAsStringAsync(friendsFilePath);
+        const friends = JSON.parse(jsonString);
+
+        return friends;
     } catch (error) {
-        console.error("Error fetching chatting history:", error);
-        return { messages: [] };
+        console.error("Error reading saved friends:", error);
+        return [];
     }
 };

@@ -30,12 +30,13 @@ const sendMessage = async () => {
 export default function Chatting() {
   const route = useRoute();
   const { name, image, id } = route.params;
-
+  const { roomId, userId } = route.params;
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [chats, setChats] = useState([]);
-
+  console.log(roomId, userId)
+  const currentUserId = "currentUser";
 
   useEffect(() => {
     setLoading(true);
@@ -55,6 +56,9 @@ export default function Chatting() {
     LoadChattingOfUser();
 
   }, [id,chats]);
+  useEffect(()=>{
+     
+  },[])
 
   const messages = [
     { id: "1", text: "Hey! How are you?", sender: "me" },

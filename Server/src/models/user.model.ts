@@ -8,12 +8,15 @@ interface IUser extends Document {
   profilePic: string;
   about: string;
   friends: mongoose.Types.ObjectId[];
-  chats:mongoose.Types.ObjectId [];
-  contacts: mongoose.Types.ObjectId[];
   groups: mongoose.Types.ObjectId[];
   communities: mongoose.Types.ObjectId[];
   followedChannels: mongoose.Types.ObjectId[];
   lastSeen: Date;
+  lastMessage: {
+    text: string;
+    timestamp: Date;
+    seen: boolean;
+  };
   online: boolean;
   status: { media?: string; text?: string; timestamp?: Date }[];
   callLogs: mongoose.Types.ObjectId[];
@@ -29,29 +32,19 @@ const userSchema = new Schema<IUser>({
   about: { type: String, default: "Hey there! I am using WhatsApp." },
   friends: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   groups: [{ type: mongoose.Schema.Types.ObjectId, ref: "Group" }],
-  chats: [ { type: mongoose.Schema.Types.ObjectId, ref: "Chat" }],
   communities: [{ type: mongoose.Schema.Types.ObjectId, ref: "Community" }],
-  followedChannels: [{ type: mongoose.Schema.Types.ObjectId, ref: "Channel" }], // Channels the user follows
+  followedChannels: [{ type: mongoose.Schema.Types.ObjectId, ref: "Channel" }],
   lastSeen: { type: Date, default: Date.now },
   online: { type: Boolean, default: false },
   isVerified: { type: Boolean, default: false },
   status: [{ media: String, text: String, timestamp: Date }],
   callLogs: [{ type: mongoose.Schema.Types.ObjectId, ref: "Call" }],
+  lastMessage: {
+    text: { type: String, default: "" },
+    timestamp: { type: Date, default: Date.now },
+    seen: { type: Boolean, default: false },
+  },
 });
-
-// **Method to generate access token**
-userSchema.methods.generateAccessToken = function (): string {
-  return jwt.sign({ userId: this._id }, process.env.ACCESS_TOKEN_SECRET!, {
-    expiresIn: "40d",
-  });
-};
-
-// **Method to generate refresh token**
-userSchema.methods.generateRefreshToken = function (): string {
-  return jwt.sign({ userId: this._id }, process.env.REFRESH_TOKEN_SECRET!, {
-    expiresIn: "7d",
-  });
-};
 
 const User: Model<IUser> = mongoose.model<IUser>("User", userSchema);
 
