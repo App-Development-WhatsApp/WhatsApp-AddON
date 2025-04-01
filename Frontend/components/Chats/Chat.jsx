@@ -104,7 +104,7 @@ export default function Chat() {
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#00ff00" />
-          <Text style={styles.loadingText}>Fetching data...</Text>
+          <Text style={styles.loadingText}>Fetching Profiles...</Text>
         </View>
       ) : (
         <>

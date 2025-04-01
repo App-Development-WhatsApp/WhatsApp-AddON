@@ -104,7 +104,7 @@ export default function Chatting() {
                 item.sender === "me" ? styles.myMessage : styles.theirMessage,
               ]}
             >
-              <Text style={styles.messageText}>{item.text}</Text>
+              <Text style={styles.messageText}>{item.text} Hello buddy</Text>
             </View>
           )}
           keyExtractor={(item) => item.id}
