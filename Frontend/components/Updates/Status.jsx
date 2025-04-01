@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
@@ -6,11 +6,41 @@ import {
   FlatList,
   TouchableOpacity,
   Image,
-  ScrollView
+  ScrollView,
+  Alert,
+  Linking
 } from 'react-native';
+import { Camera } from 'expo-camera';
+import { useNavigation } from '@react-navigation/native';
 import { Users } from '../../lib/data';
 
-export default function Status() {
+export default function Status({ user }) {
+  const [hasPermission, setHasPermission] = useState(null);
+  const navigation = useNavigation(); // Fix navigation issue
+
+  useEffect(() => {
+    (async () => {
+      const { status } = await Camera.requestCameraPermissionsAsync();
+      setHasPermission(status === 'granted');
+    })();
+  }, []);
+
+  const handlePress = async () => {
+    const { status } = await Camera.requestCameraPermissionsAsync();
+    
+    if (status === 'granted') {
+      navigation.navigate('UploadStatus'); // Navigate if permission is granted
+    } else {
+      Alert.alert(
+        'Camera Permission Required',
+        'This app needs access to your camera. Please enable it in settings.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Open Settings', onPress: () => Linking.openSettings() }, // Redirect to settings
+        ]
+      );
+    }
+  };
 
   const Item = ({ name, image }) => (
     <TouchableOpacity style={styles.userCtn} activeOpacity={0.6}>
@@ -26,24 +56,24 @@ export default function Status() {
     <View style={styles.container}>
       <Text style={styles.title}>Status</Text>
 
-      <ScrollView 
-        horizontal 
-        contentContainerStyle={styles.statusCtn} 
+      <ScrollView
+        horizontal
+        contentContainerStyle={styles.statusCtn}
         showsHorizontalScrollIndicator={false}
       >
-        <View style={styles.myStatusCtn}>
+        <TouchableOpacity style={styles.myStatusCtn} onPress={handlePress} activeOpacity={0.6}>
           <View style={styles.imageWrapper}>
-            <Image 
-              style={styles.image} 
-              source={require('../../assets/images/samuel.jpg')} 
-              resizeMode='cover' 
+            <Image
+              style={styles.image}
+              source={require('../../assets/images/samuel.jpg')}
+              resizeMode='cover'
             />
             <TouchableOpacity style={styles.addIcon}>
               <Text style={styles.addText}>+</Text>
             </TouchableOpacity>
           </View>
           <Text style={styles.name} numberOfLines={1}>Add status</Text>
-        </View>
+        </TouchableOpacity>
 
         <FlatList
           data={Users}
@@ -117,7 +147,7 @@ const styles = StyleSheet.create({
   },
   userCtn: {
     alignItems: 'center',
-    marginRight: 12,
+    margin: 12,
   },
   name: {
     fontSize: 13,

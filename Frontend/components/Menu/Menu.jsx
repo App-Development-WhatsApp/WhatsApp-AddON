@@ -3,9 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, Modal, Pressable, Alert } fro
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import * as FileSystem from "expo-file-system";
-
-const userFilePath = FileSystem.documentDirectory + "userInfo.json";
-const friendsFilePath = FileSystem.documentDirectory + "friendsInfo.json"; // Cached friend list
+import { userFilePath,friendsFilePath } from '../../utils/chatStorage';
 
 export default function MenuBar() {
   const [menuVisible, setMenuVisible] = useState(false);
