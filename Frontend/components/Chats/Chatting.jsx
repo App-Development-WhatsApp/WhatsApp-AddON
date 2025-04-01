@@ -14,6 +14,9 @@ import {
 import { useRoute } from "@react-navigation/native";
 import { MaterialCommunityIcons, FontAwesome, Entypo, Ionicons } from "@expo/vector-icons";
 import EmojiPicker from "react-native-emoji-picker-staltz";
+import { API_URL } from "../../Services/AuthServices";
+import socket from '../../utils/socket'; // Adjust the import path as necessary
+
 
 export default function Chatting() {
   const route = useRoute();
@@ -21,6 +24,18 @@ export default function Chatting() {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [message, setMessage] = useState("");
   const [chats, setChats] = useState([]);
+  useEffect(()=>{
+    console.log("Socket connected")
+    socket.connect();
+    socket.on("message", (data) => {
+      setReceivedMessage(data);
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+
+  },[])
 
   const messages = [
     { id: "1", text: "Hey! How are you?", sender: "me" },

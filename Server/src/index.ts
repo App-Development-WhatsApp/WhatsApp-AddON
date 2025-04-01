@@ -12,8 +12,14 @@ const io = new Server(httpServer, {
   cors: {
     origin: "*", // Allow requests from any mobile client
     methods: ["GET", "POST"],
+    credentials: true, // Allow credentials (cookies, auth headers, etc.)
+
   },
   allowEIO3: true, // Ensures compatibility with React Native clients
+});
+
+io.on("connection", (socket) => {
+  console.log("User connected:", socket.id);
 });
 
 // Connect to the database before starting the server

@@ -48,7 +48,9 @@
     "react-native-screens": "~4.4.0",
     "react-native-tab-view": "^3.5.2",
     "react-native-web": "~0.19.6",
-    "rn-emoji-picker": "^1.1.6"
+    "rn-emoji-picker": "^1.1.6",
+    "socket.io-client": "^4.8.1",
+    "socket.io-parser": "^4.2.4"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0"

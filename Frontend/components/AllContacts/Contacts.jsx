@@ -25,7 +25,8 @@ export default function Contacts() {
 
     useEffect(() => {
         const fetchUsers = async () => {
-            setLoading(true);
+            console.log("hello")
+            // setLoading(true);
             try {
                 const res = await getAllUsers();
                 if (res.success) {
