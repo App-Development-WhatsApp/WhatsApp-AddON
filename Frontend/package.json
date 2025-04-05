@@ -9,6 +9,7 @@
     "web": "expo start --web"
   },
   "dependencies": {
+    "@config-plugins/react-native-webrtc": "^10.0.0",
     "@expo/metro-runtime": "~4.0.1",
     "@react-native-async-storage/async-storage": "^2.1.2",
     "@react-native-community/netinfo": "^11.4.1",
@@ -48,6 +49,7 @@
     "react-native-screens": "~4.4.0",
     "react-native-tab-view": "^3.5.2",
     "react-native-web": "~0.19.6",
+    "react-native-webrtc": "^124.0.5",
     "rn-emoji-picker": "^1.1.6",
     "socket.io-client": "^4.8.1",
     "socket.io-parser": "^4.2.4"
