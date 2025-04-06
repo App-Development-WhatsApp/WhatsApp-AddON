@@ -20,11 +20,12 @@ export default function UploadStatusScreen() {
       return;
     }
     const media = await MediaLibrary.getAssetsAsync({
-      mediaType: "photo",
-      first: 50,
+      mediaTypes: ImagePicker.MediaTypeOptions.All, // Supports both images and videos
+      allowsEditing: true,
+      quality: 1,
     });
 
-    if (media.assets.length > 0) {
+    if (!result.canceled && media.assets.length > 0) {
       setGalleryImages(media.assets);
     }
   };
@@ -41,7 +42,7 @@ export default function UploadStatusScreen() {
       const savedAsset = await MediaLibrary.createAssetAsync(result.assets[0].uri);
       await MediaLibrary.createAlbumAsync("WhatsApp Status", savedAsset, false);
 
-      navigation.navigate("UploadImageStatus", { imageUri: result.assets[0].uri });
+      navigation.navigate("UploadImageStatus", { imageUri: result.assets[0].uri,size:result.assets[0].size });
     }
   };
 
