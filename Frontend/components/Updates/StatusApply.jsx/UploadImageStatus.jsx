@@ -14,48 +14,7 @@ export default function UploadImageStatus({ route, navigation }) {
     const { selectedImages } = route.params;
     const [message, setMessage] = useState("");
     const [loading, setLoading] = useState(false);
-    const [status, setStatus] = useState([
-<<<<<<< HEAD
-        {
-            id: 1,
-            imageUri: imageUri,
-            emojis: [
-            ],
-            text: ['Feeling great today!'],
-            caption: 'Chilling with my shades.',
-        }
-=======
-        // {
-        //     id: 1,
-        //     mediaUri: imageUri,
-        //     mediasize: size,
-        //     mediaType: 'image', // 'image' or 'video'
-        //     emojis: [
-        //         {
-        //             id: 0,
-        //             emoji: '😀',
-        //             position: { x: 100, y: 100 },
-        //             scale: 1.5,
-        //         },
-        //         {
-        //             id: 1,
-        //             emoji: '😂',
-        //             position: { x: 150, y: 150 },
-        //             scale: 1.5,
-        //         }
-        //     ],
-        //     timing: [{
-        //         startTime: 0,
-        //         endTime: 30,
-        //     }],
-        //     autotrim: false,
-        //     audio: false,
-        //     segments: [],
-        //     text: ['Feeling great today!'],
-        //     caption: 'Chilling with my shades.',
-        // }
->>>>>>> 9c5f09fa28009fb38090c4efa25b7fb835508546
-    ]);
+    const [status, setStatus] = useState([]);
     const [selectedIndex, setSelectedIndex] = useState(0);
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
     const [isVideoPlaying, setIsVideoPlaying] = useState(false);
