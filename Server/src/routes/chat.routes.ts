@@ -1,52 +1,77 @@
 import { Router } from "express";
 import { verifyJWT } from "../middlewares/auth.middleware";
+import { upload } from "../middlewares/multer.middleware";
+import {
+  uploadChatJson,
+  getMergedChatMessages,
+} from "../controllers/chat.controller";
 
 const router = Router();
 
-router.route("/").post((req, res) => {
-    console.log("chat created")
+// ------------------ Chat Sync Routes ------------------
+
+// Upload local chat JSON file and merge on server
+// Client must send `chatFile` as the uploaded JSON file
+router.post("/upload", verifyJWT, upload.single("chatFile"), uploadChatJson);
+
+// Get merged & sorted messages for 2 users
+router.get("/:user1Id/:user2Id", verifyJWT, getMergedChatMessages);
+
+
+// ------------------ Example Routes (You can customize or remove these) ------------------
+
+router.post("/", (req, res) => {
+  console.log("chat created");
 });
 
-router.route("/:userId").get(verifyJWT, () => {
-    console.log("chat fetched")
-});
-router.route("/:chatId/messages").get(() => {
-    console.log("chat messages fetched")
-});
-router.route("/:chatId").delete(() => {
-    console.log("chat deleted")
+router.get("/:userId", verifyJWT, () => {
+  console.log("chat fetched");
 });
 
-// group
-router.route("/group").get(() => {
-    console.log("Group created")
-});
-router.route("/:groupId").get(() => {
-    console.log("Retrieves details of a specific group, including members.")
+router.get("/:chatId/messages", () => {
+  console.log("chat messages fetched");
 });
 
-router.route("/group/:chatId").get(verifyJWT, () => {
-    console.log("chat fetched")
-});
-router.route("/group/:chatId/leave").get(verifyJWT, () => {
-    console.log("chat fetched")
-});
-router.route("/:groupId/members").post(verifyJWT, () => {
-    console.log("Adds a new member to a group")
-});
-router.route("/:groupId/members/:memberId").post(verifyJWT, () => {
-    console.log("Removes a member from a group.")
+router.delete("/:chatId", () => {
+  console.log("chat deleted");
 });
 
 
+// ------------------ Group Chat Routes ------------------
 
-// Additional features
-
-router.route("/:chatId/messages/read").get(verifyJWT, () => {
-    console.log("Read messages")
+router.get("/group", () => {
+  console.log("Group created");
 });
 
-router.route("/:userId/unread").get(verifyJWT, () => {
-    console.log("Unread messages")
+router.get("/:groupId", () => {
+  console.log("Retrieves details of a specific group, including members.");
 });
+
+router.get("/group/:chatId", verifyJWT, () => {
+  console.log("chat fetched");
+});
+
+router.get("/group/:chatId/leave", verifyJWT, () => {
+  console.log("chat fetched");
+});
+
+router.post("/:groupId/members", verifyJWT, () => {
+  console.log("Adds a new member to a group");
+});
+
+router.post("/:groupId/members/:memberId", verifyJWT, () => {
+  console.log("Removes a member from a group.");
+});
+
+
+// ------------------ Misc Features ------------------
+
+router.get("/:chatId/messages/read", verifyJWT, () => {
+  console.log("Read messages");
+});
+
+router.get("/:userId/unread", verifyJWT, () => {
+  console.log("Unread messages");
+});
+
 export default router;

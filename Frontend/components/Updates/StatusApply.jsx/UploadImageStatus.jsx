@@ -15,8 +15,6 @@ export default function UploadImageStatus({ route, navigation }) {
             id: 1,
             imageUri: imageUri,
             emojis: [
-                { emoji: '😀', position: { x: 50, y: 50 }, scale: 1 },
-                { emoji: '😎', position: { x: 100, y: 100 }, scale: 1.5 },
             ],
             text: ['Feeling great today!'],
             caption: 'Chilling with my shades.',

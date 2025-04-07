@@ -1,87 +1,169 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   KeyboardAvoidingView,
   Platform,
   Text,
-  Modal,
   StyleSheet,
   Image,
   FlatList,
   TextInput,
   TouchableOpacity,
+  Modal,
+  Alert,
+  TouchableWithoutFeedback,
 } from "react-native";
-import { useRoute } from "@react-navigation/native";
-import { MaterialCommunityIcons, FontAwesome, Entypo, Ionicons } from "@expo/vector-icons";
+import { useNavigation, useRoute } from "@react-navigation/native";
+import {
+  MaterialCommunityIcons,
+  FontAwesome,
+  Entypo,
+  Ionicons,
+  Feather,
+} from "@expo/vector-icons";
 import EmojiPicker from "react-native-emoji-picker-staltz";
+import {
+  loadUserInfo,
+  getSharedChatFilePath,
+  readJsonFile,
+  sendMessageSocket,
+  socket,
+  clearChatFile,
+} from "../../utils/chatStorage";
 
 export default function Chatting() {
+  const navigation = useNavigation();
   const route = useRoute();
-  const { name, image, id } = route.params;
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const [message, setMessage] = useState("");
+  const { userId: friendId, name, image } = route.params;
   const [chats, setChats] = useState([]);
+  const [message, setMessage] = useState("");
+  const [currentUserId, setCurrentUserId] = useState(null);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const flatListRef = useRef(null);
 
-  const messages = [
-    { id: "1", text: "Hey! How are you?", sender: "me" },
-    { id: "2", text: "I am good! What about you?", sender: "them" },
-    { id: "3", text: "I am fine too. What are you doing?", sender: "me" },
-    { id: "4", text: "Just working on a project.", sender: "them" },
-  ];
+  useEffect(() => {
+    const setup = async () => {
+      const user = await loadUserInfo();
+      setCurrentUserId(user._id);
+      await loadChatHistory(user._id);
+    };
+
+    setup();
+
+    const messageListener = (msg) => {
+      if (
+        (msg.senderId === friendId && msg.receiverId === currentUserId) ||
+        (msg.senderId === currentUserId && msg.receiverId === friendId)
+      ) {
+        const formatted = {
+          ...msg,
+          id: Date.now().toString(),
+          sender: msg.senderId === currentUserId ? "me" : "them",
+        };
+        setChats((prev) => [...prev, formatted]);
+      }
+    };
+
+    socket.on("receiveMessage", messageListener);
+
+    return () => {
+      socket.off("receiveMessage", messageListener);
+    };
+  }, [friendId, currentUserId]);
+
+  const loadChatHistory = async (myId) => {
+    const filePath = await getSharedChatFilePath(friendId);
+    if (filePath) {
+      const data = await readJsonFile(filePath);
+      if (data && data.messages) {
+        const formatted = data.messages.map((msg) => ({
+          ...msg,
+          sender: msg.senderId === myId ? "me" : "them",
+        }));
+        setChats(formatted);
+      }
+    }
+  };
+
+  const handleClearChat = async () => {
+    Alert.alert("Clear Chat", "Are you sure you want to delete all messages?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Clear",
+        onPress: async () => {
+          try {
+            await clearChatFile(friendId);
+            setChats([]);
+          } catch (err) {
+            console.error("Error clearing chat:", err);
+          }
+        },
+      },
+    ]);
+  };
+
+  const handleSend = async () => {
+    if (!message.trim() || !currentUserId) return;
+
+    const newMsg = {
+      id: Date.now().toString(),
+      text: message,
+      sender: "me",
+      senderId: currentUserId,
+      receiverId: friendId,
+      timestamp: new Date().toISOString(),
+    };
+
+    setChats((prev) => [...prev, newMsg]);
+    await sendMessageSocket(friendId, message);
+    setMessage("");
+  };
 
   return (
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton}>
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color="white" />
         </TouchableOpacity>
         <View style={styles.userInfo}>
-          <Image source={image} style={styles.profileImage} />
+          <Image
+            source={image ? { uri: image } : require("../../assets/images/blank.jpeg")}
+            style={styles.profileImage}
+          />
           <Text style={styles.name}>{name}</Text>
         </View>
         <View style={styles.iconContainer}>
-          <TouchableOpacity>
-            <FontAwesome name="phone" size={22} color="white" />
-          </TouchableOpacity>
-          <TouchableOpacity>
-            <MaterialCommunityIcons name="video" size={26} color="white" />
-          </TouchableOpacity>
-          <TouchableOpacity>
-            <Entypo name="dots-three-vertical" size={22} color="white" />
+          <TouchableOpacity><FontAwesome name="phone" size={22} color="white" /></TouchableOpacity>
+          <TouchableOpacity><MaterialCommunityIcons name="video" size={26} color="white" /></TouchableOpacity>
+          <TouchableOpacity onPress={handleClearChat}>
+            <Feather name="trash-2" size={22} color="white" />
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* Messages */}
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={{ flex: 1 }}
-      >
+      {/* Chat list */}
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
         <FlatList
-          data={messages}
+          ref={flatListRef}
+          data={chats}
           renderItem={({ item }) => (
-            <View
-              style={[
-                styles.messageBubble,
-                item.sender === "me" ? styles.myMessage : styles.theirMessage,
-              ]}
-            >
+            <View style={[styles.messageBubble, item.sender === "me" ? styles.myMessage : styles.theirMessage]}>
               <Text style={styles.messageText}>{item.text}</Text>
             </View>
           )}
           keyExtractor={(item) => item.id}
-          style={styles.messagesContainer}
+          onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+          onLayout={() => flatListRef.current?.scrollToEnd({ animated: true })}
         />
       </KeyboardAvoidingView>
 
-      {/* Input Bar */}
+      {/* Input */}
       <View style={styles.inputContainer}>
         <View style={styles.inputWrapper}>
           <TouchableOpacity style={styles.inputIconLeft} onPress={() => setShowEmojiPicker(true)}>
             <MaterialCommunityIcons name="emoticon-happy" size={24} color="white" />
           </TouchableOpacity>
-
           <TextInput
             style={styles.input}
             placeholder="Type a message..."
@@ -89,20 +171,17 @@ export default function Chatting() {
             value={message}
             onChangeText={setMessage}
           />
-
-          <TouchableOpacity style={styles.inputIconRight}>
-            <MaterialCommunityIcons name="attachment" size={24} color="white" />
-          </TouchableOpacity>
         </View>
-
-        <TouchableOpacity style={styles.sendButton}>
+        <TouchableOpacity style={styles.sendButton} onPress={handleSend}>
           <MaterialCommunityIcons name="send" size={24} color="white" />
         </TouchableOpacity>
       </View>
 
-
       {/* Emoji Picker */}
       <Modal visible={showEmojiPicker} transparent={true} animationType="slide">
+        <TouchableWithoutFeedback onPress={() => setShowEmojiPicker(false)}>
+          <View style={styles.modalOverlay} />
+        </TouchableWithoutFeedback>
         <View style={styles.emojiPickerContainer}>
           <EmojiPicker
             onEmojiSelected={(emoji) => {
@@ -130,9 +209,14 @@ const styles = StyleSheet.create({
   userInfo: { flexDirection: "row", alignItems: "center", flex: 1 },
   profileImage: { width: 40, height: 40, borderRadius: 20, marginRight: 10 },
   name: { fontSize: 18, color: "white" },
-  iconContainer: { flexDirection: "row", gap: 15, alignItems: "center"},
-  messagesContainer: { flex: 1, padding: 10 },
-  messageBubble: { padding: 10, borderRadius: 10, marginVertical: 5, maxWidth: "75%" },
+  iconContainer: { flexDirection: "row", gap: 15, alignItems: "center" },
+  messageBubble: {
+    padding: 10,
+    borderRadius: 10,
+    marginVertical: 5,
+    maxWidth: "75%",
+    margin: 15,
+  },
   myMessage: { alignSelf: "flex-end", backgroundColor: "#005c4b" },
   theirMessage: { alignSelf: "flex-start", backgroundColor: "#202c33" },
   messageText: { color: "white" },
@@ -148,7 +232,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#233040",
-    paddingHorizontal: 40, // Space for icons
+    paddingHorizontal: 40,
     borderRadius: 20,
     position: "relative",
   },
@@ -159,14 +243,7 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 16,
   },
-  inputIconLeft: {
-    position: "absolute",
-    left: 10,
-  },
-  inputIconRight: {
-    position: "absolute",
-    right: 10,
-  },
+  inputIconLeft: { position: "absolute", left: 10 },
   sendButton: {
     marginLeft: 10,
     backgroundColor: "rgb(95, 252, 123)",
@@ -176,10 +253,12 @@ const styles = StyleSheet.create({
   emojiPickerContainer: {
     backgroundColor: "white",
     padding: 20,
-    position: "absolute",
-    bottom: 0,
     width: "100%",
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "transparent",
   },
 });

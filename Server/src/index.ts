@@ -21,25 +21,38 @@ connectDB()
   .then(() => {
     console.log("MongoDB Connected Successfully!");
 
+    // Handle socket connections
     io.on("connection", (socket) => {
       console.log("A user connected:", socket.id);
 
-      // Send a welcome message to the client
-      socket.emit("welcome", { message: "Welcome to the Socket.IO server" });
-
-      // Handle incoming messages
-      socket.on("message", (data) => {
-        console.log("Message from client:", data);
-        io.emit("broadcast", { message: `Broadcast message: ${data}` });
+      // Join a user's personal room
+      socket.on("join", (userId: string) => {
+        socket.join(userId);
+        console.log(`User with ID ${userId} joined room ${userId}`);
       });
 
-      // Handle client disconnect
+      // Handle message sending
+      socket.on("sendMessage", (message) => {
+        console.log("Received message:", message);
+
+        const { receiverId } = message;
+
+        if (receiverId) {
+          // Emit the message to the receiver's room
+          io.to(receiverId).emit("receiveMessage", message);
+          console.log(`Message sent to room: ${receiverId}`);
+        } else {
+          console.warn("No receiverId provided in message.");
+        }
+      });
+
+      // Handle user disconnect
       socket.on("disconnect", () => {
         console.log("User disconnected:", socket.id);
       });
     });
 
-    // Start the HTTP server after successful DB connection
+    // Start the server
     const PORT = env.PORT || 5000;
     httpServer.listen(PORT, () => {
       console.log(`Server is running on http://localhost:${PORT}`);

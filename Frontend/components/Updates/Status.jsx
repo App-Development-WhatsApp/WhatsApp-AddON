@@ -144,6 +144,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
+    top: -2.5
   },
   userCtn: {
     alignItems: 'center',
