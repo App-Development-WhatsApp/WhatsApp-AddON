@@ -26,6 +26,7 @@ import LoginScreen from "./components/auth/Login";
 import Contacts from "./components/AllContacts/Contacts";
 import UploadStatusScreen from "./components/Updates/UploadStatusScreen";
 import UploadImageStatus from "./components/Updates/StatusApply.jsx/UploadImageStatus";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 const Stack = createStackNavigator();
 
 export default function App() {
@@ -54,6 +55,8 @@ export default function App() {
 
   return (
     <NavigationContainer>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+
       <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Main" component={MyTabs} />
@@ -77,7 +80,9 @@ export default function App() {
         <Stack.Screen name="Invite" component={InviteFriendScreen} />
         <Stack.Screen name="AppUpdate" component={AppUpdateScreen} />
       </Stack.Navigator>
+    </GestureHandlerRootView>
     </NavigationContainer>
+
   );
 }
 

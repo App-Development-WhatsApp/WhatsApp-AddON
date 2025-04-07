@@ -35,6 +35,17 @@
       "eas": {
         "projectId": "415ec8ee-39e7-447a-8eb2-dfb3b591b7b0"
       }
-    }
+    },
+    "plugins": [
+      "@config-plugins/react-native-webrtc",
+      "expo-video",
+      [
+        "expo-video",
+        {
+          "supportsBackgroundPlayback": true,
+          "supportsPictureInPicture": true
+        }
+      ]
+    ]
   }
 }

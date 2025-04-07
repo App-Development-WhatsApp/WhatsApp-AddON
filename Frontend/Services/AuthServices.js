@@ -2,15 +2,28 @@ import axios from "axios";
 import * as FileSystem from "expo-file-system";
 import { saveUserInfo } from "../utils/chatStorage";
 import { userFilePath, friendsFilePath } from "../utils/chatStorage";
+<<<<<<< HEAD
+=======
+export const BACKEND_URL="http://192.168.30.25:5000"
+export const API_URL = `${BACKEND_URL}/api/v1/users`; // Replace with your backend URL
+>>>>>>> 9c5f09fa28009fb38090c4efa25b7fb835508546
 
 export const API_URL = "http://192.168.30.93:5000/api/v1/users"; // Your backend URL
 
 // -------------------- LOGIN --------------------
 export const login = async (formData) => {
+<<<<<<< HEAD
   try {
     const response = await axios.post(`${API_URL}/login`, formData, {
       headers: { "Content-Type": "application/json" },
     });
+=======
+    try {
+        console.log(formData)
+        const response = await axios.post(`${API_URL}/login`, formData, {
+            headers: { 'Content-Type': 'application/json' }
+        });
+>>>>>>> 9c5f09fa28009fb38090c4efa25b7fb835508546
 
     if (response.data.success && response.data.data?.user) {
       await saveUserInfo(response.data.data.user); // Save user to local storage

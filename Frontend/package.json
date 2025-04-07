@@ -9,8 +9,9 @@
     "web": "expo start --web"
   },
   "dependencies": {
+    "@config-plugins/react-native-webrtc": "^10.0.0",
     "@expo/metro-runtime": "~4.0.1",
-    "@react-native-async-storage/async-storage": "^2.1.2",
+    "@react-native-async-storage/async-storage": "1.23.1",
     "@react-native-community/netinfo": "^11.4.1",
     "@react-navigation/core": "^6.4.16",
     "@react-navigation/material-top-tabs": "^6.6.13",
@@ -20,7 +21,7 @@
     "emoji-mart": "^5.6.0",
     "emoji-mart-native": "^0.6.5-beta",
     "emoji-picker-react": "^4.12.2",
-    "expo": "^52.0.27",
+    "expo": "~52.0.42",
     "expo-av": "^15.0.2",
     "expo-camera": "^16.0.18",
     "expo-document-picker": "~13.0.3",
@@ -30,31 +31,48 @@
     "expo-image-picker": "^16.0.6",
     "expo-media-library": "^17.0.6",
     "expo-status-bar": "~2.0.1",
+    "expo-video": "~2.0.6",
     "expo-video-thumbnails": "^9.0.3",
+    "ffmpeg-kit-react-native": "^6.0.2",
     "i18next": "^24.2.3",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "react-i18next": "^15.4.1",
+<<<<<<< HEAD
     "react-native": "0.76.6",
     "react-native-blob-util": "^0.21.2",
+=======
+    "react-native": "0.76.9",
+>>>>>>> 9c5f09fa28009fb38090c4efa25b7fb835508546
     "react-native-emoji-picker": "^0.2.2",
     "react-native-emoji-picker-staltz": "^1.0.0",
     "react-native-fast-image": "^8.6.3",
     "react-native-fs": "^2.20.0",
-    "react-native-gesture-handler": "^2.12.0",
+    "react-native-gesture-handler": "~2.20.2",
     "react-native-localize": "^3.4.1",
     "react-native-mime-types": "^2.5.0",
     "react-native-pager-view": "6.5.1",
+<<<<<<< HEAD
     "react-native-pdf": "^6.7.7",
     "react-native-pdf-viewer": "^0.1.1",
     "react-native-reanimated": "^3.17.1",
+=======
+>>>>>>> 9c5f09fa28009fb38090c4efa25b7fb835508546
     "react-native-safe-area-context": "4.12.0",
     "react-native-screens": "~4.4.0",
     "react-native-tab-view": "^3.5.2",
+    "react-native-video-processing": "^1.7.2",
     "react-native-web": "~0.19.6",
+<<<<<<< HEAD
     "react-native-webview": "^13.12.5",
     "rn-emoji-picker": "^1.1.6",
     "socket.io-client": "^4.8.1"
+=======
+    "react-native-webrtc": "^124.0.5",
+    "rn-emoji-picker": "^1.1.6",
+    "socket.io-client": "^4.8.1",
+    "socket.io-parser": "^4.2.4"
+>>>>>>> 9c5f09fa28009fb38090c4efa25b7fb835508546
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",

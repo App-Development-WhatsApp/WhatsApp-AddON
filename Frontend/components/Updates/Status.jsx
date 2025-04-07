@@ -26,8 +26,10 @@ export default function Status({ user }) {
   }, []);
 
   const handlePress = async () => {
+    // console.log("errmonubj")
     const { status } = await Camera.requestCameraPermissionsAsync();
-    
+    // console.log(status)
+    setHasPermission(status === 'granted');
     if (status === 'granted') {
       navigation.navigate('UploadStatus'); // Navigate if permission is granted
     } else {

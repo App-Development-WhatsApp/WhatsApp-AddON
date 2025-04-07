@@ -22,6 +22,7 @@ import {
   Feather,
 } from "@expo/vector-icons";
 import EmojiPicker from "react-native-emoji-picker-staltz";
+<<<<<<< HEAD
 import {
   loadUserInfo,
   getSharedChatFilePath,
@@ -30,16 +31,36 @@ import {
   socket,
   clearChatFile,
 } from "../../utils/chatStorage";
+=======
+import { API_URL } from "../../Services/AuthServices";
+import socket from '../../utils/socket'; // Adjust the import path as necessary
+
+>>>>>>> 9c5f09fa28009fb38090c4efa25b7fb835508546
 
 export default function Chatting() {
   const navigation = useNavigation();
   const route = useRoute();
   const { userId: friendId, name, image } = route.params;
   const [chats, setChats] = useState([]);
+<<<<<<< HEAD
   const [message, setMessage] = useState("");
   const [currentUserId, setCurrentUserId] = useState(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const flatListRef = useRef(null);
+=======
+  useEffect(()=>{
+    console.log("Socket connected")
+    socket.connect();
+    socket.on("message", (data) => {
+      setReceivedMessage(data);
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+
+  },[])
+>>>>>>> 9c5f09fa28009fb38090c4efa25b7fb835508546
 
   useEffect(() => {
     const setup = async () => {
