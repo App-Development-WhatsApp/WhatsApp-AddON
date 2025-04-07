@@ -1,52 +1,49 @@
 import React, { useEffect, useState } from "react";
 import {
     View, TextInput, Image, StyleSheet, Dimensions,
-    TouchableOpacity, FlatList, Text, PanResponder, Switch,useRef 
+    TouchableOpacity, FlatList, Text, PanResponder, Switch, useRef
 } from "react-native";
-import {
-    PinchGestureHandler,
-    GestureHandlerRootView,
-} from 'react-native-gesture-handler';
 import { Video } from 'expo-av';
-import { Animated } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import Icon from "react-native-vector-icons/FontAwesome";
 import { MaterialCommunityIcons } from "react-native-vector-icons";
-import { VideoScreen } from "./VideoHandling/VideoScreen";
+import { segmentVideo } from "../../../utils/FFmpeg";
+
 
 export default function UploadImageStatus({ route, navigation }) {
-    const { imageUri,size } = route.params;
+    const { selectedImages } = route.params;
     const [message, setMessage] = useState("");
+    const [loading, setLoading] = useState(false);
     const [status, setStatus] = useState([
-        {
-            id: 1,
-            mediaUri: imageUri,
-            mediasize:size,
-            mediaType: 'image', // 'image' or 'video'
-            emojis: [
-                {
-                    id: 0,
-                    emoji: '😀',
-                    position: { x: 100, y: 100 },
-                    scale: 1.5,
-                },
-                {
-                    id: 1,
-                    emoji: '😂',
-                    position: { x: 150, y: 150 },
-                    scale: 1.5,
-                },
-                {
-                    id: 2,
-                    emoji: '😍',
-                    position: { x: 200, y: 200 },
-                    scale: 1.5,
-                }
-            ],
-            autotrim: false,
-            text: ['Feeling great today!'],
-            caption: 'Chilling with my shades.',
-        }
+        // {
+        //     id: 1,
+        //     mediaUri: imageUri,
+        //     mediasize: size,
+        //     mediaType: 'image', // 'image' or 'video'
+        //     emojis: [
+        //         {
+        //             id: 0,
+        //             emoji: '😀',
+        //             position: { x: 100, y: 100 },
+        //             scale: 1.5,
+        //         },
+        //         {
+        //             id: 1,
+        //             emoji: '😂',
+        //             position: { x: 150, y: 150 },
+        //             scale: 1.5,
+        //         }
+        //     ],
+        //     timing: [{
+        //         startTime: 0,
+        //         endTime: 30,
+        //     }],
+        //     autotrim: false,
+        //     audio: false,
+        //     segments: [],
+        //     text: ['Feeling great today!'],
+        //     caption: 'Chilling with my shades.',
+        // }
     ]);
     const [selectedIndex, setSelectedIndex] = useState(0);
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -140,6 +137,31 @@ export default function UploadImageStatus({ route, navigation }) {
     };
 
     useEffect(() => {
+        if (selectedImages && selectedImages.length > 0) {
+            const newStatuses = selectedImages.map((image, index) => ({
+                id: index + 1,
+                mediaUri: image.uri,
+                mediasize: image.size,
+                mediaType: image.mediaType || 'image',
+                emojis: [],
+                text: [],
+                segments: [],
+                caption: '',
+                timing: [
+                    {
+                        startTime: 0,
+                        endTime: 30,
+                    }
+                ],
+                autotrim: false,
+                audio: false,
+            }));
+            setStatus(newStatuses);
+        }
+    }, [selectedImages]);
+
+
+    useEffect(() => {
         if (status.length === 0) {
             navigation.navigate("UploadStatus");
         }
@@ -155,17 +177,22 @@ export default function UploadImageStatus({ route, navigation }) {
         });
 
         if (!result.canceled) {
-            setStatus([...status, {
-                id: status.length + 1,
-                mediaUri: result.assets[0].uri,
-                mediasize:result.assets[0].size,
-                mediaType: result.assets[0].type || " ", // Either 'image' or 'video'
-                emojis: [],
-                text: [],
-                caption: ''
-            }]);
-        }
-    };
+            if (result.assets[0].type.startsWith("video/")) {
+                const segments = await segmentVideo(result.assets[0]);
+                console.log("Video segments:", segments);
+                setStatus([...status, {
+                    id: status.length + 1,
+                    mediaUri: result.assets[0].uri,
+                    mediasize: result.assets[0].size,
+                    mediaType: result.assets[0].type || " ", // Either 'image' or 'video'
+                    emojis: [],
+                    text: [],
+                    segments: segments,
+                    caption: ''
+                }]);
+            }
+        };
+    }
     const handleRemoveImage = (index) => {
         const newStatus = status.filter((_, i) => i !== index);
         setStatus(newStatus);
@@ -175,6 +202,9 @@ export default function UploadImageStatus({ route, navigation }) {
         if (status.length === 0) {
             navigation.navigate("UploadStatus");
         }
+    };
+    const handlePlayPause = () => {
+        setIsVideoPlaying(!isVideoPlaying);
     };
     const handleEmojiSelect = (emoji) => {
         setShowEmojiPicker(false);
@@ -189,6 +219,7 @@ export default function UploadImageStatus({ route, navigation }) {
     };
     const handleEmojiRemove = () => {
         console.log("Removing emoji with ID:", selectedEmojiId);
+        console.log("Removing emoji:", selectedEmojiId);
         if (selectedEmojiId === null) return;
         const updatedStatus = [...status];
         updatedStatus[selectedIndex].emojis = updatedStatus[selectedIndex].emojis.filter(emoji => emoji.id !== selectedEmojiId);
@@ -215,69 +246,53 @@ export default function UploadImageStatus({ route, navigation }) {
             {status[selectedIndex].mediaType === 'image' ? (
                 <Image source={{ uri: status[selectedIndex].mediaUri }} style={styles.backgroundMedia} />
             ) : (
-                <View style={styles.videoContainer}>
-                     <VideoScreen VideoUri={status[selectedIndex].mediaUri} />
+                <View style={styles.backgroundMedia}>
+                    <ScrollView horizontal style={styles.segmentScroll}>
+                        {segments.map((uri, idx) => (
+                            <Video
+                                key={idx}
+                                source={{ uri }}
+                                style={styles.video}
+                                resizeMode="cover"
+                                useNativeControls={false}
+                                isLooping
+                                shouldPlay={false}
+                            />
+                        ))}
+                    </ScrollView>
+                    <Video
+                        source={{ uri: status[selectedIndex].mediaUri }}
+                        style={{ height: "100%" }}
+                        resizeMode="cover"
+                        shouldPlay={isVideoPlaying}
+                        isLooping
+                    />
+                    {!isVideoPlaying ? (
+                        <TouchableOpacity style={styles.playButton} onPress={handlePlayPause}>
+                            <Icon name="play" size={40} color="#fff" />
+                        </TouchableOpacity>
+                    ) : (
+                        <TouchableOpacity style={styles.playButton} onPress={handlePlayPause}>
+                            <Icon name="pause" size={40} color="#fff" />
+                        </TouchableOpacity>
+
+                    )}
                 </View>
             )}
-            {
-                status[selectedIndex].mediaType === 'image' ? (
-                    <View style={styles.iconRow}>
-                        <TouchableOpacity onPress={handleBack}>
-                            <Icon name="arrow-left" size={20} color="#fff" />
-                        </TouchableOpacity>
+            <View style={styles.iconRow}>
+                <TouchableOpacity onPress={handleBack}>
+                    <Icon name="arrow-left" size={20} color="#fff" />
+                </TouchableOpacity>
 
-                        <View style={styles.iconsLeft}>
-                            <TouchableOpacity><Icon name="music" size={20} color="#fff" /></TouchableOpacity>
-                            <TouchableOpacity><Icon name="crop" size={20} color="#fff" /></TouchableOpacity>
-                            <TouchableOpacity onPress={() => setShowEmojiPicker(true)}>
-                                <Icon name="smile-o" size={20} color="#fff" />
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                ) : (
-                    <View style={styles.iconRow}>
-                        {/* Show Video Trimming Slider */}
-                        <Video
-                            source={{ uri: status[selectedIndex].uri }}
-                            style={styles.video}
-                            paused={true}
-                            resizeMode="contain"
-                        />
+                <View style={styles.iconsLeft}>
+                    <TouchableOpacity><Icon name="music" size={20} color="#fff" /></TouchableOpacity>
+                    <TouchableOpacity><Icon name="crop" size={20} color="#fff" /></TouchableOpacity>
+                    <TouchableOpacity onPress={() => setShowEmojiPicker(true)}>
+                        <Icon name="smile-o" size={20} color="#fff" />
+                    </TouchableOpacity>
+                </View>
+            </View>
 
-                        <View style={styles.sliderContainer}>
-                            <Text style={styles.trimText}>Trim Start</Text>
-                            {/* <Slider
-                                style={styles.slider}
-                                minimumValue={0}
-                                maximumValue={duration}
-                                value={trimStart}
-                                onValueChange={(value) => setTrimStart(value)}
-                            />
-
-                            <Text style={styles.trimText}>Trim End</Text>
-                            <Slider
-                                style={styles.slider}
-                                minimumValue={trimStart}
-                                maximumValue={duration}
-                                value={trimEnd}
-                                onValueChange={(value) => setTrimEnd(value)}
-                            /> */}
-                        </View>
-                    </View>
-                )
-            }
-
-            {/* <TouchableOpacity onPress={handleBack}>
-                            <Icon name="arrow-left" size={20} color="#fff" />
-                        </TouchableOpacity>
-
-                        <View style={styles.iconsLeft}>
-                            <TouchableOpacity><Icon name="music" size={20} color="#fff" /></TouchableOpacity>
-                            <TouchableOpacity><Icon name="crop" size={20} color="#fff" /></TouchableOpacity>
-                            <TouchableOpacity onPress={() => setShowEmojiPicker(true)}>
-                                <Icon name="smile-o" size={20} color="#fff" />
-                            </TouchableOpacity>
-                        </View> */}
 
             <View>{renderEmojis()}</View>
 
@@ -337,14 +352,13 @@ const { width } = Dimensions.get("window");
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: "#000" },
-    backgroundMedia: { width: "100%", height: "70%", position: "absolute", top: "10%" },
-    videoContainer: { width: "100%", height: "100%", position: "relative" },
+    backgroundMedia: { width: "100%", height: "70%", position: "absolute", top: "10%", backgroundColor: "red" },
     playButton: { width: 60, height: 60, position: "absolute", display: 'flex', alignItems: 'center', justifyContent: 'center', top: "40%", left: "50%", transform: [{ translateX: -20 }, { translateY: -20 }], backgroundColor: "rgba(0,0,0,0.5)", padding: 10, borderRadius: 90 },
     imageList: { position: "absolute", bottom: "20%", left: "5%", right: "5%" },
     imageContainer: { marginHorizontal: 2, position: "relative" },
     smallMedia: { width: 60, height: 60, borderRadius: 10 },
     selectedImage: { borderColor: "green", borderWidth: 2, borderRadius: 12 },
-    iconRow: { position: "absolute", top: 30, left: "5%", right: "5%", flexDirection: "row", justifyContent: "space-between", width: "90%" },
+    iconRow: { position: "absolute", height: "5%", backgroundColor: "red", top: 30, flexDirection: "row", justifyContent: "space-between", width: "100%" },
     iconsLeft: { flexDirection: "row", justifyContent: "space-between", width: "60%" },
     inputWrapper: { position: "absolute", bottom: "10%", left: "5%", right: "5%", flexDirection: "row", alignItems: "center", backgroundColor: "rgba(0, 0, 0, 0.5)", padding: 5, borderRadius: 50, marginTop: 10, borderBlockColor: "green", borderWidth: 2 },
     messageInput: { flex: 1, color: "#fff", fontSize: 16, padding: 10 },
