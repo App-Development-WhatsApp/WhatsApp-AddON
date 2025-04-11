@@ -68,7 +68,7 @@ export default function UploadStatusScreen() {
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       quality: 1,
     });
-    console.log("Selected images:", result.assets);
+    console.log("Selected images:", result.assets); 
 
     // if (!result.canceled) {
     //   result.assets.forEach((asset) => {

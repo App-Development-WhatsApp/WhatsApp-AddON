@@ -28,6 +28,7 @@ import UploadStatusScreen from "./components/Updates/UploadStatusScreen";
 import UploadImageStatus from "./components/Updates/StatusApply.jsx/UploadImageStatus";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 const Stack = createStackNavigator();
+import { SocketProvider } from "./context/SocketContext";
 
 export default function App() {
   const [loading, setLoading] = useState(true);
@@ -54,35 +55,36 @@ export default function App() {
   }
 
   return (
-    <NavigationContainer>
-      <GestureHandlerRootView style={{ flex: 1 }}>
+    <SocketProvider>
+      <NavigationContainer>
+        <GestureHandlerRootView style={{ flex: 1 }}>
 
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="Login" component={LoginScreen} />
-        <Stack.Screen name="Main" component={MyTabs} />
-        <Stack.Screen name="Settings" component={SettingsScreen} />
-        <Stack.Screen name="Status" component={StatusScreen} />
-        <Stack.Screen name="VideoPlayer" component={VideoPlayer} />
-        <Stack.Screen name="History" component={History} />
-        <Stack.Screen name="Chatting" component={Chatting} />
-        <Stack.Screen name="Contacts" component={Contacts} />
-        <Stack.Screen name="Account" component={AccountScreen} />
-        <Stack.Screen name="Privacy" component={PrivacyScreen} />
-        <Stack.Screen name="UploadStatus" component={UploadStatusScreen} />
-        <Stack.Screen name="UploadImageStatus" component={UploadImageStatus} options={{ title: "Edit Status" }} />
-        <Stack.Screen name="Avatar" component={AvatarScreen} />
-        <Stack.Screen name="List" component={ListScreen} />
-        <Stack.Screen name="ChatSetting" component={ChatScreen} />
-        <Stack.Screen name="Notification" component={NotificationScreen} />
-        <Stack.Screen name="Storage" component={StorageAndDataScreen} />
-        <Stack.Screen name="AppLanguage" component={AppLanguageScreen} />
-        <Stack.Screen name="help" component={HelpScreen} />
-        <Stack.Screen name="Invite" component={InviteFriendScreen} />
-        <Stack.Screen name="AppUpdate" component={AppUpdateScreen} />
-      </Stack.Navigator>
-    </GestureHandlerRootView>
-    </NavigationContainer>
-
+          <Stack.Navigator screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="Login" component={LoginScreen} />
+            <Stack.Screen name="Main" component={MyTabs} />
+            <Stack.Screen name="Settings" component={SettingsScreen} />
+            <Stack.Screen name="Status" component={StatusScreen} />
+            <Stack.Screen name="VideoPlayer" component={VideoPlayer} />
+            <Stack.Screen name="History" component={History} />
+            <Stack.Screen name="Chatting" component={Chatting} />
+            <Stack.Screen name="Contacts" component={Contacts} />
+            <Stack.Screen name="Account" component={AccountScreen} />
+            <Stack.Screen name="Privacy" component={PrivacyScreen} />
+            <Stack.Screen name="UploadStatus" component={UploadStatusScreen} />
+            <Stack.Screen name="UploadImageStatus" component={UploadImageStatus} options={{ title: "Edit Status" }} />
+            <Stack.Screen name="Avatar" component={AvatarScreen} />
+            <Stack.Screen name="List" component={ListScreen} />
+            <Stack.Screen name="ChatSetting" component={ChatScreen} />
+            <Stack.Screen name="Notification" component={NotificationScreen} />
+            <Stack.Screen name="Storage" component={StorageAndDataScreen} />
+            <Stack.Screen name="AppLanguage" component={AppLanguageScreen} />
+            <Stack.Screen name="help" component={HelpScreen} />
+            <Stack.Screen name="Invite" component={InviteFriendScreen} />
+            <Stack.Screen name="AppUpdate" component={AppUpdateScreen} />
+          </Stack.Navigator>
+        </GestureHandlerRootView>
+      </NavigationContainer>
+    </SocketProvider>
   );
 }
 

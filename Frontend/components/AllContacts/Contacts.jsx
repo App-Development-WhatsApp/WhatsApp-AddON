@@ -14,19 +14,20 @@ import { useNavigation } from '@react-navigation/native';
 import Header from '../Chats/Header';
 import Search from '../Chats/Search';
 import { getAllUsers } from '../../Services/AuthServices';
+import { useNetInfo } from '@react-native-community/netinfo';
 
 const friendsFilePath = FileSystem.documentDirectory + "friendsInfo.json"; // Correct file path for storing friends
 
 export default function Contacts() {
     const navigation = useNavigation();
+    const netInfo = useNetInfo();
     const [loading, setLoading] = useState(false);
     const [users, setUsers] = useState([]);
-    const [friends, setFriends] = useState([]);
 
     useEffect(() => {
+        console.log(netInfo.isConnected)
         const fetchUsers = async () => {
-            console.log("hello")
-            // setLoading(true);
+            setLoading(true);
             try {
                 const res = await getAllUsers();
                 if (res.success) {
@@ -39,21 +40,10 @@ export default function Contacts() {
             }
         };
 
-        const loadFriends = async () => {
-            try {
-                const fileExists = await FileSystem.getInfoAsync(friendsFilePath);
-                if (fileExists.exists) {
-                    const storedData = await FileSystem.readAsStringAsync(friendsFilePath);
-                    setFriends(JSON.parse(storedData) || []);
-                }
-            } catch (error) {
-                console.error("Error loading friends:", error);
-            }
-        };
-
-        fetchUsers();
-        loadFriends();
-    }, []);
+        if (netInfo.isConnected) {
+            fetchUsers();
+        }
+    }, [netInfo.isConnected]);
 
     const handleChatPress = async (id, name, image) => {
         try {

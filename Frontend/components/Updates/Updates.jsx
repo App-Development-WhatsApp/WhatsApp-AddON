@@ -21,7 +21,7 @@ export default function Updates() {
     const loadUser = async () => {
       try {
         const userInfo = await loadUserInfo();
-        console.log("User Info:", userInfo);
+        // console.log("User Info:", userInfo);
         setUser(userInfo)
       } catch (error) {
         console.error("Error loading user info:", error);

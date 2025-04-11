@@ -2,63 +2,92 @@ import { app } from "./app";
 import { connectDB } from "./db/config";
 import { env } from "./utils/Env";
 import http from "http";
-import { Server } from "socket.io";
+import { Server, Socket } from "socket.io";
 
-// Create an HTTP server
+// Create HTTP server
 const httpServer = http.createServer(app);
 
-// Initialize Socket.IO
+// Define message type
+interface Message {
+  senderId: string;
+  receiverId: string;
+  content: string;
+  timestamp?: Date;
+  [key: string]: any;
+}
+
+// Placeholder functions (implement these)
+const getPendingMessages = async (userId: string): Promise<Message[]> => {
+  // your DB fetch logic
+  return [];
+};
+
+const markMessagesAsDelivered = async (userId: string): Promise<void> => {
+  // your DB update logic
+};
+
+// Initialize Socket.IO server
 const io = new Server(httpServer, {
   cors: {
-    origin: "*", // Allow requests from any mobile client
+    origin: "*",
     methods: ["GET", "POST"],
-    credentials: true, // Allow credentials (cookies, auth headers, etc.)
-
+    credentials: true,
   },
-  allowEIO3: true, // Ensures compatibility with React Native clients
+  allowEIO3: true,
 });
 
-io.on("connection", (socket) => {
+// Handle connections
+io.on("connection", (socket: Socket) => {
   console.log("User connected:", socket.id);
+
+  // User visits chat page
+  socket.on("User_come_to_chat_page", async ({ userId }: { userId: string }) => {
+    socket.join(userId);
+    console.log(`User with ID ${userId} joined room ${userId}`);
+
+    const pendingMessages = await getPendingMessages(userId);
+
+    if (pendingMessages?.length) {
+      console.log(`Sending ${pendingMessages.length} pending messages to user ${userId}`);
+
+      for (const message of pendingMessages) {
+        io.to(userId).emit("receivePendingMessage", message);
+        console.log("Pending message sent:", message);
+      }
+
+      await markMessagesAsDelivered(userId);
+    }
+  });
+
+  // Join room
+  socket.on("join", (userId: string) => {
+    socket.join(userId);
+    console.log(`User with ID ${userId} joined room ${userId}`);
+  });
+
+  // Send message
+  socket.on("sendMessage", (message: Message) => {
+    console.log("Received message:", message);
+
+    const { receiverId } = message;
+
+    if (receiverId) {
+      io.to(receiverId).emit("receiveMessage", message);
+      console.log(`Message sent to room: ${receiverId}`);
+    } else {
+      console.warn("No receiverId provided in message.");
+    }
+  });
+
+  socket.on("disconnect", () => {
+    console.log("User disconnected:", socket.id);
+  });
 });
 
-// Connect to the database before starting the server
+// Start server after DB connection
 connectDB()
   .then(() => {
     console.log("MongoDB Connected Successfully!");
-
-    // Handle socket connections
-    io.on("connection", (socket) => {
-      console.log("A user connected:", socket.id);
-
-      // Join a user's personal room
-      socket.on("join", (userId: string) => {
-        socket.join(userId);
-        console.log(`User with ID ${userId} joined room ${userId}`);
-      });
-
-      // Handle message sending
-      socket.on("sendMessage", (message) => {
-        console.log("Received message:", message);
-
-        const { receiverId } = message;
-
-        if (receiverId) {
-          // Emit the message to the receiver's room
-          io.to(receiverId).emit("receiveMessage", message);
-          console.log(`Message sent to room: ${receiverId}`);
-        } else {
-          console.warn("No receiverId provided in message.");
-        }
-      });
-
-      // Handle user disconnect
-      socket.on("disconnect", () => {
-        console.log("User disconnected:", socket.id);
-      });
-    });
-
-    // Start the server
     const PORT = env.PORT || 5000;
     httpServer.listen(PORT, () => {
       console.log(`Server is running on http://localhost:${PORT}`);

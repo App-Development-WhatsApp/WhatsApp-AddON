@@ -22,7 +22,6 @@ import {
   Feather,
 } from "@expo/vector-icons";
 import EmojiPicker from "react-native-emoji-picker-staltz";
-<<<<<<< HEAD
 import {
   loadUserInfo,
   getSharedChatFilePath,
@@ -31,44 +30,25 @@ import {
   socket,
   clearChatFile,
 } from "../../utils/chatStorage";
-=======
 import { API_URL } from "../../Services/AuthServices";
-import socket from '../../utils/socket'; // Adjust the import path as necessary
-
->>>>>>> 9c5f09fa28009fb38090c4efa25b7fb835508546
+import { loadChatHistory } from "../../utils/chatStorage";
 
 export default function Chatting() {
   const navigation = useNavigation();
   const route = useRoute();
   const { userId: friendId, name, image } = route.params;
   const [chats, setChats] = useState([]);
-<<<<<<< HEAD
   const [message, setMessage] = useState("");
   const [currentUserId, setCurrentUserId] = useState(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const flatListRef = useRef(null);
-=======
-  useEffect(()=>{
-    console.log("Socket connected")
-    socket.connect();
-    socket.on("message", (data) => {
-      setReceivedMessage(data);
-    });
-
-    return () => {
-      socket.disconnect();
-    };
-
-  },[])
->>>>>>> 9c5f09fa28009fb38090c4efa25b7fb835508546
-
   useEffect(() => {
     const setup = async () => {
       const user = await loadUserInfo();
       setCurrentUserId(user._id);
-      await loadChatHistory(user._id);
+      const chatsdata=await loadChatHistory(user._id);
+      setChats(chatsdata);
     };
-
     setup();
 
     const messageListener = (msg) => {
@@ -92,19 +72,8 @@ export default function Chatting() {
     };
   }, [friendId, currentUserId]);
 
-  const loadChatHistory = async (myId) => {
-    const filePath = await getSharedChatFilePath(friendId);
-    if (filePath) {
-      const data = await readJsonFile(filePath);
-      if (data && data.messages) {
-        const formatted = data.messages.map((msg) => ({
-          ...msg,
-          sender: msg.senderId === myId ? "me" : "them",
-        }));
-        setChats(formatted);
-      }
-    }
-  };
+
+
 
   const handleClearChat = async () => {
     Alert.alert("Clear Chat", "Are you sure you want to delete all messages?", [
@@ -128,8 +97,10 @@ export default function Chatting() {
 
     const newMsg = {
       id: Date.now().toString(),
-      text: message,
-      sender: "me",
+      type: messageType, // 'text' | 'photo' | 'video' | 'document'
+      content: messageContent, // text string or file URI
+      fileName: fileName || null, // optional, for files
+      mimeType: mimeType || null, // optional, for previewing files (e.g., image/jpeg)
       senderId: currentUserId,
       receiverId: friendId,
       timestamp: new Date().toISOString(),
@@ -169,7 +140,7 @@ export default function Chatting() {
           ref={flatListRef}
           data={chats}
           renderItem={({ item }) => (
-            <View style={[styles.messageBubble, item.sender === "me" ? styles.myMessage : styles.theirMessage]}>
+            <View style={[styles.messageBubble, item.senderId === currentUserId ? styles.myMessage : styles.theirMessage]}>
               <Text style={styles.messageText}>{item.text}</Text>
             </View>
           )}

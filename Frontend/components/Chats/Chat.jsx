@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState,useContext } from 'react';
 import {
   StyleSheet,
   Text,
@@ -14,12 +14,13 @@ import * as FileSystem from 'expo-file-system';
 import { useNavigation } from '@react-navigation/native';
 import { useNetInfo } from "@react-native-community/netinfo";
 import { MaterialCommunityIcons, Feather, Entypo } from '@expo/vector-icons';
-import { getProfile } from '../../Services/AuthServices';
 import Menu from '../Menu/Menu';
-
-const friendsFilePath = FileSystem.documentDirectory + "friendsInfo.json";
+import { friendsFilePath, setReceivedMessage } from '../../utils/chatStorage';
+import { SocketContext } from '../../context/SocketContext';
 
 export default function Chat() {
+  const socket = useContext(SocketContext);
+  
   const netInfo = useNetInfo();
   const navigation = useNavigation();
   const [loading, setLoading] = useState(true);
@@ -28,18 +29,12 @@ export default function Chat() {
 
   useEffect(() => {
     const loadUserAndFriends = async () => {
+      setLoading(true)
       try {
         const fileExists = await FileSystem.getInfoAsync(friendsFilePath);
         if (fileExists.exists) {
           const storedData = await FileSystem.readAsStringAsync(friendsFilePath);
           setFriends(JSON.parse(storedData) || []);
-        }
-
-        if (netInfo.isConnected) {
-          const profileData = await getProfile();
-          if (profileData) {
-            setUserData(profileData);
-          }
         }
       } catch (error) {
         console.error("Error loading data:", error);
@@ -47,31 +42,13 @@ export default function Chat() {
         setLoading(false);
       }
     };
-
     loadUserAndFriends();
-  }, [netInfo.isConnected]);
+
+  }, [netInfo.isConnected,fileExists.exists]);
 
   const handleChatPress = async (id, name, image) => {
     navigation.navigate('Chatting', { userId: id, name, image });
 
-    try {
-      let storedFriends = [];
-      const fileExists = await FileSystem.getInfoAsync(friendsFilePath);
-      if (fileExists.exists) {
-        const fileData = await FileSystem.readAsStringAsync(friendsFilePath);
-        storedFriends = JSON.parse(fileData) || [];
-      }
-
-      if (!storedFriends.some(friend => friend.userId === id)) {
-        const newUser = { userId: id, userName: name, image, message: "Say hi!", time: "Now" };
-        storedFriends.push(newUser);
-
-        await FileSystem.writeAsStringAsync(friendsFilePath, JSON.stringify(storedFriends, null, 2));
-        setFriends(storedFriends);
-      }
-    } catch (error) {
-      console.error("Error updating friends list:", error);
-    }
   };
 
   const Item = ({ userId, userName, image, message, time }) => {

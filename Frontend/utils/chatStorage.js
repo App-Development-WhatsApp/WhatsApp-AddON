@@ -276,3 +276,125 @@ export const uploadChatToServer = async (otherUserId) => {
     console.error("Error uploading chat:", error);
   }
 };
+
+// --------------------------------------------------------------------------
+
+export const setReceivedMessage = async (data) => {
+  try {
+    const { message, senderId, timestamp, type } = data;
+    const currentUser = await loadUserInfo();
+
+    if (!currentUser || !currentUser._id) {
+      console.error("User not found");
+      return;
+    }
+
+    const fileUri = await getSharedChatFilePath(senderId);
+
+    const dataFromFile = await readJsonFile(fileUri);
+
+    const newMessage = {
+      id: Date.now().toString(),
+      senderId: senderId,
+      receiverId: currentUser._id,
+      text: message,
+      timestamp: timestamp || new Date().toISOString(),
+      type: type
+    };
+
+    // Insert in correct timestamp order
+    insertMessageInOrder(dataFromFile.messages, newMessage);
+
+    await writeJsonFile(fileUri, dataFromFile);
+    await updateFriendsFile(senderId, message, newMessage.timestamp, isCurrentChatOpen);
+    console.log("Message saved successfully:", newMessage);
+
+    return newMessage;
+
+  } catch (error) {
+    console.error("Error uploading chat:", error);
+  }
+};
+function insertMessageInOrder(messages, newMessage) {
+  let left = 0;
+  let right = messages.length;
+
+  while (left < right) {
+    const mid = Math.floor((left + right) / 2);
+    if (new Date(messages[mid].timestamp) < new Date(newMessage.timestamp)) {
+      left = mid + 1;
+    } else {
+      right = mid;
+    }
+  }
+
+  messages.splice(left, 0, newMessage);
+}
+const updateFriendsFile = async (senderId, message, timestamp, isCurrentChatOpen) => {
+
+  let friends = [];
+  const fileInfo = await FileSystem.getInfoAsync(friendsFilePath);
+
+  if (fileInfo.exists) {
+    const data = await FileSystem.readAsStringAsync(friendsFilePath);
+    friends = JSON.parse(data);
+  }
+
+  const index = friends.findIndex(f => f.userId === senderId);
+  const updatedTime = timestamp || new Date().toISOString();
+
+  if (index !== -1) {
+    const friend = friends[index];
+    friend.lastMessage = message;
+    friend.timestamp = updatedTime;
+
+    if (!isCurrentChatOpen) {
+      friend.unreadCount = (friend.unreadCount || 0) + 1;
+    }
+
+    friends.splice(index, 1); // remove old
+    // Will be re-inserted below
+  } else {
+    friends.push({
+      userId: senderId,
+      lastMessage: message,
+      timestamp: updatedTime,
+      unreadCount: isCurrentChatOpen ? 0 : 1
+    });
+  }
+
+  // Insert sorted by timestamp (descending)
+  const newFriendEntry = {
+    userId: senderId,
+    lastMessage: message,
+    timestamp: updatedTime,
+    unreadCount: isCurrentChatOpen ? 0 : 1
+  };
+
+  let inserted = false;
+  for (let i = 0; i < friends.length; i++) {
+    if (new Date(friends[i].timestamp) < new Date(updatedTime)) {
+      friends.splice(i, 0, newFriendEntry);
+      inserted = true;
+      break;
+    }
+  }
+  if (!inserted) friends.push(newFriendEntry);
+
+  await FileSystem.writeAsStringAsync(friendsFilePath, JSON.stringify(friends, null, 2));
+};
+// --------------------------------------------------------------------------
+
+
+
+export const loadChatHistory = async (friendId) => {
+  try {
+    const fileUri = await getSharedChatFilePath(friendId);
+    const dataFromFile = await readJsonFile(fileUri);
+    return dataFromFile;
+  } catch (error) {
+    console.error("Error loading chat history:", error);
+    return [];
+  }
+};
+
