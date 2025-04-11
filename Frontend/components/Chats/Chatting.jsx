@@ -30,24 +30,28 @@ import {
   socket,
   clearChatFile,
 } from "../../utils/chatStorage";
-import { API_URL } from "../../Services/AuthServices";
 import { loadChatHistory } from "../../utils/chatStorage";
 
 export default function Chatting() {
   const navigation = useNavigation();
   const route = useRoute();
-  const { userId: friendId, name, image } = route.params;
+  const { userId: friendId, name, image, roomId } = route.params;
   const [chats, setChats] = useState([]);
   const [message, setMessage] = useState("");
   const [currentUserId, setCurrentUserId] = useState(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const flatListRef = useRef(null);
+
   useEffect(() => {
     const setup = async () => {
-      const user = await loadUserInfo();
-      setCurrentUserId(user._id);
-      const chatsdata=await loadChatHistory(user._id);
-      setChats(chatsdata);
+      try {
+        const user = await loadUserInfo();
+        setCurrentUserId(user._id);
+        const chatsdata = await loadChatHistory(user._id, friendId);
+        setChats(chatsdata);
+      } catch (err) {
+        console.error("Error loading user or chats:", err);
+      }
     };
     setup();
 
@@ -72,7 +76,30 @@ export default function Chatting() {
     };
   }, [friendId, currentUserId]);
 
+  const handleSend = async () => {
+    if (!message.trim() || !currentUserId) return;
 
+    try {
+      const newMsg = {
+        id: Date.now().toString(),
+        type: "text",
+        content: message.trim(),
+        senderId: currentUserId,
+        receiverId: friendId,
+        timestamp: new Date().toISOString(),
+      };
+
+      setChats((prev) => [...prev, { ...newMsg, sender: "me" }]);
+      await sendMessageSocket(friendId, newMsg);
+      setMessage("");
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    } catch (err) {
+      console.error("Error sending message:", err);
+      Alert.alert("Failed", "Unable to send message. Please try again.");
+    }
+  };
 
 
   const handleClearChat = async () => {
@@ -92,24 +119,6 @@ export default function Chatting() {
     ]);
   };
 
-  const handleSend = async () => {
-    if (!message.trim() || !currentUserId) return;
-
-    const newMsg = {
-      id: Date.now().toString(),
-      type: messageType, // 'text' | 'photo' | 'video' | 'document'
-      content: messageContent, // text string or file URI
-      fileName: fileName || null, // optional, for files
-      mimeType: mimeType || null, // optional, for previewing files (e.g., image/jpeg)
-      senderId: currentUserId,
-      receiverId: friendId,
-      timestamp: new Date().toISOString(),
-    };
-
-    setChats((prev) => [...prev, newMsg]);
-    await sendMessageSocket(friendId, message);
-    setMessage("");
-  };
 
   return (
     <View style={styles.container}>

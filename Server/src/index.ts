@@ -26,6 +26,9 @@ const markMessagesAsDelivered = async (userId: string): Promise<void> => {
   // your DB update logic
 };
 
+const userSocketMap = new Map<string, string>(); // userId -> socketId
+const SocketUserMap = new Map<string, string>(); // userId -> socketId
+
 // Initialize Socket.IO server
 const io = new Server(httpServer, {
   cors: {
@@ -42,7 +45,7 @@ io.on("connection", (socket: Socket) => {
 
   // User visits chat page
   socket.on("User_come_to_chat_page", async ({ userId }: { userId: string }) => {
-    socket.join(userId);
+    // socket.join(userId);
     console.log(`User with ID ${userId} joined room ${userId}`);
 
     const pendingMessages = await getPendingMessages(userId);
@@ -60,10 +63,10 @@ io.on("connection", (socket: Socket) => {
   });
 
   // Join room
-  socket.on("join", (userId: string) => {
-    socket.join(userId);
-    console.log(`User with ID ${userId} joined room ${userId}`);
-  });
+  // socket.on("join", (userId: string) => {
+  //   socket.join(userId);
+  //   console.log(`User with ID ${userId} joined room ${userId}`);
+  // });
 
   // Send message
   socket.on("sendMessage", (message: Message) => {
@@ -84,7 +87,6 @@ io.on("connection", (socket: Socket) => {
   });
 });
 
-// Start server after DB connection
 connectDB()
   .then(() => {
     console.log("MongoDB Connected Successfully!");

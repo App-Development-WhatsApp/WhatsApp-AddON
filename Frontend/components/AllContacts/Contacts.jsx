@@ -15,18 +15,20 @@ import Header from '../Chats/Header';
 import Search from '../Chats/Search';
 import { getAllUsers } from '../../Services/AuthServices';
 import { useNetInfo } from '@react-native-community/netinfo';
-
-const friendsFilePath = FileSystem.documentDirectory + "friendsInfo.json"; // Correct file path for storing friends
+import { loadUserInfo } from '../../utils/chatStorage';
 
 export default function Contacts() {
     const navigation = useNavigation();
     const netInfo = useNetInfo();
     const [loading, setLoading] = useState(false);
     const [users, setUsers] = useState([]);
+    const [currUser, setcurrUser] = useState(null);
 
     useEffect(() => {
         console.log(netInfo.isConnected)
         const fetchUsers = async () => {
+            const userData = await loadUserInfo();
+            setcurrUser(userData);
             setLoading(true);
             try {
                 const res = await getAllUsers();
@@ -47,29 +49,22 @@ export default function Contacts() {
 
     const handleChatPress = async (id, name, image) => {
         try {
-            let storedFriends = [];
+            const generateRoomId = (uid1, uid2) => {
+                return ['' + uid1, '' + uid2].sort().join('_');
+            };
 
-            const fileExists = await FileSystem.getInfoAsync(friendsFilePath);
-            if (fileExists.exists) {
-                const fileData = await FileSystem.readAsStringAsync(friendsFilePath);
-                storedFriends = JSON.parse(fileData) || [];
-            }
-
-            // Check if user is already in the friends list
-            if (!storedFriends.some(user => user.userId === id)) {
-                const newUser = { userId: id, userName: name, image, message: "Say hi!", time: "Now" };
-                storedFriends.push(newUser);
-
-                await FileSystem.writeAsStringAsync(friendsFilePath, JSON.stringify(storedFriends, null, 2));
-                setFriends(storedFriends); // Update local state
-            }
-
-            navigation.navigate('Chatting', { userId: id, name, image });
+            navigation.navigate('Chatting', {
+                userId: id,
+                name,
+                image,
+                roomId: generateRoomId(currUser?._id, id)
+            });
 
         } catch (error) {
             console.error("Error adding user to friends:", error);
         }
     };
+
 
     const Item = ({ userId, userName, image }) => {
         const validImage = image ? { uri: image } : require('../../assets/images/blank.jpeg');

@@ -58,10 +58,9 @@ export default function App() {
     <SocketProvider>
       <NavigationContainer>
         <GestureHandlerRootView style={{ flex: 1 }}>
-
           <Stack.Navigator screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="Login" component={LoginScreen} />
             <Stack.Screen name="Main" component={MyTabs} />
+            <Stack.Screen name="Login" component={LoginScreen} />
             <Stack.Screen name="Settings" component={SettingsScreen} />
             <Stack.Screen name="Status" component={StatusScreen} />
             <Stack.Screen name="VideoPlayer" component={VideoPlayer} />

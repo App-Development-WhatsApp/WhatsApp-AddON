@@ -22,8 +22,10 @@ const LoginScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    // navigation.replace("Main");
     const checkAuth = async () => {
       const userInfo = await loadUserInfo();
+      // console.log(userInfo, "userInfo---");
       if (userInfo) {
         navigation.replace("Main");
       }
@@ -83,6 +85,7 @@ const LoginScreen = ({ navigation }) => {
 
     const result = await login(formData);
     setLoading(false);
+    console.log(result,"9807---");
 
     if (result.success) {
       navigation.replace("Main");

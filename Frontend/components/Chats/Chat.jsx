@@ -15,7 +15,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useNetInfo } from "@react-native-community/netinfo";
 import { MaterialCommunityIcons, Feather, Entypo } from '@expo/vector-icons';
 import Menu from '../Menu/Menu';
-import { friendsFilePath, setReceivedMessage } from '../../utils/chatStorage';
+import { friendsFilePath, loadUserInfo, setReceivedMessage } from '../../utils/chatStorage';
 import { SocketContext } from '../../context/SocketContext';
 
 export default function Chat() {
@@ -28,6 +28,7 @@ export default function Chat() {
   const [friends, setFriends] = useState([]);
 
   useEffect(() => {
+    setUserData(loadUserInfo());
     const loadUserAndFriends = async () => {
       setLoading(true)
       try {
@@ -44,7 +45,7 @@ export default function Chat() {
     };
     loadUserAndFriends();
 
-  }, [netInfo.isConnected,fileExists.exists]);
+  }, [netInfo.isConnected]);
 
   const handleChatPress = async (id, name, image) => {
     navigation.navigate('Chatting', { userId: id, name, image });
@@ -103,7 +104,7 @@ export default function Chat() {
           data={friends}
           renderItem={({ item }) => <Item {...item} />}
           keyExtractor={(item) => String(item.userId)}
-          ListEmptyComponent={<Text style={styles.emptyText}>No recent chats</Text>}
+          ListEmptyComponent={<Text style={styles.emptyText}>Start Chatting</Text>}
         />
       )}
 

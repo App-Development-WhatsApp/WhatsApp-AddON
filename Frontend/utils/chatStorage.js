@@ -1,8 +1,9 @@
 import * as FileSystem from "expo-file-system";
 import io from "socket.io-client";
+import { BACKEND_URL } from "../Services/AuthServices";
 
-const API_URL = "http://192.168.30.93:5000/api/v1/users";
-const SOCKET_SERVER_URL = "http://192.168.30.93:5000";
+const API_URL = `${BACKEND_URL}/api/v1/users`;
+const SOCKET_SERVER_URL = BACKEND_URL;
 
 // File paths
 export const userFilePath = FileSystem.documentDirectory + "userInfo.json";
@@ -23,44 +24,8 @@ export const initSocketConnection = async () => {
   }
 };
 
-// Socket listener
-socket.on("receiveMessage", async (message) => {
-  const currentUser = await loadUserInfo();
-  const otherUserId =
-    message.senderId === currentUser._id ? message.receiverId : message.senderId;
-
-  console.log("receiveMessage - currentUser:", currentUser._id);
-  console.log("receiveMessage - saving message with otherUserId:", otherUserId);
-
-  await addMessage(otherUserId, message); // ✅ now saves in correct shared file
-});
 
 
-// --------- File Utilities ---------- //
-
-export const getSharedChatFilePath = async (otherUserId) => {
-  try {
-    const currentUser = await loadUserInfo();
-    if (!currentUser || !currentUser._id) {
-      console.error("User info not found or invalid.");
-      return null;
-    }
-
-    const sortedIds = [currentUser._id, otherUserId].sort();
-    const fileName = `${sortedIds[0]}-${sortedIds[1]}.json`;
-    const filePath = FileSystem.documentDirectory + fileName;
-
-    const fileInfo = await FileSystem.getInfoAsync(filePath);
-    if (!fileInfo.exists) {
-      await FileSystem.writeAsStringAsync(filePath, JSON.stringify({ messages: [] }));
-    }
-
-    return filePath;
-  } catch (error) {
-    console.error("Error creating chat file path:", error);
-    return null;
-  }
-};
 
 export const readJsonFile = async (filePath) => {
   try {
@@ -98,24 +63,6 @@ export const clearChatFile = async (otherUserId) => {
 
 // --------- Message Handlers ---------- //
 
-export const addMessage = async (otherUserId, message) => {
-  const filePath = await getSharedChatFilePath(otherUserId);
-  if (!filePath) return null;
-
-  const data = await readJsonFile(filePath);
-
-  const newMessage = {
-    id: Date.now().toString(),
-    senderId: message.senderId,
-    receiverId: message.receiverId,
-    text: message.text,
-    timestamp: message.timestamp || new Date().toISOString(),
-  };
-
-  data.messages.push(newMessage);
-  await writeJsonFile(filePath, data);
-  return newMessage;
-};
 
 export const updateMessage = async (otherUserId, messageId, newText) => {
   const filePath = await getSharedChatFilePath(otherUserId);
@@ -156,6 +103,8 @@ export const saveUserInfo = async (user) => {
 
 export const loadUserInfo = async () => {
   try {
+    // const fileInfo = await FileSystem.getInfoAsync(userFilePath);
+    // console.log(fileInfo, "userFilePath");
     const data = await FileSystem.readAsStringAsync(userFilePath);
     return data ? JSON.parse(data) : null;
   } catch (error) {
@@ -387,9 +336,9 @@ const updateFriendsFile = async (senderId, message, timestamp, isCurrentChatOpen
 
 
 
-export const loadChatHistory = async (friendId) => {
+export const loadChatHistory = async (roomId) => {
   try {
-    const fileUri = await getSharedChatFilePath(friendId);
+    const fileUri = `${FileSystem.documentDirectory}${roomId}.json`;
     const dataFromFile = await readJsonFile(fileUri);
     return dataFromFile;
   } catch (error) {
