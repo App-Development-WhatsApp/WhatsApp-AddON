@@ -31,6 +31,9 @@ import {
   clearChatFile,
 } from "../../utils/chatStorage";
 import { loadChatHistory } from "../../utils/chatStorage";
+import * as DocumentPicker from "expo-document-picker";
+import { Video } from "expo-av";
+import * as ImagePicker from 'expo-image-picker';
 
 export default function Chatting() {
   const navigation = useNavigation();
@@ -41,13 +44,17 @@ export default function Chatting() {
   const [currentUserId, setCurrentUserId] = useState(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const flatListRef = useRef(null);
+  const [selectedFiles, setSelectedFiles] = useState([]);
+  const [oneTimeView, setOneTimeView] = useState(false);
+
 
   useEffect(() => {
     const setup = async () => {
       try {
         const user = await loadUserInfo();
         setCurrentUserId(user._id);
-        const chatsdata = await loadChatHistory(user._id, friendId);
+        const chatsdata = await loadChatHistory(roomId);
+        // console.log(chatsdata)
         setChats(chatsdata);
       } catch (err) {
         console.error("Error loading user or chats:", err);
@@ -77,24 +84,27 @@ export default function Chatting() {
   }, [friendId, currentUserId]);
 
   const handleSend = async () => {
-    if (!message.trim() || !currentUserId) return;
+    if (!message.trim() && selectedFiles.length === 0) return;
 
     try {
       const newMsg = {
         id: Date.now().toString(),
-        type: "text",
-        content: message.trim(),
         senderId: currentUserId,
         receiverId: friendId,
         timestamp: new Date().toISOString(),
+        ...(message.trim() && { text: message.trim() }),
+        ...(selectedFiles.length > 0 && { files: selectedFiles }),
       };
+      console.log(newMsg)
 
-      setChats((prev) => [...prev, { ...newMsg, sender: "me" }]);
-      await sendMessageSocket(friendId, newMsg);
-      setMessage("");
-      setTimeout(() => {
-        flatListRef.current?.scrollToEnd({ animated: true });
-      }, 100);
+      // setChats((prev) => [...prev, { ...newMsg, sender: currentUserId }]);
+      // await sendMessageSocket(roomId, friendId, newMsg);
+
+      // setMessage("");
+      // setSelectedFiles([]);
+      // setTimeout(() => {
+      //   flatListRef.current?.scrollToEnd({ animated: true });
+      // }, 100);
     } catch (err) {
       console.error("Error sending message:", err);
       Alert.alert("Failed", "Unable to send message. Please try again.");
@@ -117,6 +127,46 @@ export default function Chatting() {
         },
       },
     ]);
+  };
+
+  const pickFiles = async () => {
+    setSelectedFiles([]); // Clears previous selected files
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.All, // Supports both images and videos
+        multiple: true
+      });
+
+      if (!result.canceled) {
+        // Directly update the state with the newly selected files
+        setSelectedFiles((prev) => {
+          const updatedFiles = [...prev, ...result.assets];
+          // console.log(updatedFiles); // Log the updated list here
+          return updatedFiles;
+        });
+        // handleSend();
+      }
+    } catch (error) {
+      console.error("Error selecting files", error);
+    }
+  };
+
+
+  const renderFilePreview = (file) => {
+    if (file.mimeType?.startsWith('image')) {
+      return <Image source={{ uri: file.uri }} style={styles.previewImage} />;
+    }
+    if (file.mimeType?.startsWith('video')) {
+      return (
+        <Video
+          source={{ uri: file.uri }}
+          style={styles.previewImage}
+          useNativeControls
+          resizeMode="cover"
+        />
+      );
+    }
+    return <Text style={{ color: 'white' }}>📎 {file.name}</Text>;
   };
 
 
@@ -159,7 +209,6 @@ export default function Chatting() {
         />
       </KeyboardAvoidingView>
 
-      {/* Input */}
       <View style={styles.inputContainer}>
         <View style={styles.inputWrapper}>
           <TouchableOpacity style={styles.inputIconLeft} onPress={() => setShowEmojiPicker(true)}>
@@ -172,6 +221,9 @@ export default function Chatting() {
             value={message}
             onChangeText={setMessage}
           />
+          <TouchableOpacity onPress={pickFiles} style={styles.attachButton}>
+            <Text style={{ fontSize: 18 }}>📎</Text>
+          </TouchableOpacity>
         </View>
         <TouchableOpacity style={styles.sendButton} onPress={handleSend}>
           <MaterialCommunityIcons name="send" size={24} color="white" />
@@ -227,6 +279,11 @@ const styles = StyleSheet.create({
     padding: 10,
     borderTopWidth: 1,
     borderTopColor: "#1f3b3e",
+    // height: 200,
+    position: "absolute",
+    bottom: 0,
+    right: 0,
+    left: 0,
   },
   inputWrapper: {
     flex: 1,

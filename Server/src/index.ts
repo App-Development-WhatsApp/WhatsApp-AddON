@@ -72,14 +72,13 @@ io.on("connection", (socket: Socket) => {
   socket.on("sendMessage", (message: Message) => {
     console.log("Received message:", message);
 
-    const { receiverId } = message;
 
-    if (receiverId) {
-      io.to(receiverId).emit("receiveMessage", message);
-      console.log(`Message sent to room: ${receiverId}`);
-    } else {
-      console.warn("No receiverId provided in message.");
-    }
+    const { roomId } = message;
+
+    // Emit the message to all clients in the room
+    socket.to(roomId).emit("receiveMessage", message);
+    // Optional: Save message to DB here
+    console.log("Broadcasting message to room", roomId, message);
   });
 
   socket.on("disconnect", () => {

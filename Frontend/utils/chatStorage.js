@@ -161,20 +161,27 @@ export const getSavedFriends = async () => {
 
 // --------- Emit Message ---------- //
 
-export const sendMessageSocket = async (receiverId, messageText) => {
-  const currentUser = await loadUserInfo();
-  if (!currentUser || !currentUser._id) return;
 
-  const message = {
-    senderId: currentUser._id,
-    receiverId,
-    text: messageText,
-    timestamp: new Date().toISOString(),
-  };
 
-  socket.emit("sendMessage", message); // Send via socket
-  await addMessage(receiverId, message); // Also save locally
+export const sendMessageSocket = async (roomId, receiverId, messageObj) => {
+  try {
+    if (!socket || !socket.connected) {
+      console.warn("Socket not connected. Cannot send message.");
+      return;
+    }
+
+    socket.emit("sendMessage", {
+      roomId,
+      receiverId,
+      ...messageObj,
+    });
+
+    console.log("Message sent via socket:", { roomId, receiverId, ...messageObj });
+  } catch (error) {
+    console.error("Error sending message via socket:", error);
+  }
 };
+
 
 
 export const uploadChatToServer = async (otherUserId) => {
