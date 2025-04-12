@@ -77,8 +77,8 @@ io.on("connection", (socket: Socket) => {
 
     // Emit the message to all clients in the room
     socket.to(roomId).emit("receiveMessage", message);
-    // Optional: Save message to DB here
-    console.log("Broadcasting message to room", roomId, message);
+    // // Optional: Save message to DB here
+    // console.log("Broadcasting message to room", roomId, message);
   });
 
   socket.on("disconnect", () => {
