@@ -176,7 +176,7 @@ export const sendMessageSocket = async (roomId, receiverId, messageObj) => {
       ...messageObj,
     });
 
-    console.log("Message sent via socket:", { roomId, receiverId, ...messageObj });
+    // console.log("Message sent via socket:", { roomId, receiverId, ...messageObj });
   } catch (error) {
     console.error("Error sending message via socket:", error);
   }
@@ -347,7 +347,8 @@ export const loadChatHistory = async (roomId) => {
   try {
     const fileUri = `${FileSystem.documentDirectory}${roomId}.json`;
     const dataFromFile = await readJsonFile(fileUri);
-    return dataFromFile;
+    console.log("dat fron files", dataFromFile);
+    return dataFromFile.messages || [];
   } catch (error) {
     console.error("Error loading chat history:", error);
     return [];

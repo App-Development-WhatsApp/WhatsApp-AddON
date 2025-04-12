@@ -34,6 +34,7 @@ import { loadChatHistory } from "../../utils/chatStorage";
 import * as DocumentPicker from "expo-document-picker";
 import { Video } from "expo-av";
 import * as ImagePicker from 'expo-image-picker';
+import { renderMessage } from "./RenderMessages";
 
 export default function Chatting() {
   const navigation = useNavigation();
@@ -85,6 +86,22 @@ export default function Chatting() {
 
   const handleSend = async () => {
     if (!message.trim() && selectedFiles.length === 0) return;
+    // {
+    //   "files": [
+    //     {
+    //       "mimeType": "audio/mp4",
+    //       "name": "Aam Jahe Munde",
+    //       "size": 8635289,
+    //       "uri": "file:///data/user/0/host.exp.exponent/cache/DocumentPicker/2d462dac-d905-4c0d-9541-6ee10e67b8ca."
+    //     }
+    //   ],
+    //   "id": "1744443619183",
+    //   "receiverId": "67e19d1129eab4d3a046d4be",
+    //   "senderId": "67f9106f930e4bf4b19249a9",
+    //   "text": "Fufufu",
+    //   "timestamp": "2025-04-12T07:40:19.184Z",
+    //   "oneTimeView": true
+    // }
 
     try {
       const newMsg = {
@@ -95,16 +112,17 @@ export default function Chatting() {
         ...(message.trim() && { text: message.trim() }),
         ...(selectedFiles.length > 0 && { files: selectedFiles }),
       };
-      console.log(newMsg)
+      // console.log(newMsg)
 
-      // setChats((prev) => [...prev, { ...newMsg, sender: currentUserId }]);
-      // await sendMessageSocket(roomId, friendId, newMsg);
+      setChats((prev) => [...prev, { ...newMsg }]);
+      await sendMessageSocket(roomId, friendId, newMsg);
 
-      // setMessage("");
-      // setSelectedFiles([]);
-      // setTimeout(() => {
-      //   flatListRef.current?.scrollToEnd({ animated: true });
-      // }, 100);
+      setMessage("");
+      setSelectedFiles([]);
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+      console.log("kjhgufytd->", chats)
     } catch (err) {
       console.error("Error sending message:", err);
       Alert.alert("Failed", "Unable to send message. Please try again.");
@@ -144,17 +162,34 @@ export default function Chatting() {
           // console.log(updatedFiles); // Log the updated list here
           return updatedFiles;
         });
-        // handleSend();
       }
     } catch (error) {
       console.error("Error selecting files", error);
     }
   };
+  // const handleOneTimeView = (messageId, file) => {
+  //   navigation.navigate("OneTimeViewer", {
+  //     file,
+  //     messageId,
+  //     onViewed: () => {
+  //       // Remove the one-time message from chat list
+  //       setChats(prev => prev.filter(msg => msg.id !== messageId));
+  //     }
+  //   });
+  // };
 
 
   const renderFilePreview = (file) => {
+    console.log(file)
     if (file.mimeType?.startsWith('image')) {
-      return <Image source={{ uri: file.uri }} style={styles.previewImage} />;
+      return (
+        <Image
+          source={{ uri: file.uri }}
+          style={styles.previewImage}
+          resizeMode="cover"
+        />
+        // <Text style={{ color: 'white' }}>📷 {file.uri}</Text>
+      );
     }
     if (file.mimeType?.startsWith('video')) {
       return (
@@ -194,22 +229,36 @@ export default function Chatting() {
       </View>
 
       {/* Chat list */}
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
+      <KeyboardAvoidingView
+        style={{ flex: 0.91 }}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        keyboardVerticalOffset={80}
+      >
         <FlatList
-          ref={flatListRef}
           data={chats}
-          renderItem={({ item }) => (
-            <View style={[styles.messageBubble, item.senderId === currentUserId ? styles.myMessage : styles.theirMessage]}>
-              <Text style={styles.messageText}>{item.text}</Text>
-            </View>
-          )}
           keyExtractor={(item) => item.id}
-          onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
-          onLayout={() => flatListRef.current?.scrollToEnd({ animated: true })}
+          renderItem={({ item }) => renderMessage({ item, currentUserId })}
+          contentContainerStyle={styles.chatList}
         />
       </KeyboardAvoidingView>
 
-      <View style={styles.inputContainer}>
+      {/* Preview of Files */}
+      {selectedFiles.length > 0 && (
+        <View style={{ flexDirection: "row", padding: 2, backgroundColor: "#202c33", position: 'absolute', bottom: showEmojiPicker ? 430 : 70, borderRadius: 12 }}>
+          {selectedFiles.map((file, index) => (
+            <View key={index} style={{ marginRight: 1 }}>
+              {renderFilePreview(file)}
+              <TouchableOpacity style={styles.removeIcon} onPress={() => setSelectedFiles((prev) => prev.filter((_, i) => i !== index))}>
+                <MaterialCommunityIcons name="close-circle" size={20} color="red" />
+              </TouchableOpacity>
+            </View>
+          ))}
+        </View>
+      )}
+
+      {/* Input Container */}
+
+      <View style={{ ...styles.inputContainer, bottom: showEmojiPicker ? 365 : 0 }}>
         <View style={styles.inputWrapper}>
           <TouchableOpacity style={styles.inputIconLeft} onPress={() => setShowEmojiPicker(true)}>
             <MaterialCommunityIcons name="emoticon-happy" size={24} color="white" />
@@ -279,9 +328,8 @@ const styles = StyleSheet.create({
     padding: 10,
     borderTopWidth: 1,
     borderTopColor: "#1f3b3e",
-    // height: 200,
+    backgroundColor: "#202c33",
     position: "absolute",
-    bottom: 0,
     right: 0,
     left: 0,
   },
@@ -319,4 +367,16 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "transparent",
   },
+  previewImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 10,
+    marginRight: 0,
+    backgroundColor: 'black',
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  removeIcon: { position: "absolute", top: -8, right: -8, borderRadius: 20, padding: 2, zIndex: 10 },
+
 });

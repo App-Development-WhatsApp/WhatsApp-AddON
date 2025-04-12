@@ -29,6 +29,7 @@ import UploadImageStatus from "./components/Updates/StatusApply.jsx/UploadImageS
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 const Stack = createStackNavigator();
 import { SocketProvider } from "./context/SocketContext";
+import OneTimeViewer from "./components/Chats/OneTimeView";
 
 export default function App() {
   const [loading, setLoading] = useState(true);
@@ -70,6 +71,7 @@ export default function App() {
             <Stack.Screen name="Account" component={AccountScreen} />
             <Stack.Screen name="Privacy" component={PrivacyScreen} />
             <Stack.Screen name="UploadStatus" component={UploadStatusScreen} />
+            {/* <Stack.Screen name="OneTimeViewer" component={OneTimeViewer} /> */}
             <Stack.Screen name="UploadImageStatus" component={UploadImageStatus} options={{ title: "Edit Status" }} />
             <Stack.Screen name="Avatar" component={AvatarScreen} />
             <Stack.Screen name="List" component={ListScreen} />
