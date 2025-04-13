@@ -33,6 +33,7 @@ export default function SettingsScreen({ navigation }) {
         <SettingsItem icon={<Feather name="help-circle" size={22} color="white" />} text="Help" subText="Help center, contact us, privacy policy" onPress={() => navigation.navigate('help')}/>
         <SettingsItem icon={<Feather name="user-plus" size={22} color="white" />} text="Invite a friend" onPress={() => navigation.navigate('Invite')}/>
         <SettingsItem icon={<Feather name="refresh-ccw" size={22} color="white" />} text="App updates" onPress={() => navigation.navigate('AppUpdate')}/>
+        <SettingsItem icon={<Feather name="refresh-ccw" size={22} color="white" />} text="Video Editing" onPress={() => navigation.navigate('Video')}/>
 
         <View style={{ marginTop: 20, paddingHorizontal: 15 }}>
           <Text style={{ color: '#888', fontSize: 14, marginBottom: 10 }}>Also from Meta</Text>

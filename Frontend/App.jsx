@@ -26,6 +26,7 @@ import LoginScreen from "./components/auth/Login";
 import Contacts from "./components/AllContacts/Contacts";
 import UploadStatusScreen from "./components/Updates/UploadStatusScreen";
 import UploadImageStatus from "./components/Updates/StatusApply.jsx/UploadImageStatus";
+import VideoEditing from "./components/setting/VideoEditing";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 const Stack = createStackNavigator();
 import { SocketProvider } from "./context/SocketContext";
@@ -81,6 +82,7 @@ export default function App() {
             <Stack.Screen name="AppLanguage" component={AppLanguageScreen} />
             <Stack.Screen name="help" component={HelpScreen} />
             <Stack.Screen name="Invite" component={InviteFriendScreen} />
+            <Stack.Screen name="Video" component={VideoEditing} />
             <Stack.Screen name="AppUpdate" component={AppUpdateScreen} />
           </Stack.Navigator>
         </GestureHandlerRootView>
