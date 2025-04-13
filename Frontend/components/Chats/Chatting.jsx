@@ -35,9 +35,13 @@ import * as DocumentPicker from "expo-document-picker";
 import { Video } from "expo-av";
 import * as ImagePicker from 'expo-image-picker';
 import { renderMessage } from "./RenderMessages";
+import SocketServices from "../../Services/SocketServices";
+import { useNetInfo } from "@react-native-community/netinfo";
+
 
 export default function Chatting() {
   const navigation = useNavigation();
+  const netInfo = useNetInfo();
   const route = useRoute();
   const { userId: friendId, name, image, roomId } = route.params;
   const [chats, setChats] = useState([]);
@@ -47,7 +51,6 @@ export default function Chatting() {
   const flatListRef = useRef(null);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [oneTimeView, setOneTimeView] = useState(false);
-
 
   useEffect(() => {
     const setup = async () => {
@@ -62,27 +65,34 @@ export default function Chatting() {
       }
     };
     setup();
+  }, [])
 
+  useEffect(() => {
     const messageListener = (msg) => {
+      const isCurrentUserSender = msg.senderId === currentUserId;
+      const isCurrentUserReceiver = msg.receiverId === currentUserId;
+
+      // Check if the message involves the current user and the friend
       if (
-        (msg.senderId === friendId && msg.receiverId === currentUserId) ||
-        (msg.senderId === currentUserId && msg.receiverId === friendId)
+        (msg.senderId === friendId && isCurrentUserReceiver) ||
+        (isCurrentUserSender && msg.receiverId === friendId)
       ) {
         const formatted = {
           ...msg,
-          id: Date.now().toString(),
-          sender: msg.senderId === currentUserId ? "me" : "them",
+          id: Date.now().toString(), // create unique id
+          sender: isCurrentUserSender ? "me" : "them",
         };
+
         setChats((prev) => [...prev, formatted]);
       }
     };
 
-    socket.on("receiveMessage", messageListener);
+    SocketServices.registerReceiveMessage(messageListener);
 
     return () => {
-      socket.off("receiveMessage", messageListener);
+      SocketServices.unregisterReceiveMessage(messageListener);
     };
-  }, [friendId, currentUserId]);
+  }, [friendId, netInfo.isConnected,currentUserId]);
 
   const handleSend = async () => {
     if (!message.trim() && selectedFiles.length === 0) return;
@@ -112,7 +122,6 @@ export default function Chatting() {
         ...(message.trim() && { text: message.trim() }),
         ...(selectedFiles.length > 0 && { files: selectedFiles }),
       };
-      // console.log(newMsg)
 
       setChats((prev) => [...prev, { ...newMsg }]);
       await sendMessageSocket(roomId, friendId, newMsg);

@@ -4,32 +4,35 @@ import { env } from "./utils/Env";
 import http from "http";
 import { Server, Socket } from "socket.io";
 
-// Create HTTP server
-const httpServer = http.createServer(app);
-
-// Define message type
+// Message type
 interface Message {
   senderId: string;
   receiverId: string;
   content: string;
   timestamp?: Date;
+  roomId?: string;
   [key: string]: any;
 }
 
-// Placeholder functions (implement these)
+// Placeholder functions (replace with your DB logic)
 const getPendingMessages = async (userId: string): Promise<Message[]> => {
-  // your DB fetch logic
+  // Fetch undelivered messages from DB
   return [];
 };
 
-const markMessagesAsDelivered = async (userId: string): Promise<void> => {
-  // your DB update logic
+const markMessagesAsDelivered = async (messages: Message[]): Promise<void> => {
+  // Mark these messages as delivered in DB
 };
 
-const userSocketMap = new Map<string, string>(); // userId -> socketId
-const SocketUserMap = new Map<string, string>(); // userId -> socketId
+const saveMessageToDB = async (message: Message): Promise<void> => {
+  // Save message to DB
+};
 
-// Initialize Socket.IO server
+// Maps to track online users (userId -> Set of socketIds)
+const onlineUsers = new Map<string, Set<string>>();
+
+// Create HTTP server and Socket.IO
+const httpServer = http.createServer(app);
 const io = new Server(httpServer, {
   cors: {
     origin: "*",
@@ -39,53 +42,72 @@ const io = new Server(httpServer, {
   allowEIO3: true,
 });
 
-// Handle connections
+// Extend Socket with userId
+declare module "socket.io" {
+  interface Socket {
+    userId?: string;
+  }
+}
+
 io.on("connection", (socket: Socket) => {
-  console.log("User connected:", socket.id);
+  console.log("New socket connected:", socket.id);
 
-  // User visits chat page
-  socket.on("User_come_to_chat_page", async ({ userId }: { userId: string }) => {
-    // socket.join(userId);
-    console.log(`User with ID ${userId} joined room ${userId}`);
+  // On user connected
+  socket.on("user-connected", async (userId: string) => {
+    // socket.userId = userId;
 
+    if (!onlineUsers.has(userId)) {
+      onlineUsers.set(userId, new Set());
+    }
+    onlineUsers.get(userId)!.add(socket.id);
+
+    console.log(`${userId} connected with socket ${socket.id}`);
+
+    // Deliver pending messages
     const pendingMessages = await getPendingMessages(userId);
+    pendingMessages.forEach((msg) => {
+      io.to(socket.id).emit("receiveMessage", msg);
+    });
 
-    if (pendingMessages?.length) {
-      console.log(`Sending ${pendingMessages.length} pending messages to user ${userId}`);
+    await markMessagesAsDelivered(pendingMessages);
+  });
 
-      for (const message of pendingMessages) {
-        io.to(userId).emit("receivePendingMessage", message);
-        console.log("Pending message sent:", message);
-      }
+  // Handle incoming message
+  socket.on("sendMessage", async (message: Message) => {
+    console.log("Received message:", message);
+    message.timestamp = new Date();
 
-      await markMessagesAsDelivered(userId);
+
+    const receiverSocketId = onlineUsers.get(message.receiverId);
+
+    if (receiverSocketId) {
+      // ✅ Receiver is online — send message instantly
+      receiverSocketId.forEach((sockId) => {
+        io.to(sockId).emit("receiveMessage", message);
+      });
+    } else {
+      // ❌ Receiver is offline — store in DB
+      await saveMessageToDB(message); // Save with `delivered: false`
     }
   });
 
-  // Join room
-  // socket.on("join", (userId: string) => {
-  //   socket.join(userId);
-  //   console.log(`User with ID ${userId} joined room ${userId}`);
-  // });
-
-  // Send message
-  socket.on("sendMessage", (message: Message) => {
-    console.log("Received message:", message);
-
-
-    const { roomId } = message;
-
-    // Emit the message to all clients in the room
-    socket.to(roomId).emit("receiveMessage", message);
-    // // Optional: Save message to DB here
-    // console.log("Broadcasting message to room", roomId, message);
-  });
-
+  // On disconnect
   socket.on("disconnect", () => {
-    console.log("User disconnected:", socket.id);
+    const userId = socket.userId;
+    if (userId) {
+      const userSockets = onlineUsers.get(userId);
+      if (userSockets) {
+        userSockets.delete(socket.id);
+        if (userSockets.size === 0) {
+          onlineUsers.delete(userId);
+        }
+      }
+    }
+    console.log(`Socket ${socket.id} disconnected`);
   });
 });
 
+// Connect DB and start server
 connectDB()
   .then(() => {
     console.log("MongoDB Connected Successfully!");

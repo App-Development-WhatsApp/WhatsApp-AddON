@@ -25,11 +25,11 @@ export default function Contacts() {
     const [currUser, setcurrUser] = useState(null);
 
     useEffect(() => {
-        console.log(netInfo.isConnected)
+        // console.log(netInfo.isConnected,"net")
+        setLoading(true);
         const fetchUsers = async () => {
             const userData = await loadUserInfo();
             setcurrUser(userData);
-            setLoading(true);
             try {
                 const res = await getAllUsers();
                 if (res.success) {
