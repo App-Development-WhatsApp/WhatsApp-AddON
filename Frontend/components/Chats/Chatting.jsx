@@ -34,14 +34,13 @@ import {
 import { loadChatHistory } from "../../utils/chatStorage";
 import * as DocumentPicker from "expo-document-picker";
 import { Video } from "expo-av";
-import * as ImagePicker from 'expo-image-picker';
+import * as ImagePicker from "expo-image-picker";
 import { renderMessage } from "./RenderMessages";
 import SocketServices from "../../Services/SocketServices";
 import { useNetInfo } from "@react-native-community/netinfo";
 import OneTimeView from "./OneTimeView";
-import loader from '../../assets/loader.gif';
+import loader from "../../assets/loader.gif";
 // import ThreeDots from "react-loader-spinner";
-
 
 export default function Chatting() {
   const navigation = useNavigation();
@@ -73,16 +72,13 @@ export default function Chatting() {
     };
     setup();
     socket.on("userTyping", (userId) => {
-      console.log(userId)
-       setTyping(true)
-       setTimeout(() => {
-        setTyping(false)
-       }, 1000);
-    }
-  
-  )
-
-  }, [])
+      console.log(userId);
+      setTyping(true);
+      setTimeout(() => {
+        setTyping(false);
+      }, 1000);
+    });
+  }, []);
 
   useEffect(() => {
     const messageListener = async (msg) => {
@@ -99,7 +95,7 @@ export default function Chatting() {
     return () => {
       SocketServices.unregisterReceiveMessage(messageListener);
     };
-  }, [friendId, netInfo.isConnected, currentUserId,typing]);
+  }, [friendId, netInfo.isConnected, currentUserId, typing]);
 
   const handleSend = async () => {
     if (!message.trim() && selectedFiles.length === 0) return;
@@ -131,7 +127,6 @@ export default function Chatting() {
     }
   };
 
-
   const handleClearChat = async () => {
     Alert.alert("Clear Chat", "Are you sure you want to delete all messages?", [
       { text: "Cancel", style: "cancel" },
@@ -154,7 +149,7 @@ export default function Chatting() {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.All, // Supports both images and videos
-        multiple: true
+        multiple: true,
       });
 
       if (!result.canceled) {
@@ -171,7 +166,11 @@ export default function Chatting() {
   };
   const handleOneTimeView = (messageId, file) => {
     setChats((prev) =>
-      prev.map((msg) => (msg.id === messageId ? { ...msg, files: [], text: "Message depricated" } : msg))
+      prev.map((msg) =>
+        msg.id === messageId
+          ? { ...msg, files: [], text: "Message depricated" }
+          : msg
+      )
     );
     // deete message from chat list
 
@@ -179,17 +178,19 @@ export default function Chatting() {
       file,
       onViewed: () => {
         setChats((prev) =>
-          prev.map((msg) => (msg.id === messageId ? { ...msg, files: [], text: "Message depricated" } : msg))
+          prev.map((msg) =>
+            msg.id === messageId
+              ? { ...msg, files: [], text: "Message depricated" }
+              : msg
+          )
         );
-
-      }
+      },
     });
   };
 
-
   const renderFilePreview = (file) => {
-    console.log(file)
-    if (file.mimeType?.startsWith('image')) {
+    console.log(file);
+    if (file.mimeType?.startsWith("image")) {
       return (
         <Image
           source={{ uri: file.uri }}
@@ -199,7 +200,7 @@ export default function Chatting() {
         // <Text style={{ color: 'white' }}>📷 {file.uri}</Text>
       );
     }
-    if (file.mimeType?.startsWith('video')) {
+    if (file.mimeType?.startsWith("video")) {
       return (
         <Video
           source={{ uri: file.uri }}
@@ -209,40 +210,50 @@ export default function Chatting() {
         />
       );
     }
-    return <Text style={{ color: 'white' }}>📎 {file.name}</Text>;
+    return <Text style={{ color: "white" }}>📎 {file.name}</Text>;
   };
-
 
   return (
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
           <Ionicons name="arrow-back" size={24} color="white" />
         </TouchableOpacity>
         <View style={styles.userInfo}>
           <Image
-            source={image ? { uri: image } : require("../../assets/images/blank.jpeg")}
+            source={
+              image ? { uri: image } : require("../../assets/images/blank.jpeg")
+            }
             style={styles.profileImage}
           />
           <View>
-          <Text style={styles.name}>{name}</Text>
-        
-             {
-              typing && <Text style={{ color: "white", fontSize: 12 }}>Typing...</Text>
-             /* <ThreeDots
-             visible={true}
-             height="80"
-             width="80"
-             color="#4fa94d"
-             radius="9"
-             ariaLabel="three-dots-loading"
-             /> */}
+            <Text style={styles.name}>{name}</Text>
+
+            {typing && (
+              <Text style={{ color: "white", fontSize: 12 }}>Typing...</Text>
+            )}
           </View>
         </View>
         <View style={styles.iconContainer}>
-          <TouchableOpacity><FontAwesome name="phone" size={22} color="white" /></TouchableOpacity>
-          <TouchableOpacity><MaterialCommunityIcons name="video" size={26} color="white" /></TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => {
+              navigation.navigate("AudioScreen", {
+                callerId: currentUserId,
+                calleeId: friendId,
+                calleeName: name,
+                calleeProfilePic: image,
+              });
+            }}
+          >
+            <FontAwesome name="phone" size={22} color="white" />
+          </TouchableOpacity>
+          <TouchableOpacity>
+            <MaterialCommunityIcons name="video" size={26} color="white" />
+          </TouchableOpacity>
           <TouchableOpacity onPress={handleClearChat}>
             <Feather name="trash-2" size={22} color="white" />
           </TouchableOpacity>
@@ -251,7 +262,7 @@ export default function Chatting() {
 
       {/* Chat list */}
       <KeyboardAvoidingView
-        style={{ flex: 0.91,scrollToEnd: true }}
+        style={{ flex: 0.91, scrollToEnd: true }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={80}
       >
@@ -262,7 +273,9 @@ export default function Chatting() {
           renderItem={({ item }) => {
             if (item.oneTimeView && item.files?.length === 1) {
               return (
-                <TouchableOpacity onPress={() => handleOneTimeView(item.id, item.files[0])}>
+                <TouchableOpacity
+                  onPress={() => handleOneTimeView(item.id, item.files[0])}
+                >
                   <View style={[styles.messageBubble, styles.theirMessage]}>
                     <Text style={styles.messageText}>One Time View</Text>
                   </View>
@@ -278,12 +291,30 @@ export default function Chatting() {
 
       {/* Preview of Files */}
       {selectedFiles.length > 0 && (
-        <View style={{ flexDirection: "row", padding: 2, backgroundColor: "#202c33", position: 'absolute', bottom: showEmojiPicker ? 430 : 70, borderRadius: 12 }}>
+        <View
+          style={{
+            flexDirection: "row",
+            padding: 2,
+            backgroundColor: "#202c33",
+            position: "absolute",
+            bottom: showEmojiPicker ? 430 : 70,
+            borderRadius: 12,
+          }}
+        >
           {selectedFiles.map((file, index) => (
             <View key={index} style={{ marginRight: 1 }}>
               {renderFilePreview(file)}
-              <TouchableOpacity style={styles.removeIcon} onPress={() => setSelectedFiles((prev) => prev.filter((_, i) => i !== index))}>
-                <MaterialCommunityIcons name="close-circle" size={20} color="red" />
+              <TouchableOpacity
+                style={styles.removeIcon}
+                onPress={() =>
+                  setSelectedFiles((prev) => prev.filter((_, i) => i !== index))
+                }
+              >
+                <MaterialCommunityIcons
+                  name="close-circle"
+                  size={20}
+                  color="red"
+                />
               </TouchableOpacity>
             </View>
           ))}
@@ -292,19 +323,28 @@ export default function Chatting() {
 
       {/* Input Container */}
 
-      <View style={{ ...styles.inputContainer, bottom: showEmojiPicker ? 365 : 0 }}>
+      <View
+        style={{ ...styles.inputContainer, bottom: showEmojiPicker ? 365 : 0 }}
+      >
         <View style={styles.inputWrapper}>
-          <TouchableOpacity style={styles.inputIconLeft} onPress={() => setShowEmojiPicker(true)}>
-            <MaterialCommunityIcons name="emoticon-happy" size={24} color="white" />
+          <TouchableOpacity
+            style={styles.inputIconLeft}
+            onPress={() => setShowEmojiPicker(true)}
+          >
+            <MaterialCommunityIcons
+              name="emoticon-happy"
+              size={24}
+              color="white"
+            />
           </TouchableOpacity>
           <TextInput
             style={styles.input}
             placeholder="Type a message..."
             placeholderTextColor="#888"
             value={message}
-            onChangeText={(v)=>{
+            onChangeText={(v) => {
               setMessage(v),
-              socket.emit("typing", { userId: currentUserId, friendId });
+                socket.emit("typing", { userId: currentUserId, friendId });
             }}
           />
           <TouchableOpacity onPress={pickFiles} style={styles.attachButton}>
@@ -409,16 +449,22 @@ const styles = StyleSheet.create({
     height: 100,
     borderRadius: 10,
     marginRight: 0,
-    backgroundColor: 'black',
-    justifyContent: 'center',
-    alignItems: 'center',
-    overflow: 'hidden',
+    backgroundColor: "black",
+    justifyContent: "center",
+    alignItems: "center",
+    overflow: "hidden",
   },
-  removeIcon: { position: "absolute", top: -8, right: -8, borderRadius: 20, padding: 2, zIndex: 10 },
+  removeIcon: {
+    position: "absolute",
+    top: -8,
+    right: -8,
+    borderRadius: 20,
+    padding: 2,
+    zIndex: 10,
+  },
   chatList: {
     // height: "300%",
     overflow: "scroll",
     // backgroundColor: "red",
-  }
-
+  },
 });
