@@ -8,8 +8,8 @@ import {
   Image,
   Alert,
   ActivityIndicator,
+  PanResponder,
 } from 'react-native';
-import Slider from '@react-native-community/slider';
 import * as DocumentPicker from 'expo-document-picker';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Video } from 'expo-av';
@@ -22,8 +22,13 @@ export default function VideoEditing() {
   const [duration, setDuration] = useState(0);
   const [start, setStart] = useState(0);
   const [end, setEnd] = useState(0);
+  const [trimStartPos, setTrimStartPos] = useState(0);
+  const [trimEndPos, setTrimEndPos] = useState(100);
+  const [showTrimmed, setShowTrimmed] = useState(false);
+
   const videoRef = useRef(null);
-  const totalThumbnails = 10;
+  const trimmedVideoRef = useRef(null);
+  const totalThumbnails = 9;
 
   const pickVideo = async () => {
     try {
@@ -40,6 +45,9 @@ export default function VideoEditing() {
           setStart(0);
           setEnd(0);
           setDuration(0);
+          setTrimStartPos(0);
+          setTrimEndPos(100);
+          setShowTrimmed(false);
           Alert.alert('Video selected', result.assets[0].name);
         } else {
           Alert.alert('Invalid URI', 'Please select a proper file.');
@@ -50,27 +58,6 @@ export default function VideoEditing() {
     }
   };
 
-  const generateThumbnails = async () => {
-    if (!videoUri || duration === 0) return;
-
-    setLoading(true);
-    const interval = duration / totalThumbnails;
-    const generated = [];
-
-    try {
-      for (let i = 0; i < totalThumbnails; i++) {
-        const time = i * interval * 1000;
-        const { uri } = await VideoThumbnails.getThumbnailAsync(videoUri, { time });
-        generated.push(uri);
-      }
-      setThumbnails(generated);
-    } catch (e) {
-      console.warn('Thumbnail generation failed:', e);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handlePlaybackUpdate = async ({ positionMillis }) => {
     if (positionMillis / 1000 >= end) {
       await videoRef.current.pauseAsync();
@@ -78,12 +65,52 @@ export default function VideoEditing() {
     }
   };
 
-  const playTrimmed = async () => {
-    if (videoRef.current) {
-      await videoRef.current.setPositionAsync(start * 1000);
-      await videoRef.current.playAsync();
+  const handleTrimmedPlaybackUpdate = async (status) => {
+    if (!status.isLoaded || !status.isPlaying) return;
+    if (status.positionMillis >= end * 1000) {
+      await trimmedVideoRef.current.pauseAsync();
+      await trimmedVideoRef.current.setPositionAsync(start * 1000);
     }
   };
+
+  const generateThumbnails = async (uri, videoDuration) => {
+    setLoading(true);
+    const thumbList = [];
+    const interval = videoDuration / (totalThumbnails + 1);
+
+    for (let i = 1; i <= totalThumbnails; i++) {
+      const timestamp = i * interval;
+      try {
+        const { uri: thumbnailUri } = await VideoThumbnails.getThumbnailAsync(uri, {
+          time: timestamp * 1000,
+        });
+        thumbList.push(thumbnailUri);
+      } catch (e) {
+        console.warn(`Could not generate thumbnail at ${timestamp}s`, e);
+      }
+    }
+
+    setThumbnails(thumbList);
+    setLoading(false);
+  };
+
+  const panResponderStart = PanResponder.create({
+    onMoveShouldSetPanResponder: () => true,
+    onPanResponderMove: (_, gestureState) => {
+      const newPos = Math.min(Math.max(0, trimStartPos + gestureState.dx / 3), trimEndPos - 5);
+      setTrimStartPos(newPos);
+      setStart((newPos / 100) * duration);
+    },
+  });
+
+  const panResponderEnd = PanResponder.create({
+    onMoveShouldSetPanResponder: () => true,
+    onPanResponderMove: (_, gestureState) => {
+      const newPos = Math.max(Math.min(100, trimEndPos + gestureState.dx / 3), trimStartPos + 5);
+      setTrimEndPos(newPos);
+      setEnd((newPos / 100) * duration);
+    },
+  });
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -106,52 +133,92 @@ export default function VideoEditing() {
               const seconds = durationMillis / 1000;
               setDuration(seconds);
               setEnd(seconds);
+              generateThumbnails(videoUri, seconds);
             }}
             onPlaybackStatusUpdate={handlePlaybackUpdate}
           />
 
-          <View style={styles.sliderContainer}>
-            <Text>Start: {start.toFixed(1)}s</Text>
-            <Slider
-              style={styles.slider}
-              minimumValue={0}
-              maximumValue={end}
-              value={start}
-              step={0.1}
-              onValueChange={setStart}
-            />
+          {loading ? (
+            <ActivityIndicator size="large" color="#007BFF" />
+          ) : (
+            <View style={styles.trimContainer}>
+              <View style={styles.trimTrack}>
+                <View style={[styles.overlay, { width: `${trimStartPos}%` }]} />
 
-            <Text>End: {end.toFixed(1)}s</Text>
-            <Slider
-              style={styles.slider}
-              minimumValue={start}
-              maximumValue={duration}
-              value={end}
-              step={0.1}
-              onValueChange={setEnd}
-            />
-          </View>
+                <View
+                  style={[
+                    styles.selectedRange,
+                    {
+                      left: `${trimStartPos}%`,
+                      width: `${trimEndPos - trimStartPos}%`,
+                    },
+                  ]}
+                >
+                  <View style={styles.handle} {...panResponderStart.panHandlers} />
+                  <View style={styles.handle} {...panResponderEnd.panHandlers} />
+                </View>
 
-          <TouchableOpacity style={styles.playButton} onPress={playTrimmed}>
-            <Text style={styles.buttonText}>▶️ Play Trimmed</Text>
-          </TouchableOpacity>
+                <View
+                  style={[
+                    styles.overlay,
+                    { left: `${trimEndPos}%`, right: 0, width: `${100 - trimEndPos}%` },
+                  ]}
+                />
 
+                <View style={styles.trimThumbnailStrip}>
+                  {thumbnails.map((thumb, idx) => (
+                    <Image key={idx} source={{ uri: thumb }} style={styles.trimThumbnail} />
+                  ))}
+                </View>
+              </View>
+            </View>
+          )}
+
+          {/* Show Trimmed Video Button */}
           <TouchableOpacity
-            style={[styles.button, { backgroundColor: '#4CAF50' }]}
-            onPress={generateThumbnails}
-            disabled={loading || !videoUri}
+            style={[styles.button, { marginTop: 20 }]}
+            onPress={() => setShowTrimmed(true)}
           >
-            <MaterialIcons name="content-cut" size={24} color="white" />
-            <Text style={styles.buttonText}>Generate Thumbnails</Text>
+            <MaterialIcons name="play-arrow" size={24} color="white" />
+            <Text style={styles.buttonText}>Show Trimmed Video</Text>
           </TouchableOpacity>
 
-          {loading && <ActivityIndicator size="large" color="#000" style={{ marginTop: 20 }} />}
+          {/* Trimmed Video */}
+          {showTrimmed && (
+            <View style={{ width: '100%', alignItems: 'center', marginTop: 20 }}>
+                <Text style={{ fontWeight: 'bold', marginBottom: 10 }}>
+                Trimmed Video (From {start.toFixed(2)}s to {end.toFixed(2)}s)
+                </Text>
 
-          <ScrollView horizontal style={styles.thumbnailRow}>
-            {thumbnails.map((thumb, idx) => (
-              <Image key={idx} source={{ uri: thumb }} style={styles.thumbnail} />
-            ))}
-          </ScrollView>
+                <Video
+                ref={trimmedVideoRef}
+                source={{ uri: videoUri }}
+                resizeMode="contain"
+                style={styles.video}
+                useNativeControls={false} // Hide controls to restrict seeking
+                shouldPlay={false}
+                onPlaybackStatusUpdate={handleTrimmedPlaybackUpdate}
+                onLoad={() => {
+                    if (trimmedVideoRef.current) {
+                    trimmedVideoRef.current.setPositionAsync(start * 1000);
+                    }
+                }}
+                />
+
+                <TouchableOpacity
+                style={[styles.button, { marginTop: 10 }]}
+                onPress={async () => {
+                    if (trimmedVideoRef.current) {
+                    await trimmedVideoRef.current.setPositionAsync(start * 1000);
+                    await trimmedVideoRef.current.playAsync();
+                    }
+                }}
+                >
+                <MaterialIcons name="play-arrow" size={24} color="white" />
+                <Text style={styles.buttonText}>Play Trimmed Section</Text>
+                </TouchableOpacity>
+            </View>
+            )}
         </>
       )}
     </ScrollView>
@@ -160,57 +227,81 @@ export default function VideoEditing() {
 
 const styles = StyleSheet.create({
   container: {
-    flexGrow: 1,
     padding: 20,
+    paddingBottom: 100,
+    backgroundColor: '#fff',
     alignItems: 'center',
-    gap: 20,
   },
   title: {
     fontSize: 24,
+    marginBottom: 20,
     fontWeight: 'bold',
   },
   button: {
+    backgroundColor: '#007BFF',
     flexDirection: 'row',
-    backgroundColor: '#2196F3',
-    padding: 14,
-    borderRadius: 10,
     alignItems: 'center',
-    gap: 10,
-    marginTop: 10,
+    padding: 12,
+    paddingHorizontal: 20,
+    borderRadius: 10,
   },
   buttonText: {
-    color: 'white',
-    fontWeight: 'bold',
+    color: '#fff',
+    marginLeft: 10,
+    fontSize: 16,
   },
   video: {
     width: '100%',
-    height: 220,
-    marginTop: 20,
-    borderRadius: 10,
+    height: 200,
+    marginVertical: 20,
   },
-  sliderContainer: {
+  trimContainer: {
     width: '100%',
     marginTop: 20,
+    position: 'relative',
   },
-  slider: {
-    width: '100%',
-    height: 40,
-  },
-  playButton: {
-    marginTop: 10,
-    backgroundColor: '#f57c00',
-    padding: 14,
-    borderRadius: 10,
-  },
-  thumbnailRow: {
-    marginTop: 20,
-    flexDirection: 'row',
-  },
-  thumbnail: {
-    width: 100,
-    height: 100,
-    marginRight: 10,
+  trimTrack: {
+    height: 60,
+    backgroundColor: '#ddd',
     borderRadius: 8,
-    backgroundColor: '#eee',
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    zIndex: 2,
+  },
+  selectedRange: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,123,255,0.3)',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    zIndex: 3,
+  },
+  handle: {
+    width: 10,
+    height: '100%',
+    backgroundColor: '#007BFF',
+    zIndex: 5,
+  },
+  trimThumbnailStrip: {
+    flexDirection: 'row',
+    height: 60,
+    width: '100%',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    zIndex: 1,
+  },
+  trimThumbnail: {
+    flex: 1,
+    height: 60,
+    resizeMode: 'cover',
   },
 });
