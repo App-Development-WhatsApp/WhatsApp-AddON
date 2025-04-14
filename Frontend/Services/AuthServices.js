@@ -10,14 +10,14 @@ export const API_URL = `${BACKEND_URL}/api/v1/users`; // Replace with your backe
 export const login = async (formData) => {
 
   try {
-    console.log(formData)
+    // console.log(formData)
     const response = await axios.post(`${API_URL}/login`, formData, {
       headers: { 'Content-Type': 'application/json' }
     });
-
+    // console.log(formData, "formData")
+    
     if (response.data.success && response.data.data?.user) {
       await saveUserInfo(response.data.data.user); // Save user to local storage
-      console.log("has saved")
       return { success: true, user: response.data.data.user };
     } else {
       return {

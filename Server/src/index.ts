@@ -17,15 +17,19 @@ interface Message {
 // Placeholder functions (replace with your DB logic)
 const getPendingMessages = async (userId: string): Promise<Message[]> => {
   // Fetch undelivered messages from DB
+  console.log("Fetching pending messages for user:", userId);
   return [];
 };
 
 const markMessagesAsDelivered = async (messages: Message[]): Promise<void> => {
   // Mark these messages as delivered in DB
+  console.log("Marking messages as delivered:", messages);
 };
 
 const saveMessageToDB = async (message: Message): Promise<void> => {
   // Save message to DB
+  console.log("Saving message to DB:", message);
+  // Simulate saving to DB
 };
 
 // Maps to track online users (userId -> Set of socketIds)
@@ -78,11 +82,11 @@ io.on("connection", (socket: Socket) => {
     message.timestamp = new Date();
 
 
-    const receiverSocketId = onlineUsers.get(message.receiverId);
+    const receiverSocketIds = onlineUsers.get(message.receiverId);
 
-    if (receiverSocketId) {
+    if (receiverSocketIds) {
       // ✅ Receiver is online — send message instantly
-      receiverSocketId.forEach((sockId) => {
+      receiverSocketIds.forEach((sockId) => {
         io.to(sockId).emit("receiveMessage", message);
       });
     } else {

@@ -37,13 +37,13 @@ import * as ImagePicker from 'expo-image-picker';
 import { renderMessage } from "./RenderMessages";
 import SocketServices from "../../Services/SocketServices";
 import { useNetInfo } from "@react-native-community/netinfo";
-
+import OneTimeView from "./OneTimeView";
 
 export default function Chatting() {
   const navigation = useNavigation();
   const netInfo = useNetInfo();
   const route = useRoute();
-  const { userId: friendId, name, image, roomId } = route.params;
+  const { userId: friendId, name, image } = route.params;
   const [chats, setChats] = useState([]);
   const [message, setMessage] = useState("");
   const [currentUserId, setCurrentUserId] = useState(null);
@@ -57,8 +57,7 @@ export default function Chatting() {
       try {
         const user = await loadUserInfo();
         setCurrentUserId(user._id);
-        const chatsdata = await loadChatHistory(roomId);
-        // console.log(chatsdata)
+        const chatsdata = await loadChatHistory(friendId);
         setChats(chatsdata);
       } catch (err) {
         console.error("Error loading user or chats:", err);
@@ -69,22 +68,12 @@ export default function Chatting() {
 
   useEffect(() => {
     const messageListener = (msg) => {
-      const isCurrentUserSender = msg.senderId === currentUserId;
-      const isCurrentUserReceiver = msg.receiverId === currentUserId;
+      const formatted = {
+        ...msg,
+        timestamp: Date.now().toString(), // overwrite existing timestamp
+      };
 
-      // Check if the message involves the current user and the friend
-      if (
-        (msg.senderId === friendId && isCurrentUserReceiver) ||
-        (isCurrentUserSender && msg.receiverId === friendId)
-      ) {
-        const formatted = {
-          ...msg,
-          id: Date.now().toString(), // create unique id
-          sender: isCurrentUserSender ? "me" : "them",
-        };
-
-        setChats((prev) => [...prev, formatted]);
-      }
+      setChats((prev) => [...prev, formatted]);
     };
 
     SocketServices.registerReceiveMessage(messageListener);
@@ -92,7 +81,7 @@ export default function Chatting() {
     return () => {
       SocketServices.unregisterReceiveMessage(messageListener);
     };
-  }, [friendId, netInfo.isConnected,currentUserId]);
+  }, [friendId, netInfo.isConnected, currentUserId]);
 
   const handleSend = async () => {
     if (!message.trim() && selectedFiles.length === 0) return;
@@ -121,17 +110,19 @@ export default function Chatting() {
         timestamp: new Date().toISOString(),
         ...(message.trim() && { text: message.trim() }),
         ...(selectedFiles.length > 0 && { files: selectedFiles }),
+        oneTimeView: oneTimeView,
       };
 
       setChats((prev) => [...prev, { ...newMsg }]);
-      await sendMessageSocket(roomId, friendId, newMsg);
+      SocketServices.sendMessage(newMsg);
+      // await sendMessageSocket( friendId, newMsg);
 
       setMessage("");
       setSelectedFiles([]);
       setTimeout(() => {
         flatListRef.current?.scrollToEnd({ animated: true });
       }, 100);
-      console.log("kjhgufytd->", chats)
+      // console.log("kjhgufytd->", chats)
     } catch (err) {
       console.error("Error sending message:", err);
       Alert.alert("Failed", "Unable to send message. Please try again.");
@@ -176,16 +167,22 @@ export default function Chatting() {
       console.error("Error selecting files", error);
     }
   };
-  // const handleOneTimeView = (messageId, file) => {
-  //   navigation.navigate("OneTimeViewer", {
-  //     file,
-  //     messageId,
-  //     onViewed: () => {
-  //       // Remove the one-time message from chat list
-  //       setChats(prev => prev.filter(msg => msg.id !== messageId));
-  //     }
-  //   });
-  // };
+  const handleOneTimeView = (messageId, file) => {
+    setChats((prev) =>
+      prev.map((msg) => (msg.id === messageId ? { ...msg, files: [], text: "Message depricated" } : msg))
+    );
+    // deete message from chat list
+
+    navigation.navigate("OneTimeViewer", {
+      file,
+      onViewed: () => {
+        setChats((prev) =>
+          prev.map((msg) => (msg.id === messageId ? { ...msg, files: [], text: "Message depricated" } : msg))
+        );
+
+      }
+    });
+  };
 
 
   const renderFilePreview = (file) => {
@@ -246,7 +243,17 @@ export default function Chatting() {
         <FlatList
           data={chats}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => renderMessage({ item, currentUserId })}
+          renderItem={({ item }) => {
+            {
+              item.oneTimeView && item.files.length === 1 ? (
+                <TouchableOpacity onPress={() => handleOneTimeView(item.id, item.files[0])}>
+                  <View style={[styles.messageBubble, styles.theirMessage]}>
+                    <Text style={styles.messageText}>One Time View</Text>
+                  </View>
+                </TouchableOpacity>
+              ) : (renderMessage({ item, currentUserId }))
+            }
+          }}
           contentContainerStyle={styles.chatList}
         />
       </KeyboardAvoidingView>

@@ -55,7 +55,7 @@ export default function VideoEditing() {
                 // Generate thumbnails for every second
                 for (let i = 0; i <= totalFrames; i++) {
                     const time = i * interval;
-                    const thumbnail = await VideoThumbnails.getThumbnailAsync(videoUri, { time });
+                    const thumbnail =  VideoThumbnails.getThumbnailAsync(videoUri, { time });
                     thumbnailsArray.push(thumbnail.uri);
                 }
                 setThumbnails(thumbnailsArray);

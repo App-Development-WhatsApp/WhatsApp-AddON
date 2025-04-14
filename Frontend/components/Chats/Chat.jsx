@@ -28,7 +28,16 @@ export default function Chat() {
   const [friends, setFriends] = useState([]);
 
   useEffect(() => {
-    setUserData(loadUserInfo());
+    const userInfo = async () => {
+      const user = await loadUserInfo();
+      if (user) {
+        setUserData(user);
+      }
+    }
+    setUserData(userInfo);
+  
+    setUserData();
+    // console.log("Main Page")
     const loadUserAndFriends = async () => {
       setLoading(true)
       try {
@@ -122,7 +131,7 @@ const styles = StyleSheet.create({
   container: {
     padding: 10,
     backgroundColor: '#121212',
-    height: '100%',
+    height: '90%',
   },
   headerCtn: {
     marginTop: StatusBar.currentHeight,

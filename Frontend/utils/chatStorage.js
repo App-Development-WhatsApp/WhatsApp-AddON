@@ -1,7 +1,7 @@
 import * as FileSystem from "expo-file-system";
 import io from "socket.io-client";
 import { BACKEND_URL } from "../Services/AuthServices";
-
+import { Platform } from 'react-native';
 const API_URL = `${BACKEND_URL}/api/v1/users`;
 const SOCKET_SERVER_URL = BACKEND_URL;
 
@@ -94,8 +94,11 @@ export const deleteMessage = async (otherUserId, messageId) => {
 
 export const saveUserInfo = async (user) => {
   try {
-    await FileSystem.writeAsStringAsync(userFilePath, JSON.stringify(user));
-    console.log("User info saved!");
+    if (Platform.OS === 'web') {
+      localStorage.setItem('user', JSON.stringify(user));
+    } else {
+      await FileSystem.writeAsStringAsync(userFilePath, JSON.stringify(user));
+    }
   } catch (error) {
     console.error("Error saving user info:", error);
   }
@@ -103,15 +106,19 @@ export const saveUserInfo = async (user) => {
 
 export const loadUserInfo = async () => {
   try {
-    // const fileInfo = await FileSystem.getInfoAsync(userFilePath);
-    // console.log(fileInfo, "userFilePath");
-    const data = await FileSystem.readAsStringAsync(userFilePath);
-    return data ? JSON.parse(data) : null;
+    if (Platform.OS === 'web') {
+      const data = localStorage.getItem('user');
+      return data ? JSON.parse(data) : null;
+    } else {
+      const data = await FileSystem.readAsStringAsync(userFilePath);
+      return data ? JSON.parse(data) : null;
+    }
   } catch (error) {
     console.error("Error loading user info:", error);
     return null;
   }
 };
+
 
 export const fetchAndSaveFriends = async (userId) => {
   try {
@@ -148,11 +155,16 @@ export const fetchAndSaveFriends = async (userId) => {
 
 export const getSavedFriends = async () => {
   try {
-    const fileInfo = await FileSystem.getInfoAsync(friendsFilePath);
-    if (!fileInfo.exists) return [];
+    if (Platform.OS === 'web') {
+      const data = localStorage.getItem('friends');
+      return data ? JSON.parse(data) : [];
+    } else {
+      const fileInfo = await FileSystem.getInfoAsync(friendsFilePath);
+      if (!fileInfo.exists) return [];
 
-    const jsonString = await FileSystem.readAsStringAsync(friendsFilePath);
-    return JSON.parse(jsonString);
+      const jsonString = await FileSystem.readAsStringAsync(friendsFilePath);
+      return JSON.parse(jsonString);
+    }
   } catch (error) {
     console.error("Error reading saved friends:", error);
     return [];
@@ -162,25 +174,6 @@ export const getSavedFriends = async () => {
 // --------- Emit Message ---------- //
 
 
-
-export const sendMessageSocket = async (roomId, receiverId, messageObj) => {
-  try {
-    if (!socket || !socket.connected) {
-      console.warn("Socket not connected. Cannot send message.");
-      return;
-    }
-
-    socket.emit("sendMessage", {
-      roomId,
-      receiverId,
-      ...messageObj,
-    });
-
-    // console.log("Message sent via socket:", { roomId, receiverId, ...messageObj });
-  } catch (error) {
-    console.error("Error sending message via socket:", error);
-  }
-};
 
 
 
@@ -343,15 +336,31 @@ const updateFriendsFile = async (senderId, message, timestamp, isCurrentChatOpen
 
 
 
-export const loadChatHistory = async (roomId) => {
+export const loadChatHistory = async (friendId) => {
   try {
-    const fileUri = `${FileSystem.documentDirectory}${roomId}.json`;
+    const fileUri = `${FileSystem.documentDirectory}chat_${friendId}.json`;
     const dataFromFile = await readJsonFile(fileUri);
     console.log("dat fron files", dataFromFile);
     return dataFromFile.messages || [];
   } catch (error) {
     console.error("Error loading chat history:", error);
     return [];
+  }
+};
+
+export const saveChatMessage = async (friendId, message) => {
+  try {
+    const path = `${FileSystem.documentDirectory}chat_${friendId}.json`;
+    let existingChats = [];
+    const fileInfo = await FileSystem.getInfoAsync(path);
+    if (fileInfo.exists) {
+      const content = await FileSystem.readAsStringAsync(path);
+      existingChats = JSON.parse(content || '[]');
+    }
+    existingChats.push(message);
+    await FileSystem.writeAsStringAsync(path, JSON.stringify(existingChats));
+  } catch (error) {
+    console.error("Error saving message:", error);
   }
 };
 

@@ -1,3 +1,4 @@
+import { saveChatMessage } from "../utils/chatStorage";
 import socket from "../utils/socket";
 
 const registerReceiveMessage = (callback) => {
@@ -8,7 +9,8 @@ const unregisterReceiveMessage = (callback) => {
   socket.off("receiveMessage", callback);
 };
 
-const sendMessage = (message) => {
+const sendMessage =async (message) => {
+  await saveChatMessage(message.receiverId, message);
   socket.emit("sendMessage", message);
 };
 

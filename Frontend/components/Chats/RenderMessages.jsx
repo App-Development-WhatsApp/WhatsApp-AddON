@@ -52,6 +52,14 @@ export const renderFilePreview = (file) => {
             <View style={previewStyles}>
                 <Text style={{ color: 'white' }}>📄 PDF file</Text>
                 <Text style={{ color: 'white', fontSize: 12 }}>Use `react-native-pdf` to render</Text>
+                <Pdf
+                    trustAllCerts={false}
+                    source={PdfResource}
+                    style={styles.pdf}
+                    onLoadComplete={(numberOfPages, filePath) => {
+                        console.log(`number of pages: ${numberOfPages}`);
+                    }}
+                />
             </View>
         );
     } else {
@@ -96,8 +104,6 @@ export const renderMessage = ({ item, currentUserId }) => {
                         )}
                     </View>
                 )}
-
-
 
                 {!isShortMessage && (
                     <Text style={styles.timestampText}>{formattedTime}</Text>
