@@ -45,7 +45,8 @@
           "supportsBackgroundPlayback": true,
           "supportsPictureInPicture": true
         }
-      ]
+      ],
+      "react-native-compressor"
     ]
   }
 }

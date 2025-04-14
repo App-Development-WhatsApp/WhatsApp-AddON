@@ -1847,6 +1847,11 @@
   resolved "https://registry.npmjs.org/@react-native-community/netinfo/-/netinfo-11.4.1.tgz"
   integrity sha512-B0BYAkghz3Q2V09BF88RA601XursIEA111tnc2JOaN7axJWmNefmfjZqw/KdSxKZp7CZUuPpjBmz/WCR9uaHYg==
 
+"@react-native-community/slider@^4.5.6":
+  version "4.5.6"
+  resolved "https://registry.npmjs.org/@react-native-community/slider/-/slider-4.5.6.tgz"
+  integrity sha512-UhLPFeqx0YfPLrEz8ffT3uqAyXWu6iqFjohNsbp4cOU7hnJwg2RXtDnYHoHMr7MOkZDVdlLMdrSrAuzY6KGqrg==
+
 "@react-native/assets-registry@0.76.9":
   version "0.76.9"
   resolved "https://registry.npmjs.org/@react-native/assets-registry/-/assets-registry-0.76.9.tgz"
@@ -6724,6 +6729,16 @@ react-native-blob-util@^0.21.2, react-native-blob-util@>=0.13.7:
     base-64 "0.1.0"
     glob "^10.3.10"
 
+react-native-compressor@^1.11.0:
+  version "1.11.0"
+  resolved "https://registry.npmjs.org/react-native-compressor/-/react-native-compressor-1.11.0.tgz"
+  integrity sha512-XaI0U2CtlW6ZYjwdQ4jdpnJa3C9CD1pc1a4jiUMtnUxWtCqgT7PNjOiEqlYLLwwGTvorXXNuby5In1yy7Vdmhg==
+
+react-native-create-thumbnail@^2.1.1:
+  version "2.1.1"
+  resolved "https://registry.npmjs.org/react-native-create-thumbnail/-/react-native-create-thumbnail-2.1.1.tgz"
+  integrity sha512-3rawLi0mZiKfPh53C3mbrI9EVVzLWLYiDynUdpAe/I36XbSSFupxP9+g10/rrhhTNX8NSg/4zAC8Z7P9epnt+g==
+
 react-native-emoji-picker-staltz@^1.0.0:
   version "1.0.0"
   resolved "https://registry.npmjs.org/react-native-emoji-picker-staltz/-/react-native-emoji-picker-staltz-1.0.0.tgz"
@@ -6892,7 +6907,7 @@ react-native-webview@*, react-native-webview@^13.12.5:
     escape-string-regexp "^4.0.0"
     invariant "2.2.4"
 
-react-native@*, "react-native@^0.0.0-0 || >=0.60 <1.0", react-native@>=0.30.0, react-native@>=0.40, react-native@>=0.47, react-native@>=0.59, react-native@>=0.60.0, react-native@>=0.70.0, react-native@0.76.9:
+react-native@*, "react-native@^0.0.0-0 || >=0.60 <1.0", react-native@>=0.30.0, react-native@>=0.40, react-native@>=0.47, react-native@>=0.59, react-native@>=0.59.0, react-native@>=0.60.0, react-native@>=0.70.0, react-native@0.76.9:
   version "0.76.9"
   resolved "https://registry.npmjs.org/react-native/-/react-native-0.76.9.tgz"
   integrity sha512-+LRwecWmTDco7OweGsrECIqJu0iyrREd6CTCgC/uLLYipiHvk+MH9nd6drFtCw/6Blz6eoKTcH9YTTJusNtrWg==
