@@ -29,6 +29,7 @@ import {
   sendMessageSocket,
   socket,
   clearChatFile,
+  saveChatMessage,
 } from "../../utils/chatStorage";
 import { loadChatHistory } from "../../utils/chatStorage";
 import * as DocumentPicker from "expo-document-picker";
@@ -38,19 +39,24 @@ import { renderMessage } from "./RenderMessages";
 import SocketServices from "../../Services/SocketServices";
 import { useNetInfo } from "@react-native-community/netinfo";
 import OneTimeView from "./OneTimeView";
+import loader from '../../assets/loader.gif';
+// import ThreeDots from "react-loader-spinner";
+
 
 export default function Chatting() {
   const navigation = useNavigation();
   const netInfo = useNetInfo();
   const route = useRoute();
   const { userId: friendId, name, image } = route.params;
-  const [chats, setChats] = useState([]);
   const [message, setMessage] = useState("");
   const [currentUserId, setCurrentUserId] = useState(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const flatListRef = useRef(null);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [oneTimeView, setOneTimeView] = useState(false);
+  const [typing, setTyping] = useState(false);
+
+  const [chats, setChats] = useState([]);
 
   useEffect(() => {
     const setup = async () => {
@@ -59,48 +65,44 @@ export default function Chatting() {
         setCurrentUserId(user._id);
         const chatsdata = await loadChatHistory(friendId);
         setChats(chatsdata);
+        // console.log(chatsdata)
+        // console.log(chats, "-----")
       } catch (err) {
         console.error("Error loading user or chats:", err);
       }
     };
     setup();
+    socket.on("userTyping", (userId) => {
+      console.log(userId)
+       setTyping(true)
+       setTimeout(() => {
+        setTyping(false)
+       }, 1000);
+    }
+  
+  )
+
   }, [])
 
   useEffect(() => {
-    const messageListener = (msg) => {
+    const messageListener = async (msg) => {
       const formatted = {
         ...msg,
         timestamp: Date.now().toString(), // overwrite existing timestamp
       };
-
+      // console.log("Received message:", formatted);
       setChats((prev) => [...prev, formatted]);
+      await saveChatMessage(formatted.senderId, formatted);
     };
 
     SocketServices.registerReceiveMessage(messageListener);
-
     return () => {
       SocketServices.unregisterReceiveMessage(messageListener);
     };
-  }, [friendId, netInfo.isConnected, currentUserId]);
+  }, [friendId, netInfo.isConnected, currentUserId,typing]);
 
   const handleSend = async () => {
     if (!message.trim() && selectedFiles.length === 0) return;
-    // {
-    //   "files": [
-    //     {
-    //       "mimeType": "audio/mp4",
-    //       "name": "Aam Jahe Munde",
-    //       "size": 8635289,
-    //       "uri": "file:///data/user/0/host.exp.exponent/cache/DocumentPicker/2d462dac-d905-4c0d-9541-6ee10e67b8ca."
-    //     }
-    //   ],
-    //   "id": "1744443619183",
-    //   "receiverId": "67e19d1129eab4d3a046d4be",
-    //   "senderId": "67f9106f930e4bf4b19249a9",
-    //   "text": "Fufufu",
-    //   "timestamp": "2025-04-12T07:40:19.184Z",
-    //   "oneTimeView": true
-    // }
 
     try {
       const newMsg = {
@@ -223,7 +225,20 @@ export default function Chatting() {
             source={image ? { uri: image } : require("../../assets/images/blank.jpeg")}
             style={styles.profileImage}
           />
+          <View>
           <Text style={styles.name}>{name}</Text>
+        
+             {
+              typing && <Text style={{ color: "white", fontSize: 12 }}>Typing...</Text>
+             /* <ThreeDots
+             visible={true}
+             height="80"
+             width="80"
+             color="#4fa94d"
+             radius="9"
+             ariaLabel="three-dots-loading"
+             /> */}
+          </View>
         </View>
         <View style={styles.iconContainer}>
           <TouchableOpacity><FontAwesome name="phone" size={22} color="white" /></TouchableOpacity>
@@ -236,22 +251,25 @@ export default function Chatting() {
 
       {/* Chat list */}
       <KeyboardAvoidingView
-        style={{ flex: 0.91 }}
+        style={{ flex: 0.91,scrollToEnd: true }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={80}
       >
         <FlatList
+          ref={flatListRef}
           data={chats}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => {
-            {
-              item.oneTimeView && item.files.length === 1 ? (
+            if (item.oneTimeView && item.files?.length === 1) {
+              return (
                 <TouchableOpacity onPress={() => handleOneTimeView(item.id, item.files[0])}>
                   <View style={[styles.messageBubble, styles.theirMessage]}>
                     <Text style={styles.messageText}>One Time View</Text>
                   </View>
                 </TouchableOpacity>
-              ) : (renderMessage({ item, currentUserId }))
+              );
+            } else {
+              return renderMessage({ item, currentUserId });
             }
           }}
           contentContainerStyle={styles.chatList}
@@ -284,7 +302,10 @@ export default function Chatting() {
             placeholder="Type a message..."
             placeholderTextColor="#888"
             value={message}
-            onChangeText={setMessage}
+            onChangeText={(v)=>{
+              setMessage(v),
+              socket.emit("typing", { userId: currentUserId, friendId });
+            }}
           />
           <TouchableOpacity onPress={pickFiles} style={styles.attachButton}>
             <Text style={{ fontSize: 18 }}>📎</Text>
@@ -394,5 +415,10 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   removeIcon: { position: "absolute", top: -8, right: -8, borderRadius: 20, padding: 2, zIndex: 10 },
+  chatList: {
+    // height: "300%",
+    overflow: "scroll",
+    // backgroundColor: "red",
+  }
 
 });
