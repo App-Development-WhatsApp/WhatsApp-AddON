@@ -11,11 +11,10 @@ import {
 } from 'react-native';
 import * as FileSystem from 'expo-file-system';
 import { useNavigation } from '@react-navigation/native';
-import Header from '../Chats/Header';
-import Search from '../Chats/Search';
 import { getAllUsers } from '../../Services/AuthServices';
 import { useNetInfo } from '@react-native-community/netinfo';
 import { loadUserInfo } from '../../utils/chatStorage';
+import { Ionicons, MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 
 export default function Contacts() {
     const navigation = useNavigation();
@@ -25,7 +24,6 @@ export default function Contacts() {
     const [currUser, setcurrUser] = useState(null);
 
     useEffect(() => {
-        // console.log(netInfo.isConnected,"net")
         setLoading(true);
         const fetchUsers = async () => {
             const userData = await loadUserInfo();
@@ -65,10 +63,8 @@ export default function Contacts() {
         }
     };
 
-
     const Item = ({ userId, userName, image }) => {
         const validImage = image ? { uri: image } : require('../../assets/images/blank.jpeg');
-
         return (
             <TouchableOpacity onPress={() => handleChatPress(userId, userName, image)}>
                 <View style={styles.userCtn}>
@@ -80,34 +76,67 @@ export default function Contacts() {
                     />
                     <View style={styles.msgCtn}>
                         <Text style={styles.name}>{userName}</Text>
+                        {/* You can add status/subtext here if available */}
                     </View>
                 </View>
             </TouchableOpacity>
         );
     };
 
+    const ActionButton = ({ icon, text, rightIcon }) => (
+        <TouchableOpacity style={styles.actionBtn}>
+            <View style={styles.iconWrap}>
+                {icon}
+            </View>
+            <Text style={styles.actionText}>{text}</Text>
+            {rightIcon && <View style={styles.qrWrap}>{rightIcon}</View>}
+        </TouchableOpacity>
+    );
+
     return (
         <View style={styles.container}>
+            <View style={styles.topBar}>
+                <TouchableOpacity onPress={() => navigation.goBack()}>
+                    <Ionicons name="arrow-back" size={24} color="white" />
+                </TouchableOpacity>
+                <View>
+                    <Text style={styles.topTitle}>Select contact</Text>
+                    <Text style={styles.topSubtitle}>{users.length} contacts</Text>
+                </View>
+                <View style={styles.topIcons}>
+                    <Ionicons name="search" size={22} color="white" style={{ marginRight: 20 }} />
+                    <MaterialIcons name="more-vert" size={22} color="white" />
+                </View>
+            </View>
+
             {loading ? (
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color="#00ff00" />
                     <Text style={styles.loadingText}>Fetching profiles...</Text>
                 </View>
             ) : (
-                <ScrollView contentInsetAdjustmentBehavior="automatic">
-                    <Header />
-                    <View style={styles.chatCtn}>
-                        <FlatList
-                            data={users}
-                            renderItem={({ item }) => (
-                                <Item key={item._id} userId={item._id} userName={item.username} image={item.profilePic} />
-                            )}
-                            keyExtractor={item => item._id}
-                            horizontal={false}
-                            scrollEnabled={false}
-                            ListHeaderComponent={Search}
+                <ScrollView>
+                    <View style={styles.actionsContainer}>
+                        <ActionButton icon={<Ionicons name="people" size={24} color="white" />} text="New group" />
+                        <ActionButton
+                            icon={<Ionicons name="person-add" size={24} color="white" />}
+                            text="New contact"
+                            rightIcon={<MaterialIcons name="qr-code" size={18} color="white" />}
                         />
+                        <ActionButton icon={<Ionicons name="people-circle" size={24} color="white" />} text="New community" />
+                        <ActionButton icon={<MaterialCommunityIcons name="robot-outline" size={24} color="white" />} text="Chat with AIs" />
                     </View>
+
+                    <Text style={styles.contactsLabel}>Contacts on WhatsApp</Text>
+
+                    <FlatList
+                        data={users}
+                        renderItem={({ item }) => (
+                            <Item key={item._id} userId={item._id} userName={item.username} image={item.profilePic} />
+                        )}
+                        keyExtractor={item => item._id}
+                        scrollEnabled={false}
+                    />
                 </ScrollView>
             )}
         </View>
@@ -117,11 +146,58 @@ export default function Contacts() {
 const styles = StyleSheet.create({
     container: {
         padding: 10,
-        backgroundColor: '#011513',
-        height: '100%'
+        backgroundColor: '#121212',
+        flex: 1
     },
-    chatCtn: {
-        marginTop: 20,
+    topBar: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 10,
+    },
+    topTitle: {
+        color: 'white',
+        fontSize: 18,
+        fontWeight: 'bold',
+    },
+    topSubtitle: {
+        color: '#bbb',
+        fontSize: 12,
+    },
+    topIcons: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    actionsContainer: {
+        marginTop: 10,
+        marginBottom: 10,
+    },
+    actionBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 12,
+    },
+    iconWrap: {
+        width: 40,
+        height: 40,
+        backgroundColor: '#007b5f',
+        borderRadius: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 15,
+    },
+    actionText: {
+        color: 'white',
+        fontSize: 16,
+        flex: 1
+    },
+    qrWrap: {
+        marginRight: 15
+    },
+    contactsLabel: {
+        color: '#aaa',
+        fontSize: 13,
+        marginVertical: 10,
     },
     userCtn: {
         flexDirection: 'row',
@@ -136,7 +212,7 @@ const styles = StyleSheet.create({
     },
     name: {
         fontWeight: 'bold',
-        fontSize: 20,
+        fontSize: 17,
         color: 'white',
     },
     image: {

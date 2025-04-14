@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { View, Image, Text, TouchableOpacity } from 'react-native';
 import Video from 'react-native-video';
 import { Audio } from 'expo-av';
-import Pdf from 'react-native-pdf';
+// import Pdf from 'react-native-pdf';
 import FileViewer from 'react-native-file-viewer';
 
 const OneTimeViewer = ({ route, navigation }) => {
@@ -33,9 +33,9 @@ const OneTimeViewer = ({ route, navigation }) => {
     // if (file.mimeType.startsWith("audio/")) {
     //     return <AudioPlayer uri={file.url || file.uri} />;
     //   }
-    if (file.mimeType === 'application/pdf') {
-      return <Pdf source={{ uri: file.url || file.uri }} style={{ width: '90%', height: '70%' }} />;
-    }
+    // if (file.mimeType === 'application/pdf') {
+    //   return <Pdf source={{ uri: file.url || file.uri }} style={{ width: '90%', height: '70%' }} />;
+    // }
 
     return (
       <TouchableOpacity onPress={openWithExternalViewer}>
