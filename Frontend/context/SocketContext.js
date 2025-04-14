@@ -1,4 +1,4 @@
-import React, { createContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
 import socket from "../utils/socket";
 import { useNetInfo } from "@react-native-community/netinfo";
 import { loadUserInfo } from "../utils/chatStorage";
@@ -8,6 +8,23 @@ export const SocketContext = createContext();
 export const SocketProvider = ({ children }) => {
   const [userData, setUserData] = useState(null);
   const netInfo = useNetInfo();
+
+  const [incomingCall, setIncomingCall] = useState("");
+
+  useEffect(() => {
+    socket.on('incoming-call', (data) => {
+    });
+    console.log("context")
+    setIncomingCall({
+      from:"ID2",
+      callerName:"name",
+      callerProfilePic: "",
+    }); // { from, callerName, callerProfilePic }
+
+    return () => {
+      socket.off('incoming-call');
+    };
+  }, []);
 
   // Load user data when network is connected
   useEffect(() => {
@@ -52,8 +69,10 @@ export const SocketProvider = ({ children }) => {
   }, [netInfo.isConnected, userData]);
 
   return (
-    <SocketContext.Provider value={socket}>
+    <SocketContext.Provider value={{ socket, incomingCall, setIncomingCall }}>
       {children}
     </SocketContext.Provider>
   );
 };
+
+export const useSocket = () => useContext(SocketContext);

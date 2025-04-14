@@ -31,6 +31,8 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 const Stack = createStackNavigator();
 import { SocketProvider } from "./context/SocketContext";
 import OneTimeViewer from "./components/Chats/OneTimeView";
+import AudioScreen from "./components/Calls/AudioScreen";
+import IncomingCallBanner from "./components/banners/NotifyCallingBanner";
 
 export default function App() {
   const [loading, setLoading] = useState(true);
@@ -73,7 +75,11 @@ export default function App() {
             <Stack.Screen name="Privacy" component={PrivacyScreen} />
             <Stack.Screen name="UploadStatus" component={UploadStatusScreen} />
             {/* <Stack.Screen name="OneTimeViewer" component={OneTimeViewer} /> */}
-            <Stack.Screen name="UploadImageStatus" component={UploadImageStatus} options={{ title: "Edit Status" }} />
+            <Stack.Screen
+              name="UploadImageStatus"
+              component={UploadImageStatus}
+              options={{ title: "Edit Status" }}
+            />
             <Stack.Screen name="Avatar" component={AvatarScreen} />
             <Stack.Screen name="List" component={ListScreen} />
             <Stack.Screen name="ChatSetting" component={ChatScreen} />
@@ -81,10 +87,12 @@ export default function App() {
             <Stack.Screen name="Storage" component={StorageAndDataScreen} />
             <Stack.Screen name="AppLanguage" component={AppLanguageScreen} />
             <Stack.Screen name="help" component={HelpScreen} />
+            <Stack.Screen name="AudioScreen" component={AudioScreen} />
             <Stack.Screen name="Invite" component={InviteFriendScreen} />
             <Stack.Screen name="Video" component={VideoEditing} />
             <Stack.Screen name="AppUpdate" component={AppUpdateScreen} />
           </Stack.Navigator>
+          <IncomingCallBanner />
         </GestureHandlerRootView>
       </NavigationContainer>
     </SocketProvider>
