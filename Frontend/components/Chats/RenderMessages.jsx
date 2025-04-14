@@ -86,6 +86,7 @@ export const renderMessage = ({ item, currentUserId }) => {
     const isMyMessage = item.senderId === currentUserId;
     const formattedTime = item.timestamp ? formatTime(item.timestamp) : "";
     const isShortMessage = item.text && item.text.length < 40;
+    // console.log(item)
 
     return (
         <View style={styles.messageContainer}>

@@ -339,9 +339,14 @@ const updateFriendsFile = async (senderId, message, timestamp, isCurrentChatOpen
 export const loadChatHistory = async (friendId) => {
   try {
     const fileUri = `${FileSystem.documentDirectory}chat_${friendId}.json`;
+    const fileInfo = await FileSystem.getInfoAsync(fileUri);
+    if (!fileInfo.exists) {
+      console.warn("Chat file does not exist, creating new one.");
+      await FileSystem.writeAsStringAsync(fileUri, JSON.stringify([])); // Initialize as empty array
+    }
     const dataFromFile = await readJsonFile(fileUri);
-    console.log("dat fron files", dataFromFile);
-    return dataFromFile.messages || [];
+    // console.log("dat fronm files", dataFromFile);
+    return dataFromFile || [];
   } catch (error) {
     console.error("Error loading chat history:", error);
     return [];
@@ -353,14 +358,16 @@ export const saveChatMessage = async (friendId, message) => {
     const path = `${FileSystem.documentDirectory}chat_${friendId}.json`;
     let existingChats = [];
     const fileInfo = await FileSystem.getInfoAsync(path);
-    if (fileInfo.exists) {
-      const content = await FileSystem.readAsStringAsync(path);
-      existingChats = JSON.parse(content || '[]');
+    if (!fileInfo.exists) {
+      await FileSystem.writeAsStringAsync(path, JSON.stringify([])); // Initialize as empty array
     }
+    const content = await FileSystem.readAsStringAsync(path);
+    existingChats = JSON.parse(content || '[]');
     existingChats.push(message);
     await FileSystem.writeAsStringAsync(path, JSON.stringify(existingChats));
   } catch (error) {
     console.error("Error saving message:", error);
   }
 };
+
 

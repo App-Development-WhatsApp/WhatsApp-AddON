@@ -40,6 +40,7 @@ export const SocketProvider = ({ children }) => {
 
     socket.on("disconnect", () => {
       console.log("❌ Socket disconnected");
+      socket.emit("user-disconnected", userData._id);
     });
 
     return () => {

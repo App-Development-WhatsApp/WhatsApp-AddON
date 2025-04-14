@@ -35,6 +35,7 @@ export default function Chat() {
       }
     }
     setUserData(userInfo);
+    console.log(userData, "userData")
   
     setUserData();
     // console.log("Main Page")
@@ -131,7 +132,7 @@ const styles = StyleSheet.create({
   container: {
     padding: 10,
     backgroundColor: '#121212',
-    height: '90%',
+    height: '100%',
   },
   headerCtn: {
     marginTop: StatusBar.currentHeight,

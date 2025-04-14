@@ -17,18 +17,18 @@ interface Message {
 // Placeholder functions (replace with your DB logic)
 const getPendingMessages = async (userId: string): Promise<Message[]> => {
   // Fetch undelivered messages from DB
-  console.log("Fetching pending messages for user:", userId);
+  // console.log("Fetching pending messages for user:", userId);
   return [];
 };
 
 const markMessagesAsDelivered = async (messages: Message[]): Promise<void> => {
   // Mark these messages as delivered in DB
-  console.log("Marking messages as delivered:", messages);
+  // console.log("Marking messages as delivered:", messages);
 };
 
 const saveMessageToDB = async (message: Message): Promise<void> => {
   // Save message to DB
-  console.log("Saving message to DB:", message);
+  // console.log("Saving message to DB:", message);
   // Simulate saving to DB
 };
 
@@ -54,11 +54,12 @@ declare module "socket.io" {
 }
 
 io.on("connection", (socket: Socket) => {
-  console.log("New socket connected:", socket.id);
+  // console.log("New socket connected:", socket.id);
 
   // On user connected
   socket.on("user-connected", async (userId: string) => {
-    // socket.userId = userId;
+    socket.userId = userId;
+    console.log("User connected:", userId);
 
     if (!onlineUsers.has(userId)) {
       onlineUsers.set(userId, new Set());
@@ -78,7 +79,7 @@ io.on("connection", (socket: Socket) => {
 
   // Handle incoming message
   socket.on("sendMessage", async (message: Message) => {
-    console.log("Received message:", message);
+    // console.log("Received message:", message);
     message.timestamp = new Date();
 
 
@@ -86,6 +87,7 @@ io.on("connection", (socket: Socket) => {
 
     if (receiverSocketIds) {
       // ✅ Receiver is online — send message instantly
+      console.log("Receiver is online, sending message:", message, "----", receiverSocketIds);
       receiverSocketIds.forEach((sockId) => {
         io.to(sockId).emit("receiveMessage", message);
       });
@@ -93,6 +95,21 @@ io.on("connection", (socket: Socket) => {
       // ❌ Receiver is offline — store in DB
       await saveMessageToDB(message); // Save with `delivered: false`
     }
+  });
+  socket.on("typing", async ( props:any ) => {
+    console.log("Typing event:", props);
+    const receiverSocketIds = onlineUsers.get(props.friendId);
+    console.log("Receiver socket IDs:", receiverSocketIds);
+    if (receiverSocketIds) {
+      // Receiver is online — send typing event
+      receiverSocketIds.forEach((sockId) => {
+        io.to(sockId).emit("userTyping",props.userid);
+      });
+    }
+  })
+  socket.on('user-disconnected', (userId: string) => {
+    console.log("User disconnected:", userId);
+    onlineUsers.delete(userId);
   });
 
   // On disconnect

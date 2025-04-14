@@ -32,7 +32,11 @@ const OneTimeViewer = ({ route, navigation }) => {
     }
     // if (file.mimeType.startsWith("audio/")) {
     //     return <AudioPlayer uri={file.url || file.uri} />;
+<<<<<<< HEAD
     //   }
+=======
+    // //   }
+>>>>>>> b9c3ae96e32e392847d572bc9acbf054d923fc42
     // if (file.mimeType === 'application/pdf') {
     //   return <Pdf source={{ uri: file.url || file.uri }} style={{ width: '90%', height: '70%' }} />;
     // }
