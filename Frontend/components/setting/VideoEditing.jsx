@@ -161,7 +161,11 @@ export default function VideoEditing() {
                 <View
                   style={[
                     styles.overlay,
-                    { left: `${trimEndPos}%`, right: 0, width: `${100 - trimEndPos}%` },
+                    {
+                      left: `${trimEndPos}%`,
+                      right: 0,
+                      width: `${100 - trimEndPos}%`,
+                    },
                   ]}
                 />
 
@@ -174,7 +178,6 @@ export default function VideoEditing() {
             </View>
           )}
 
-          {/* Show Trimmed Video Button */}
           <TouchableOpacity
             style={[styles.button, { marginTop: 20 }]}
             onPress={() => setShowTrimmed(true)}
@@ -183,42 +186,41 @@ export default function VideoEditing() {
             <Text style={styles.buttonText}>Show Trimmed Video</Text>
           </TouchableOpacity>
 
-          {/* Trimmed Video */}
           {showTrimmed && (
             <View style={{ width: '100%', alignItems: 'center', marginTop: 20 }}>
-                <Text style={{ fontWeight: 'bold', marginBottom: 10 }}>
+              <Text style={{ fontWeight: 'bold', marginBottom: 10 }}>
                 Trimmed Video (From {start.toFixed(2)}s to {end.toFixed(2)}s)
-                </Text>
+              </Text>
 
-                <Video
+              <Video
                 ref={trimmedVideoRef}
                 source={{ uri: videoUri }}
                 resizeMode="contain"
                 style={styles.video}
-                useNativeControls={false} // Hide controls to restrict seeking
+                useNativeControls={false}
                 shouldPlay={false}
                 onPlaybackStatusUpdate={handleTrimmedPlaybackUpdate}
                 onLoad={() => {
-                    if (trimmedVideoRef.current) {
+                  if (trimmedVideoRef.current) {
                     trimmedVideoRef.current.setPositionAsync(start * 1000);
-                    }
+                  }
                 }}
-                />
+              />
 
-                <TouchableOpacity
+              <TouchableOpacity
                 style={[styles.button, { marginTop: 10 }]}
                 onPress={async () => {
-                    if (trimmedVideoRef.current) {
+                  if (trimmedVideoRef.current) {
                     await trimmedVideoRef.current.setPositionAsync(start * 1000);
                     await trimmedVideoRef.current.playAsync();
-                    }
+                  }
                 }}
-                >
+              >
                 <MaterialIcons name="play-arrow" size={24} color="white" />
                 <Text style={styles.buttonText}>Play Trimmed Section</Text>
-                </TouchableOpacity>
+              </TouchableOpacity>
             </View>
-            )}
+          )}
         </>
       )}
     </ScrollView>

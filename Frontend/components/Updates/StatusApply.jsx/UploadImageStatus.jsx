@@ -1,349 +1,394 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useRef, useEffect } from 'react';
 import {
-    View, TextInput, Image, StyleSheet, Dimensions,
-    TouchableOpacity, FlatList, Text, PanResponder, Switch, useRef
-} from "react-native";
-import { Video } from 'expo-av';
+  View,
+  Image,
+  TouchableOpacity,
+  TextInput,
+  Text,
+  FlatList,
+  StyleSheet,
+  Dimensions,
+  PanResponder,
+  ActivityIndicator,
+} from 'react-native';
+import { useRoute, useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
-import Icon from "react-native-vector-icons/FontAwesome";
-import { MaterialCommunityIcons } from "react-native-vector-icons";
-import { segmentVideo } from "../../../utils/FFmpeg";
+import * as VideoThumbnails from 'expo-video-thumbnails';
+import { Ionicons, Entypo, MaterialCommunityIcons, Feather } from '@expo/vector-icons';
+import { Video } from 'expo-av';
 
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const TRIM_BOX_WIDTH = SCREEN_WIDTH * 0.9;
 
-export default function UploadImageStatus({ route, navigation }) {
-    const { selectedImages } = route.params;
-    const [message, setMessage] = useState("");
-    const [loading, setLoading] = useState(false);
-    const [status, setStatus] = useState([]);
-    const [selectedIndex, setSelectedIndex] = useState(0);
-    const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-    const [isVideoPlaying, setIsVideoPlaying] = useState(false);
-    const [selectedEmojiId, setSelectedEmojiId] = useState(null); // To keep track of the emoji being resized
+const UploadImageStatus = () => {
+  const route = useRoute();
+  const navigation = useNavigation();
+  const initialUri = route.params?.uri;
+  const initialType = route.params?.type;
 
-    const createPanResponder = (statusId, emojiIndex) => {
-        let initialDistance = null;
-        let initialScale = status[selectedIndex].emojis[emojiIndex].scale;
+  const [selectedMedia, setSelectedMedia] = useState([{ uri: initialUri, type: initialType, caption: '' }]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [thumbnails, setThumbnails] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [duration, setDuration] = useState(0);
+  const [start, setStart] = useState(0);
+  const [end, setEnd] = useState(0);
+  const [trimStartPos, setTrimStartPos] = useState(0);
+  const [trimEndPos, setTrimEndPos] = useState(100);
 
-        return PanResponder.create({
-            onStartShouldSetPanResponder: () => true,
-            onMoveShouldSetPanResponder: () => true,
+  const videoRef = useRef(null);
 
-            onPanResponderGrant: () => {
-                // Store current scale at gesture start
-                initialScale = status[selectedIndex].emojis[emojiIndex].scale;
-            },
-
-            onPanResponderMove: (evt, gestureState) => {
-                const touches = evt.nativeEvent.touches;
-
-                if (touches.length === 2) {
-                    const [touch1, touch2] = touches;
-
-                    const dx = touch1.pageX - touch2.pageX;
-                    const dy = touch1.pageY - touch2.pageY;
-
-                    const currentDistance = Math.sqrt(dx * dx + dy * dy);
-
-                    if (initialDistance === null) {
-                        initialDistance = currentDistance;
-                    } else {
-                        const scaleFactor = currentDistance / initialDistance;
-                        const newScale = Math.max(0.5, Math.min(3, initialScale * scaleFactor));
-
-                        // Update scale using your function
-                        const emojiId = status[selectedIndex].emojis[emojiIndex].id;
-                        setSelectedEmojiId(emojiId);
-                        handleEmojiScale(newScale);
-                    }
-                } else if (touches.length === 1) {
-                    const { moveX, moveY } = gestureState;
-                    setStatus((prevStatus) =>
-                        prevStatus.map((stat) =>
-                            stat.id === statusId
-                                ? {
-                                    ...stat,
-                                    emojis: stat.emojis.map((emoji, index) =>
-                                        index === emojiIndex
-                                            ? { ...emoji, position: { x: moveX, y: moveY } }
-                                            : emoji
-                                    ),
-                                }
-                                : stat
-                        )
-                    );
-                }
-            },
-
-            onPanResponderRelease: () => {
-                initialDistance = null;
-            },
-        });
-    };
-
-    const renderEmojis = () => {
-        return status[selectedIndex].emojis.map((emoji, index) => (
-            <View
-                key={emoji.id}
-                style={[styles.emojiContainer,
-                selectedEmojiId === emoji.id && styles.selectedEmoji, { top: emoji.position.y, left: emoji.position.x, transform: [{ scale: emoji.scale }] }]}
-                {...createPanResponder(status[selectedIndex].id, index).panHandlers}
-            >
-                {selectedEmojiId === emoji.id && (
-                    <TouchableOpacity style={styles.removeIcon} onPress={handleEmojiRemove}>
-                        <Icon name="times" size={20} color="white" />
-                    </TouchableOpacity>
-                )}
-                <Text style={{ fontSize: 30 * emoji.scale }}
-                    onTouchStart={() => {
-                        setSelectedEmojiId(emoji.id); // Set the selected emoji ID on touch start
-                        if (emoji.id !== selectedEmojiId) {
-                        } else {
-                            setSelectedEmojiId(null); // Reset if the same emoji is touched again
-                        }
-                    }}
-                >{emoji.emoji}</Text>
-            </View>
-        ));
-    };
-
-    useEffect(() => {
-        if (selectedImages && selectedImages.length > 0) {
-            const newStatuses = selectedImages.map((image, index) => ({
-                id: index + 1,
-                mediaUri: image.uri,
-                mediasize: image.size,
-                mediaType: image.mediaType || 'image',
-                emojis: [],
-                text: [],
-                segments: [],
-                caption: '',
-                timing: [
-                    {
-                        startTime: 0,
-                        endTime: 30,
-                    }
-                ],
-                autotrim: false,
-                audio: false,
-            }));
-            setStatus(newStatuses);
-        }
-    }, [selectedImages]);
-
-
-    useEffect(() => {
-        if (status.length === 0) {
-            navigation.navigate("UploadStatus");
-        }
-    }, [status]);
-
-    const handleBack = () => navigation.goBack();
-
-    const handleAttachment = async () => {
-        const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.All, // Supports both images and videos
-            allowsEditing: true,
-            quality: 1
-        });
-
-        if (!result.canceled) {
-            if (result.assets[0].type.startsWith("video/")) {
-                const segments = await segmentVideo(result.assets[0]);
-                console.log("Video segments:", segments);
-                setStatus([...status, {
-                    id: status.length + 1,
-                    mediaUri: result.assets[0].uri,
-                    mediasize: result.assets[0].size,
-                    mediaType: result.assets[0].type || " ", // Either 'image' or 'video'
-                    emojis: [],
-                    text: [],
-                    segments: segments,
-                    caption: ''
-                }]);
-            }
-        };
+  const generateThumbnails = async (uri) => {
+    try {
+      setLoading(true);
+      const thumbs = [];
+  
+      for (let i = 0; i < 9; i++) {
+        const time = i * 1000; // default spacing (every second)
+        const { uri: thumbUri } = await VideoThumbnails.getThumbnailAsync(uri, { time });
+        thumbs.push(thumbUri);
+      }
+  
+      setThumbnails(thumbs);
+    } catch (e) {
+      console.log(e);
+    } finally {
+      setLoading(false);
     }
-    const handleRemoveImage = (index) => {
-        const newStatus = status.filter((_, i) => i !== index);
-        setStatus(newStatus);
-        if (index === selectedIndex && index !== 0) {
-            setSelectedIndex(index - 1);
-        }
-        if (status.length === 0) {
-            navigation.navigate("UploadStatus");
-        }
-    };
-    const handlePlayPause = () => {
-        setIsVideoPlaying(!isVideoPlaying);
-    };
-    const handleEmojiSelect = (emoji) => {
-        setShowEmojiPicker(false);
-        const updatedStatus = [...status];
-        updatedStatus[selectedIndex].emojis.push({
-            id: updatedStatus[selectedIndex].emojis.length,
-            emoji,
-            position: { x: 100, y: 100 },
-            scale: 1
-        });
-        setStatus(updatedStatus);
-    };
-    const handleEmojiRemove = () => {
-        console.log("Removing emoji with ID:", selectedEmojiId);
-        console.log("Removing emoji:", selectedEmojiId);
-        if (selectedEmojiId === null) return;
-        const updatedStatus = [...status];
-        updatedStatus[selectedIndex].emojis = updatedStatus[selectedIndex].emojis.filter(emoji => emoji.id !== selectedEmojiId);
-        setStatus(updatedStatus);
-        setSelectedEmojiId(null); // Reset selection after removal
-    };
-    const handleEmojiScale = (scale) => {
-        setStatus((prevStatus) =>
-            prevStatus.map((stat) =>
-                stat.id === status[selectedIndex].id
-                    ? {
-                        ...stat,
-                        emojis: stat.emojis.map((emoji) =>
-                            emoji.id === selectedEmojiId ? { ...emoji, scale } : emoji
-                        ),
-                    }
-                    : stat
-            )
-        );
-    };
+  };  
+
+  useEffect(() => {
+    const mainMedia = selectedMedia[currentIndex];
+    if (mainMedia?.type?.includes('video')) {
+      generateThumbnails(mainMedia.uri);
+    }
+  }, [selectedMedia, currentIndex]);
+
+  const handlePickMedia = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.All,
+      allowsMultipleSelection: true,
+      quality: 1,
+    });
+
+    if (!result.canceled) {
+      const assets = result.assets.map((asset) => ({
+        uri: asset.uri,
+        type: asset.type,
+        caption: '',
+      }));
+      setSelectedMedia((prev) => [...prev, ...assets]);
+    }
+  };
+
+  const removeMedia = (index) => {
+    const updated = [...selectedMedia];
+    updated.splice(index, 1);
+    if (currentIndex >= updated.length) {
+      setCurrentIndex(Math.max(0, updated.length - 1));
+    }
+    setSelectedMedia(updated);
+  };
+
+  const panResponderStart = PanResponder.create({
+    onMoveShouldSetPanResponder: () => true,
+    onPanResponderMove: (_, gestureState) => {
+      const newPos = Math.min(Math.max(0, trimStartPos + gestureState.dx / 3), trimEndPos - 5);
+      setTrimStartPos(newPos);
+      setStart((newPos / 100) * duration);
+    },
+  });
+
+  const panResponderEnd = PanResponder.create({
+    onMoveShouldSetPanResponder: () => true,
+    onPanResponderMove: (_, gestureState) => {
+      const newPos = Math.max(Math.min(100, trimEndPos + gestureState.dx / 3), trimStartPos + 5);
+      setTrimEndPos(newPos);
+      setEnd((newPos / 100) * duration);
+    },
+  });
+
+  const formatTime = (duration) => {
+    const mins = Math.floor(duration / 60);
+    const secs = Math.floor(duration % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+  
+
+  const renderMediaPreview = ({ item, index }) => {
+    const isImage = item.type.includes('image');
+    const isSelected = index === currentIndex;
     return (
-        <View style={styles.container}>
-            {/* Conditionally render image or video */}
-            {status[selectedIndex].mediaType === 'image' ? (
-                <Image source={{ uri: status[selectedIndex].mediaUri }} style={styles.backgroundMedia} />
-            ) : (
-                <View style={styles.backgroundMedia}>
-                    <ScrollView horizontal style={styles.segmentScroll}>
-                        {segments.map((uri, idx) => (
-                            <Video
-                                key={idx}
-                                source={{ uri }}
-                                style={styles.video}
-                                resizeMode="cover"
-                                useNativeControls={false}
-                                isLooping
-                                shouldPlay={false}
-                            />
-                        ))}
-                    </ScrollView>
-                    <Video
-                        source={{ uri: status[selectedIndex].mediaUri }}
-                        style={{ height: "100%" }}
-                        resizeMode="cover"
-                        shouldPlay={isVideoPlaying}
-                        isLooping
-                    />
-                    {!isVideoPlaying ? (
-                        <TouchableOpacity style={styles.playButton} onPress={handlePlayPause}>
-                            <Icon name="play" size={40} color="#fff" />
-                        </TouchableOpacity>
-                    ) : (
-                        <TouchableOpacity style={styles.playButton} onPress={handlePlayPause}>
-                            <Icon name="pause" size={40} color="#fff" />
-                        </TouchableOpacity>
-
-                    )}
-                </View>
-            )}
-            <View style={styles.iconRow}>
-                <TouchableOpacity onPress={handleBack}>
-                    <Icon name="arrow-left" size={20} color="#fff" />
-                </TouchableOpacity>
-
-                <View style={styles.iconsLeft}>
-                    <TouchableOpacity><Icon name="music" size={20} color="#fff" /></TouchableOpacity>
-                    <TouchableOpacity><Icon name="crop" size={20} color="#fff" /></TouchableOpacity>
-                    <TouchableOpacity onPress={() => setShowEmojiPicker(true)}>
-                        <Icon name="smile-o" size={20} color="#fff" />
-                    </TouchableOpacity>
-                </View>
+      <TouchableOpacity onPress={() => setCurrentIndex(index)}>
+        <View style={[styles.mediaBox, isSelected && styles.selectedMediaBox]}>
+          {isImage ? (
+            <Image source={{ uri: item.uri }} style={styles.imageThumb} />
+          ) : (
+            <View style={styles.videoWrapper}>
+              <Video source={{ uri: item.uri }} style={styles.videoThumb} resizeMode="cover" isMuted shouldPlay={false} />
+              <Ionicons name="play-circle-outline" size={24} color="white" style={styles.playIcon} />
             </View>
-
-
-            <View>{renderEmojis()}</View>
-
-            {showEmojiPicker && (
-                <View style={styles.emojiPicker}>
-                    {["😀", "😂", "😍", "😎", "🥳"].map((emoji, index) => (
-                        <TouchableOpacity key={index} onPress={() => handleEmojiSelect(emoji)}>
-                            <Text style={{ fontSize: 30, margin: 5 }}>{emoji}</Text>
-                        </TouchableOpacity>
-                    ))}
-                </View>
-            )}
-
-            <FlatList
-                data={status}
-                horizontal
-                keyExtractor={(item) => item.id.toString()}
-                renderItem={({ item, index }) => (
-                    <TouchableOpacity onPress={() => {
-                        setSelectedIndex(index);
-                        setIsVideoPlaying(false); // Reset video play state when switching images
-                    }}>
-                        <View style={[styles.imageContainer, selectedIndex === index ? styles.selectedImage : {}]}>
-                            {item.mediaType === 'image' ? (
-                                <Image source={{ uri: item.mediaUri }} style={styles.smallMedia} />
-                            ) : (
-                                <Video source={{ uri: item.mediaUri }} style={styles.smallMedia} resizeMode="cover" />
-                            )}
-                            <TouchableOpacity style={styles.removeIcon} onPress={() => handleRemoveImage(index)}>
-                                <Icon name="times" size={16} color="white" />
-                            </TouchableOpacity>
-                        </View>
-                    </TouchableOpacity>
-                )}
-                style={styles.imageList}
-            />
-            <View style={styles.inputWrapper}>
-                <TouchableOpacity onPress={handleAttachment} style={styles.inputIcon}>
-                    <MaterialCommunityIcons name="attachment" size={24} color="white" />
-                </TouchableOpacity>
-                <TextInput
-                    style={styles.messageInput}
-                    placeholder="Add a Caption..."
-                    placeholderTextColor="#888"
-                    value={message}
-                    onChangeText={setMessage}
-                />
-                <TouchableOpacity style={styles.AddCaption}>
-                    <MaterialCommunityIcons name="send" size={24} color="white" />
-                </TouchableOpacity>
-            </View>
+          )}
+          <TouchableOpacity style={styles.deleteButton} onPress={() => removeMedia(index)}>
+            <Ionicons name="close-circle" size={18} color="white" />
+          </TouchableOpacity>
         </View>
+      </TouchableOpacity>
     );
-}
+  };
 
-const { width } = Dimensions.get("window");
+  const mainMedia = selectedMedia[currentIndex];
+  const isMainImage = mainMedia?.type?.includes('image');
+
+  const togglePlayPause = async () => {
+    if (!videoRef.current) return;
+    if (isPlaying) {
+      await videoRef.current.pauseAsync();
+      setIsPlaying(false);
+    } else {
+      await videoRef.current.playAsync();
+      setIsPlaying(true);
+    }
+  };
+
+  return (
+    <View style={{ flex: 1, backgroundColor: 'black' }}>
+      {isMainImage ? (
+        <Image source={{ uri: mainMedia.uri }} style={{ flex: 1, resizeMode: 'contain' }} />
+      ) : (
+        <View style={{ flex: 1 }}>
+          <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={togglePlayPause}>
+            <Video
+              ref={videoRef}
+              source={{ uri: mainMedia.uri }}
+              style={{ flex: 1 }}
+              resizeMode="contain"
+              isLooping
+              shouldPlay={false}
+              onLoad={({ durationMillis }) => {
+                setDuration(durationMillis);
+                setStart(0);
+                setEnd(durationMillis);
+                setTrimStartPos(0);
+                setTrimEndPos(100);
+              }}                                          
+            />
+            {!isPlaying && (
+              <Ionicons name="play-circle-outline" size={64} color="white" style={styles.centerPlayIcon} />
+            )}
+          </TouchableOpacity>
+
+          {loading ? (
+            <ActivityIndicator size="large" color="#007BFF" style={{ marginVertical: 20 }} />
+          ) : (
+            <View style={styles.trimContainer}>
+              <View style={styles.trimTrack}>
+                <View style={[styles.overlay, { width: `${trimStartPos}%` }]} />
+                <View
+                  style={[
+                    styles.selectedRange,
+                    {
+                      left: `${trimStartPos}%`,
+                      width: `${trimEndPos - trimStartPos}%`,
+                    },
+                  ]}
+                >
+                  <View style={styles.handle} {...panResponderStart.panHandlers} />
+                  <View style={styles.handle} {...panResponderEnd.panHandlers} />
+                </View>
+                <View style={[styles.overlay, { left: `${trimEndPos}%`, width: `${100 - trimEndPos}%` }]} />
+                <View style={styles.trimThumbnailStrip}>
+                  {thumbnails.map((thumb, idx) => (
+                    <Image key={idx} source={{ uri: thumb }} style={styles.trimThumbnail} />
+                  ))}
+                </View>
+              </View>
+              <Text style={styles.trimLabel}>
+                Start: {formatTime(start / 1000)} - End: {formatTime(end / 1000)}
+              </Text>
+            </View>
+          )}
+        </View>
+      )}
+
+      <View style={styles.topIcons}>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Ionicons name="arrow-back" size={28} color="white" />
+        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', gap: 18 }}>
+          <Entypo name="music" size={24} color="white" />
+          <MaterialCommunityIcons name="sticker-emoji" size={24} color="white" />
+          <Feather name="edit-3" size={24} color="white" />
+          <Ionicons name="text" size={24} color="white" />
+        </View>
+      </View>
+
+      {selectedMedia.length > 1 && (
+        <View style={styles.mediaListWrapper}>
+          <FlatList
+            data={selectedMedia}
+            horizontal
+            keyExtractor={(item, index) => `${item.uri}-${index}`}
+            renderItem={renderMediaPreview}
+            showsHorizontalScrollIndicator={false}
+          />
+        </View>
+      )}
+
+      <View style={styles.captionWrapper}>
+        <Ionicons name="add-circle-outline" size={26} color="#ccc" onPress={handlePickMedia} />
+        <TextInput
+          placeholder="Add a caption..."
+          placeholderTextColor="#ccc"
+          style={styles.captionInput}
+          value={selectedMedia[currentIndex]?.caption}
+          onChangeText={(text) => {
+            const updated = [...selectedMedia];
+            updated[currentIndex].caption = text;
+            setSelectedMedia(updated);
+          }}
+        />
+      </View>
+
+      <View style={styles.swipeText}>
+        <Text style={{ color: '#aaa' }}>Swipe up for filters</Text>
+      </View>
+    </View>
+  );
+};
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: "#000" },
-    backgroundMedia: { width: "100%", height: "70%", position: "absolute", top: "10%", backgroundColor: "red" },
-    playButton: { width: 60, height: 60, position: "absolute", display: 'flex', alignItems: 'center', justifyContent: 'center', top: "40%", left: "50%", transform: [{ translateX: -20 }, { translateY: -20 }], backgroundColor: "rgba(0,0,0,0.5)", padding: 10, borderRadius: 90 },
-    imageList: { position: "absolute", bottom: "20%", left: "5%", right: "5%" },
-    imageContainer: { marginHorizontal: 2, position: "relative" },
-    smallMedia: { width: 60, height: 60, borderRadius: 10 },
-    selectedImage: { borderColor: "green", borderWidth: 2, borderRadius: 12 },
-    iconRow: { position: "absolute", height: "5%", backgroundColor: "red", top: 30, flexDirection: "row", justifyContent: "space-between", width: "100%" },
-    iconsLeft: { flexDirection: "row", justifyContent: "space-between", width: "60%" },
-    inputWrapper: { position: "absolute", bottom: "10%", left: "5%", right: "5%", flexDirection: "row", alignItems: "center", backgroundColor: "rgba(0, 0, 0, 0.5)", padding: 5, borderRadius: 50, marginTop: 10, borderBlockColor: "green", borderWidth: 2 },
-    messageInput: { flex: 1, color: "#fff", fontSize: 16, padding: 10 },
-    messageInput2: { flex: 1, color: "#fff", fontSize: 16 },
-    emojiText: { fontSize: 30 },
-    emojiDisplay: { marginTop: 30, flexDirection: 'row', flexWrap: 'wrap' },
-    selectedEmoji: { borderWidth: 2, borderColor: 'blue', padding: 5, borderRadius: 10 },
-    emojiContainer: { position: "absolute", zIndex: 2 },
-    sliderContainer: { marginTop: 20, width: 200 },
-    ShowCaption: { position: "absolute", textAlign: 'center', bottom: "10%", left: "5%", right: "5%", backgroundColor: "rgba(0, 0, 0, 0.5)", padding: 10, borderRadius: 10 },
-    AddCaption: { backgroundColor: "green", borderRadius: 50, alignItems: "center", justifyContent: "center", padding: 10, marginLeft: 20 },
-    SendSection: { position: "absolute", bottom: "0%", left: "0%", right: "0%", flexDirection: "row", alignItems: "center", backgroundColor: "rgba(127, 12, 12, 0.5)", padding: 10, marginTop: 10 },
-    inputIcon: { borderRadius: 50, padding: 10, marginRight: 10 },
-    removeIcon: { position: "absolute", top: -4, right: -4, backgroundColor: "green", borderRadius: 20, padding: 1, zIndex: 10 },
-    emojiPicker: { position: "absolute", bottom: '50%', left: "10%", right: "10%", flexDirection: "row", backgroundColor: "rgba(0,0,0,0.8)", padding: 10, borderRadius: 10 },
+  topIcons: {
+    position: 'absolute',
+    top: 40,
+    left: 20,
+    right: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  trimContainer: {
+    position: 'absolute',
+    top: 90,
+    alignSelf: 'center',
+    width: TRIM_BOX_WIDTH,
+  },
+  trimLabel: {
+    color: 'white',
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  trimTrack: {
+    height: 50,
+    backgroundColor: '#222',
+    justifyContent: 'center',
+    overflow: 'hidden',
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: 'white'
+  },
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255,255,255,0.3)',
+  },
+  selectedRange: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  handle: {
+    width: 8,
+    backgroundColor: 'white',
+    height: '100%',
+  },
+  trimThumbnailStrip: {
+    ...StyleSheet.absoluteFillObject,
+    flexDirection: 'row',
+    zIndex: -1,
+  },
+  trimThumbnail: {
+    width: TRIM_BOX_WIDTH / 9,
+    height: '100%',
+  },
+  mediaListWrapper: {
+    position: 'absolute',
+    bottom: 90,
+    paddingLeft: 10,
+  },
+  mediaBox: {
+    marginRight: 8,
+    position: 'relative',
+    borderRadius: 8,
+    overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  selectedMediaBox: {
+    borderColor: 'white',
+  },
+  imageThumb: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+  },
+  videoWrapper: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  videoThumb: {
+    width: '100%',
+    height: '100%',
+  },
+  playIcon: {
+    position: 'absolute',
+    top: 18,
+    left: 18,
+  },
+  centerPlayIcon: {
+    position: 'absolute',
+    top: '45%',
+    left: '50%',
+    transform: [{ translateX: -32 }, { translateY: -32 }],
+  },
+  deleteButton: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    borderRadius: 12,
+    padding: 2,
+  },
+  captionWrapper: {
+    position: 'absolute',
+    bottom: 60,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    width: '100%',
+  },
+  captionInput: {
+    flex: 1,
+    marginLeft: 10,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    borderRadius: 10,
+    padding: 10,
+    color: 'white',
+    fontSize: 16,
+  },
+  swipeText: {
+    position: 'absolute',
+    bottom: 20,
+    width: '100%',
+    alignItems: 'center',
+  },
 });
 
-
+export default UploadImageStatus;

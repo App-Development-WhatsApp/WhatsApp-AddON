@@ -6792,6 +6792,7 @@ react-native-fs@^2.20.0:
     invariant "^2.2.4"
     prop-types "^15.7.2"
 
+
 react-native-image-picker@^8.2.0:
   version "8.2.0"
   resolved "https://registry.npmjs.org/react-native-image-picker/-/react-native-image-picker-8.2.0.tgz"
@@ -6917,7 +6918,7 @@ react-native-webview@*, react-native-webview@^13.12.5:
     escape-string-regexp "^4.0.0"
     invariant "2.2.4"
 
-react-native@*, "react-native@^0.0.0-0 || >=0.60 <1.0", react-native@>=0.30.0, react-native@>=0.40, react-native@>=0.47, react-native@>=0.59, react-native@>=0.59.0, react-native@>=0.60.0, react-native@>=0.70.0, react-native@0.76.9:
+react-native@*, "react-native@^0.0.0-0 || >=0.60 <1.0", react-native@>=0.30.0, react-native@>=0.40, react-native@>=0.40.0, react-native@>=0.47, react-native@>=0.59, react-native@>=0.59.0, react-native@>=0.60.0, react-native@>=0.70.0, react-native@0.76.9:
   version "0.76.9"
   resolved "https://registry.npmjs.org/react-native/-/react-native-0.76.9.tgz"
   integrity sha512-+LRwecWmTDco7OweGsrECIqJu0iyrREd6CTCgC/uLLYipiHvk+MH9nd6drFtCw/6Blz6eoKTcH9YTTJusNtrWg==
