@@ -1,213 +1,140 @@
-import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  Image,
-  StyleSheet,
-  FlatList,
-  StatusBar,
-} from "react-native";
-import { Camera } from "expo-camera";
-import * as ImagePicker from "expo-image-picker";
-import * as MediaLibrary from "expo-media-library";
-import { useNavigation } from "@react-navigation/native";
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, Image, ScrollView, StyleSheet } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+import { Ionicons } from '@expo/vector-icons'; // ✅ Correct icon import for Expo
+import { useNavigation } from '@react-navigation/native';
 
-export default function UploadStatusScreen() {
-  const [galleryImages, setGalleryImages] = useState([]);
-  const [selectedImages, setSelectedImages] = useState([]);
-  const navigation = useNavigation();
+const UploadStatusScreen = () => {
+  const [media, setMedia] = useState([]);
 
-  useEffect(() => {
-    fetchGalleryImages();
-  }, []);
 
-  const fetchGalleryImages = async () => {
-    const { status } = await MediaLibrary.requestPermissionsAsync();
-    if (status !== "granted") {
-      alert("Permission to access gallery is required.");
-      return;
-    }
+// Inside your component
+const navigation = useNavigation();
 
-    const media = await MediaLibrary.getAssetsAsync({
-      mediaType: MediaLibrary.MediaType.photo,
-      first: 30,
-      sortBy: [[MediaLibrary.SortBy.creationTime, false]],
-    });
-
-    if (media.assets.length > 0) {
-      setGalleryImages(media.assets);
-    }
-  };
-
-  const takePicture = async () => {
-    const { status } = await Camera.requestCameraPermissionsAsync();
-    if (status !== "granted") {
-      alert("Camera permission is required.");
-      return;
-    }
-
+const openCamera = async () => {
+  try {
     const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: true,
+      mediaTypes: ImagePicker.MediaTypeOptions.All,
+      allowsEditing: false,
+      aspect: [4, 3],
       quality: 1,
     });
 
     if (!result.canceled) {
-      const savedAsset = await MediaLibrary.createAssetAsync(result.assets[0].uri);
-      await MediaLibrary.createAlbumAsync("WhatsApp Status", savedAsset, false);
-      navigation.navigate("UploadImageStatus", {
-        imageUri: result.assets[0].uri,
-        size: result.assets[0].fileSize,
+      const asset = result.assets[0];
+
+      navigation.navigate('UploadImageStatus', {
+        uri: asset.uri,
+        type: asset.type,
+        size: asset.fileSize ?? null, // fileSize is not always available
       });
     }
-  };
+  } catch (error) {
+    console.error('Camera Error:', error);
+  }
+};
 
-  const selectMultipleImages = async () => {
+const openImagePicker = async () => {
+  try {
     const result = await ImagePicker.launchImageLibraryAsync({
-      allowsMultipleSelection: true,
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ImagePicker.MediaTypeOptions.All,
+      allowsEditing: false,
+      aspect: [4, 3],
       quality: 1,
     });
-    console.log("Selected images:", result.assets); 
 
-    // if (!result.canceled) {
-    //   result.assets.forEach((asset) => {
-    //     navigation.navigate("UploadImageStatus", {
-    //       imageUri: asset.uri,
-    //       size: asset.fileSize,
-    //     });
-    //   });
-    // }
-  };
+    if (!result.canceled) {
+      const asset = result.assets[0];
 
-  const handleLongPress = ({ uri, fileSize, mediaType }) => {
-    setSelectedImages((prev) => {
-      const exists = prev.some((img) => img.uri === uri);
-      if (exists) {
-        return prev.filter((img) => img.uri !== uri);
-      } else {
-        return [...prev, { uri, size: fileSize, mediaType }];
-      }
-    });
-  };
-
-
-  const UploadStatus = () => {
-    navigation.navigate("UploadImageStatus", selectedImages);
-  };
-
-  const imagesWithTiles = [{ id: "camera" }, { id: "gallery" }, ...galleryImages];
+      navigation.navigate('UploadImageStatus', {
+        uri: asset.uri,
+        type: asset.type,
+        size: asset.fileSize ?? null,
+      });
+    }
+  } catch (error) {
+    console.error('ImagePicker Error:', error);
+  }
+};
 
   return (
     <View style={styles.container}>
-      <StatusBar backgroundColor="#075E54" barStyle="light-content" />
-      <Text style={styles.heading}>Upload WhatsApp Status</Text>
+      <Text style={styles.title}>Upload Status</Text>
 
-      <TouchableOpacity onPress={UploadStatus} style={styles.uploadButton}>
-        <Text style={styles.uploadText}>📁 Upload Status</Text>
-      </TouchableOpacity>
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity style={styles.button} onPress={openCamera}>
+          <Ionicons name="camera" size={30} color="#fff" />
+          <Text style={styles.buttonText}>Take Photo/Video</Text>
+        </TouchableOpacity>
 
-      <Text style={styles.sectionTitle}>Your Gallery</Text>
-      <FlatList
-        data={imagesWithTiles}
-        numColumns={3}
-        keyExtractor={(item, index) => item.id ?? index.toString()}
-        contentContainerStyle={styles.galleryList}
-        renderItem={({ item }) =>
-          item.id === "camera" ? (
-            <TouchableOpacity onPress={takePicture} style={styles.cameraTile}>
-              <Text style={styles.cameraEmoji}>📷</Text>
-              <Text style={styles.cameraLabel}>Camera</Text>
-            </TouchableOpacity>
-          ) : item.id === "gallery" ? (
-            <TouchableOpacity onPress={selectMultipleImages} style={styles.cameraTile}>
-              <Text style={styles.cameraEmoji}>📁</Text>
-              <Text style={styles.cameraLabel}>Phone</Text>
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity
-              onPress={() => {
-                const onlyThisImage = [{ uri: item.uri, size: item.fileSize,mediaType: item.mediaType }];
-                setSelectedImages(onlyThisImage);
-                // navigation.navigate("UploadImageStatus", { selectedImages: onlyThisImage });
-                console.log("Selected image:", item);
-              }}
-              onLongPress={() =>
-                handleLongPress({ uri: item.uri, fileSize: item.fileSize, mediaType: item.mediaType })
-              }
-              style={{
-                borderWidth: selectedImages.some((img) => img.uri === item.uri) ? 3 : 0,
-                borderColor: "#25D366",
-                borderRadius: 10,
-              }}
-            >
-              <Image source={{ uri: item.uri }} style={styles.galleryImage} />
-            </TouchableOpacity>
-          )
-        }
-      />
+        <TouchableOpacity style={styles.button} onPress={openImagePicker}>
+          <Ionicons name="image" size={30} color="#fff" />
+          <Text style={styles.buttonText}>Upload Photo/Video</Text>
+        </TouchableOpacity>
+      </View>
+
+      <ScrollView horizontal style={styles.mediaContainer}>
+        {media.map((item, index) => (
+          <View key={index} style={styles.mediaItem}>
+            {item?.type?.startsWith('image') || item?.type === 'image' ? (
+              <Image source={{ uri: item.uri }} style={styles.mediaImage} />
+            ) : (
+              <Text style={styles.mediaText}>Video Selected</Text>
+            )}
+          </View>
+        ))}
+      </ScrollView>
     </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#075E54",
-    paddingTop: 50,
-    paddingHorizontal: 15,
+    padding: 20,
+    backgroundColor: '#fff',
+    alignItems: 'center',
   },
-  heading: {
-    fontSize: 22,
-    color: "#ffffff",
-    fontWeight: "bold",
-    textAlign: "center",
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 20,
+    color: '#333',
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    width: '100%',
+    justifyContent: 'space-between',
     marginBottom: 20,
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#ffffff",
-    marginBottom: 10,
+  button: {
+    backgroundColor: '#007AFF',
+    padding: 10,
+    borderRadius: 10,
+    width: '48%',
+    alignItems: 'center',
+  },
+  buttonText: {
+    color: '#fff',
+    marginTop: 5,
+    fontSize: 14,
+  },
+  mediaContainer: {
     marginTop: 20,
+    width: '100%',
   },
-  uploadButton: {
-    backgroundColor: "#25D366",
-    paddingVertical: 15,
-    borderRadius: 30,
-    alignItems: "center",
-    elevation: 4,
+  mediaItem: {
+    marginRight: 10,
   },
-  uploadText: {
-    fontSize: 18,
-    color: "#fff",
-  },
-  galleryList: {
-    paddingBottom: 20,
-    alignItems: "center",
-  },
-  galleryImage: {
+  mediaImage: {
     width: 100,
     height: 100,
-    margin: 5,
     borderRadius: 10,
   },
-  cameraTile: {
-    width: 100,
-    height: 100,
-    margin: 5,
-    backgroundColor: "#128C7E",
-    borderRadius: 10,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  cameraEmoji: {
-    fontSize: 28,
-    marginBottom: 5,
-    color: "#fff",
-  },
-  cameraLabel: {
-    fontSize: 12,
-    color: "#fff",
+  mediaText: {
+    color: '#000',
+    fontSize: 14,
   },
 });
+
+export default UploadStatusScreen;
