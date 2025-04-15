@@ -37,7 +37,7 @@ export const registerUser = asyncHandler(async (req, res) => {
   // Handle Image Upload (Optional)
   if (req.file) {
     const avatarLocalPath = req.file.path;
-    // console.log("Avatar Local Path:", avatarLocalPath);
+    console.log("Avatar Local Path:", avatarLocalPath);
 
     // Upload to Cloudinary
     const avatar = await uploadOnCloudinary(avatarLocalPath);
@@ -45,6 +45,7 @@ export const registerUser = asyncHandler(async (req, res) => {
     if (!avatar) {
       throw new ApiError(400, "Failed to upload avatar on Cloudinary");
     }
+    console.log("Avatar URL:", avatar.secure_url);
 
     // Update user with profile picture URL
     await User.findByIdAndUpdate(newUser._id, { profilePic: avatar.secure_url });
@@ -175,8 +176,13 @@ export const getFriends = asyncHandler(async (req: Request, res: Response) => {
 
 export const UploadStatus = asyncHandler(async (req: Request, res: Response) => {
   try {
-    const { userId } = req.body;
+    // const { userId } = req.body;
     const statusFiles = req.files as Express.Multer.File[]; // Cast to the correct type
+    console.log('User ID:', req.body.userId);
+    console.log('Captions:', req.body); // Will include caption_0, caption_1, etc.
+    console.log('Files:', req.files);
+
+    res.json({ message: 'Upload received!' });
 
     if (!statusFiles || statusFiles.length === 0) {
       return res.status(400).json({ message: 'No files uploaded' });
@@ -184,39 +190,41 @@ export const UploadStatus = asyncHandler(async (req: Request, res: Response) => 
 
     const statusUrls: string[] = [];
 
-    for (const file of statusFiles) {
-      const ext = path.extname(file.originalname).toLowerCase();
-      const filePath = file.path;
+    // for (const file of statusFiles) {
+    //   const ext = path.extname(file.originalname).toLowerCase();
+    //   const filePath = file.path;
 
-      if (ext === ".mp4" || ext === ".mov" || ext === ".avi" || ext === ".mkv") {
-        const duration = await getVideoDuration(filePath);
+    //   if (ext === ".mp4" || ext === ".mov" || ext === ".avi" || ext === ".mkv") {
+    //     const duration = await getVideoDuration(filePath);
 
-        if (duration > 20) {
-          // Split into chunks
-          const chunkPaths = await splitVideo(filePath);
-          for (const chunk of chunkPaths) {
-            const uploaded = await uploadOnCloudinary(chunk);
-            statusUrls.push(uploaded.secure_url);
-            fs.unlinkSync(chunk); // cleanup
-          }
-        } else {
-          const uploaded = await uploadOnCloudinary(filePath);
-          statusUrls.push(uploaded.secure_url);
-        }
-      } else {
-        // Upload photo directly
-        const uploaded = await uploadOnCloudinary(filePath);
-        statusUrls.push(uploaded.secure_url);
-      }
+    //     if (duration > 20) {
+    //       // Split into chunks
+    //       const chunkPaths = await splitVideo(filePath);
+    //       for (const chunk of chunkPaths) {
+    //         const uploaded = await uploadOnCloudinary(chunk);
+    //         statusUrls.push(uploaded.secure_url);
+    //         fs.unlinkSync(chunk); // cleanup
+    //       }
+    //     } else {
+    //       const uploaded = await uploadOnCloudinary(filePath);
+    //       statusUrls.push(uploaded.secure_url);
+    //     }
+    //   } else {
+    //     // Upload photo directly
+    //     const uploaded = await uploadOnCloudinary(filePath);
+    //     statusUrls.push(uploaded.secure_url);
+    //   }
 
-      // Cleanup original file
-      fs.unlinkSync(filePath);
-    }
-    console.log(statusUrls,'------------------------',userId)
+    //   // Cleanup original file
+    //   fs.unlinkSync(filePath);
+    // }
+    // console.log(statusUrls, '------------------------', userId)
     // Save to user
-    await User.findByIdAndUpdate(userId, { $push: { status: { $each: statusUrls } } });
+    // await User.findByIdAndUpdate(userId, { $push: { status: { $each: statusUrls } } });
 
-    res.status(200).json({ message: "Status uploaded successfully", statusUrls });
+    // res.status(200).json({ message: "Status uploaded successfully", statusUrls });
+    res.json({ message: 'Upload received!' });
+
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error' });

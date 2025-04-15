@@ -16,54 +16,72 @@ import * as ImagePicker from 'expo-image-picker';
 import * as VideoThumbnails from 'expo-video-thumbnails';
 import { Ionicons, Entypo, MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 import { Video } from 'expo-av';
+import { uploadStatus } from '../../../Services/AuthServices';
+import { loadUserInfo } from '../../../utils/chatStorage';
+
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
-const TRIM_BOX_WIDTH = SCREEN_WIDTH * 0.9;
 
 const UploadImageStatus = () => {
   const route = useRoute();
   const navigation = useNavigation();
-  const initialUri = route.params?.uri;
-  const initialType = route.params?.type;
 
-  const [selectedMedia, setSelectedMedia] = useState([{ uri: initialUri, type: initialType, caption: '' }]);
+  const [selectedMedia, setSelectedMedia] = useState([
+    {
+      uri: route.params?.uri,
+      type: route.params?.type,
+      caption: '',
+      startTime: 0,
+      endTime: 1000,
+      duration: 1000,
+    },
+  ]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [thumbnails, setThumbnails] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [duration, setDuration] = useState(0);
-  const [start, setStart] = useState(0);
-  const [end, setEnd] = useState(0);
-  const [trimStartPos, setTrimStartPos] = useState(0);
-  const [trimEndPos, setTrimEndPos] = useState(100);
+  const [uploading, setUploading] = useState(false);
+  const [userData, setUserData] = useState(null); // Assuming you have a way to get user data
 
   const videoRef = useRef(null);
+  const currentMedia = selectedMedia[currentIndex];
+  const startPercent = (currentMedia.startTime / currentMedia.duration) * 100;
+  const endPercent = (currentMedia.endTime / currentMedia.duration) * 100;
 
-  const generateThumbnails = async (uri) => {
-    try {
-      setLoading(true);
-      const thumbs = [];
-  
-      for (let i = 0; i < 9; i++) {
-        const time = i * 1000; // default spacing (every second)
-        const { uri: thumbUri } = await VideoThumbnails.getThumbnailAsync(uri, { time });
-        thumbs.push(thumbUri);
+  const generateThumbnails = async () => {
+    setLoading(true);
+    const thumbList = [];
+    const interval = currentMedia.duration / 10;
+
+    for (let i = 1; i <= 9; i++) {
+      const timestamp = i * interval;
+      try {
+        const { uri: thumbnailUri } = await VideoThumbnails.getThumbnailAsync(currentMedia.uri, {
+          time: timestamp * 1000,
+        });
+        thumbList.push(thumbnailUri);
+      } catch (e) {
+        console.warn(`Could not generate thumbnail at ${timestamp}s`, e);
       }
-  
-      setThumbnails(thumbs);
-    } catch (e) {
-      console.log(e);
-    } finally {
-      setLoading(false);
     }
-  };  
 
+    setThumbnails(thumbList);
+    setLoading(false);
+  };
   useEffect(() => {
-    const mainMedia = selectedMedia[currentIndex];
-    if (mainMedia?.type?.includes('video')) {
-      generateThumbnails(mainMedia.uri);
+    const fetchUserData = async () => {
+      // Assuming you have a function to get user data
+      const user = await loadUserInfo(); // Replace with your actual function
+      setUserData(user);
+    };
+
+    fetchUserData();
+  }, [])
+  useEffect(() => {
+    if (currentMedia.type === 'video') {
+      generateThumbnails();
     }
-  }, [selectedMedia, currentIndex]);
+  }, [currentIndex]);
 
   const handlePickMedia = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -72,40 +90,46 @@ const UploadImageStatus = () => {
       quality: 1,
     });
 
-    if (!result.canceled) {
-      const assets = result.assets.map((asset) => ({
-        uri: asset.uri,
-        type: asset.type,
+    result.assets?.forEach((item) => {
+      const newData = {
+        uri: item.uri,
+        type: item.type,
         caption: '',
-      }));
-      setSelectedMedia((prev) => [...prev, ...assets]);
-    }
+        startTime: 0,
+        endTime: item.duration || 1000,
+        duration: item.duration || 1000,
+      };
+      setSelectedMedia((prev) => [...prev, newData]);
+    });
   };
 
   const removeMedia = (index) => {
-    const updated = [...selectedMedia];
-    updated.splice(index, 1);
-    if (currentIndex >= updated.length) {
-      setCurrentIndex(Math.max(0, updated.length - 1));
-    }
-    setSelectedMedia(updated);
+    setSelectedMedia((prev) => prev.filter((_, i) => i !== index));
+    if (currentIndex >= index && currentIndex > 0) setCurrentIndex(currentIndex - 1);
   };
 
   const panResponderStart = PanResponder.create({
     onMoveShouldSetPanResponder: () => true,
     onPanResponderMove: (_, gestureState) => {
-      const newPos = Math.min(Math.max(0, trimStartPos + gestureState.dx / 3), trimEndPos - 5);
-      setTrimStartPos(newPos);
-      setStart((newPos / 100) * duration);
+      const deltaMs = (gestureState.dx / SCREEN_WIDTH) * currentMedia.duration;
+      const newPos = Math.min(Math.max(0, currentMedia.startTime + deltaMs), currentMedia.endTime - 5);
+      setSelectedMedia((prev) =>
+        prev.map((item, index) => index === currentIndex ? { ...item, startTime: newPos } : item)
+      );
     },
   });
 
   const panResponderEnd = PanResponder.create({
     onMoveShouldSetPanResponder: () => true,
     onPanResponderMove: (_, gestureState) => {
-      const newPos = Math.max(Math.min(100, trimEndPos + gestureState.dx / 3), trimStartPos + 5);
-      setTrimEndPos(newPos);
-      setEnd((newPos / 100) * duration);
+      const deltaMs = (gestureState.dx / SCREEN_WIDTH) * currentMedia.duration;
+      const newPos = Math.max(
+        Math.min(currentMedia.duration, currentMedia.endTime + deltaMs),
+        currentMedia.startTime + 5
+      );
+      setSelectedMedia((prev) =>
+        prev.map((item, index) => index === currentIndex ? { ...item, endTime: newPos } : item)
+      );
     },
   });
 
@@ -114,14 +138,15 @@ const UploadImageStatus = () => {
     const secs = Math.floor(duration % 60);
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
-  
 
   const renderMediaPreview = ({ item, index }) => {
     const isImage = item.type.includes('image');
-    const isSelected = index === currentIndex;
     return (
-      <TouchableOpacity onPress={() => setCurrentIndex(index)}>
-        <View style={[styles.mediaBox, isSelected && styles.selectedMediaBox]}>
+      <TouchableOpacity onPress={() => {
+        setCurrentIndex(index);
+        // console.log(selectedMedia[index], "selectedMedia[index]")
+      }}>
+        <View style={[styles.mediaBox, index === currentIndex && styles.selectedMediaBox]}>
           {isImage ? (
             <Image source={{ uri: item.uri }} style={styles.imageThumb} />
           ) : (
@@ -138,9 +163,6 @@ const UploadImageStatus = () => {
     );
   };
 
-  const mainMedia = selectedMedia[currentIndex];
-  const isMainImage = mainMedia?.type?.includes('image');
-
   const togglePlayPause = async () => {
     if (!videoRef.current) return;
     if (isPlaying) {
@@ -152,52 +174,64 @@ const UploadImageStatus = () => {
     }
   };
 
+  const handleUploadStatus = async () => {
+    setUploading(true);
+
+    const formData = new FormData();
+    formData.append('userId', userData._id); // Assuming you have user data
+
+    selectedMedia.forEach((item, index) => {
+      const fileExtension = item.uri.split('.').pop();
+      const mimeType = item.type === 'video'
+        ? `video/${fileExtension}`
+        : `image/${fileExtension}`;
+
+      formData.append('status', {
+        uri: item.uri,
+        type: mimeType,
+        name: `upload_${index}.${fileExtension}`,
+      });
+
+      formData.append(`caption_${index}`, item.caption);
+      formData.append(`startTime_${index}`, item.startTime);
+      formData.append(`endTime_${index}`, item.endTime);
+    });
+
+    try {
+      console.log('Uploading status...');
+      const response = await uploadStatus(formData);
+      // const result = await response.json();
+      console.log('Upload success:', response);
+    } catch (error) {
+      console.log('Upload failed:', error);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+
   return (
     <View style={{ flex: 1, backgroundColor: 'black' }}>
-      {isMainImage ? (
-        <Image source={{ uri: mainMedia.uri }} style={{ flex: 1, resizeMode: 'contain' }} />
+      {currentMedia.type.includes('image') ? (
+        <Image source={{ uri: currentMedia.uri }} style={{ flex: 1, resizeMode: 'contain' }} />
       ) : (
         <View style={{ flex: 1 }}>
-          <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={togglePlayPause}>
-            <Video
-              ref={videoRef}
-              source={{ uri: mainMedia.uri }}
-              style={{ flex: 1 }}
-              resizeMode="contain"
-              isLooping
-              shouldPlay={false}
-              onLoad={({ durationMillis }) => {
-                setDuration(durationMillis);
-                setStart(0);
-                setEnd(durationMillis);
-                setTrimStartPos(0);
-                setTrimEndPos(100);
-              }}                                          
-            />
-            {!isPlaying && (
-              <Ionicons name="play-circle-outline" size={64} color="white" style={styles.centerPlayIcon} />
-            )}
-          </TouchableOpacity>
-
           {loading ? (
             <ActivityIndicator size="large" color="#007BFF" style={{ marginVertical: 20 }} />
           ) : (
             <View style={styles.trimContainer}>
               <View style={styles.trimTrack}>
-                <View style={[styles.overlay, { width: `${trimStartPos}%` }]} />
-                <View
-                  style={[
-                    styles.selectedRange,
-                    {
-                      left: `${trimStartPos}%`,
-                      width: `${trimEndPos - trimStartPos}%`,
-                    },
-                  ]}
-                >
-                  <View style={styles.handle} {...panResponderStart.panHandlers} />
-                  <View style={styles.handle} {...panResponderEnd.panHandlers} />
+                <View style={[styles.overlay, { width: `${startPercent}%` }]} />
+                <View style={[
+                  styles.selectedRange,
+                  {
+                    left: `${startPercent}%`,
+                    width: `${endPercent - startPercent}%`,
+                  }]}>
+                  <View style={[styles.handle, { left: 0 }]} {...panResponderStart.panHandlers} />
+                  <View style={[styles.handle, { right: 0 }]} {...panResponderEnd.panHandlers} />
                 </View>
-                <View style={[styles.overlay, { left: `${trimEndPos}%`, width: `${100 - trimEndPos}%` }]} />
+                <View style={[styles.overlay, { left: `${endPercent}%`, width: `${100 - endPercent}%` }]} />
                 <View style={styles.trimThumbnailStrip}>
                   {thumbnails.map((thumb, idx) => (
                     <Image key={idx} source={{ uri: thumb }} style={styles.trimThumbnail} />
@@ -205,10 +239,24 @@ const UploadImageStatus = () => {
                 </View>
               </View>
               <Text style={styles.trimLabel}>
-                Start: {formatTime(start / 1000)} - End: {formatTime(end / 1000)}
+                Start: {formatTime(currentMedia.startTime / 1000)} - End: {formatTime(currentMedia.endTime / 1000)}
               </Text>
             </View>
           )}
+          <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={togglePlayPause}>
+            <Video
+              ref={videoRef}
+              source={{ uri: currentMedia.uri }}
+              style={{ flex: 1 }}
+              resizeMode="contain"
+              isLooping
+              shouldPlay={false}
+            />
+            {!isPlaying && (
+              <Ionicons name="play-circle-outline" size={64} color="white" style={styles.centerPlayIcon} />
+            )}
+          </TouchableOpacity>
+
         </View>
       )}
 
@@ -242,7 +290,7 @@ const UploadImageStatus = () => {
           placeholder="Add a caption..."
           placeholderTextColor="#ccc"
           style={styles.captionInput}
-          value={selectedMedia[currentIndex]?.caption}
+          value={currentMedia.caption}
           onChangeText={(text) => {
             const updated = [...selectedMedia];
             updated[currentIndex].caption = text;
@@ -251,97 +299,33 @@ const UploadImageStatus = () => {
         />
       </View>
 
-      <View style={styles.swipeText}>
-        <Text style={{ color: '#aaa' }}>Swipe up for filters</Text>
-      </View>
+      <TouchableOpacity disabled={uploading} style={styles.sendButton} onPress={handleUploadStatus}>
+        {uploading ? <ActivityIndicator size="small" color="white" /> : <Text style={styles.sendText}>Upload Status</Text>}
+      </TouchableOpacity>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  topIcons: {
-    position: 'absolute',
-    top: 40,
-    left: 20,
-    right: 20,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  trimContainer: {
-    position: 'absolute',
-    top: 90,
-    alignSelf: 'center',
-    width: TRIM_BOX_WIDTH,
-  },
-  trimLabel: {
-    color: 'white',
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
-  trimTrack: {
-    height: 50,
-    backgroundColor: '#222',
-    justifyContent: 'center',
-    overflow: 'hidden',
-    borderRadius: 8,
-    borderWidth: 2,
-    borderColor: 'white'
-  },
-  overlay: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(255,255,255,0.3)',
-  },
-  selectedRange: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  handle: {
-    width: 8,
-    backgroundColor: 'white',
-    height: '100%',
-  },
-  trimThumbnailStrip: {
-    ...StyleSheet.absoluteFillObject,
-    flexDirection: 'row',
-    zIndex: -1,
-  },
-  trimThumbnail: {
-    width: TRIM_BOX_WIDTH / 9,
-    height: '100%',
-  },
-  mediaListWrapper: {
-    position: 'absolute',
-    bottom: 90,
-    paddingLeft: 10,
-  },
   mediaBox: {
-    marginRight: 8,
+    margin: 6,
     position: 'relative',
-    borderRadius: 8,
-    overflow: 'hidden',
-    borderWidth: 2,
-    borderColor: 'transparent',
   },
   selectedMediaBox: {
-    borderColor: 'white',
+    borderColor: '#00f',
+    borderWidth: 2,
   },
   imageThumb: {
     width: 60,
     height: 60,
-    borderRadius: 8,
+    borderRadius: 6,
   },
   videoWrapper: {
     width: 60,
     height: 60,
-    borderRadius: 8,
+    borderRadius: 6,
     overflow: 'hidden',
+    backgroundColor: '#333',
   },
   videoThumb: {
     width: '100%',
@@ -352,42 +336,100 @@ const styles = StyleSheet.create({
     top: 18,
     left: 18,
   },
+  deleteButton: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    padding: 2,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    borderRadius: 10,
+  },
   centerPlayIcon: {
     position: 'absolute',
     top: '45%',
-    left: '50%',
-    transform: [{ translateX: -32 }, { translateY: -32 }],
+    left: '45%',
   },
-  deleteButton: {
-    position: 'absolute',
-    top: -6,
-    right: -6,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    borderRadius: 12,
-    padding: 2,
+  trimContainer: {
+    paddingHorizontal: 10,
+    paddingVertical: 10,
   },
-  captionWrapper: {
+  trimTrack: {
+    height: 60,
+    backgroundColor: '#222',
+    borderRadius: 6,
+    overflow: 'hidden',
+    position: 'relative',
+    marginTop: 60,
+  },
+  overlay: {
+    backgroundColor: 'rgba(255,255,255,0.3)',
     position: 'absolute',
-    bottom: 60,
+    top: 0,
+    bottom: 0,
+  },
+  selectedRange: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
+  },
+  handle: {
+    width: 10,
+    height: '100%',
+    backgroundColor: '#fff',
+    position: 'absolute',
+  },
+  trimThumbnailStrip: {
+    position: 'absolute',
+    flexDirection: 'row',
     width: '100%',
+    height: '100%',
+    zIndex: -1,
+  },
+  trimThumbnail: {
+    width: SCREEN_WIDTH / 10,
+    height: '100%',
+  },
+  trimLabel: {
+    marginTop: 8,
+    color: '#ccc',
+    textAlign: 'center',
+  },
+  topIcons: {
+    position: 'absolute',
+    top: 40,
+    left: 20,
+    right: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  mediaListWrapper: {
+    position: 'absolute',
+    bottom: 130,
+    width: '100%',
+    paddingVertical: 10,
+  },
+  captionWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#111',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
   },
   captionInput: {
+    color: '#fff',
     flex: 1,
     marginLeft: 10,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    borderRadius: 10,
-    padding: 10,
+  },
+  sendButton: {
+    backgroundColor: '#1e90ff',
+    padding: 12,
+    alignItems: 'center',
+  },
+  sendText: {
     color: 'white',
     fontSize: 16,
-  },
-  swipeText: {
-    position: 'absolute',
-    bottom: 20,
-    width: '100%',
-    alignItems: 'center',
   },
 });
 

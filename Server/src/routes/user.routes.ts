@@ -26,7 +26,7 @@ router.route("/getAllUsers").get(GetAllUsers);
 router.route("/getAllChattedUsers").get(GetAllChattedUsers);
 router.route("/friends/:userId").post(getFriends);
 router.route("/logout").post(logoutUser);
-router.route("/status_Upload").post(upload.array("status"),UploadStatus)
+router.route("/status_Upload").post(UploadStatus)
 
 
 

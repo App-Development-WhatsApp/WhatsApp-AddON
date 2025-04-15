@@ -26,7 +26,7 @@ const openCamera = async () => {
       navigation.navigate('UploadImageStatus', {
         uri: asset.uri,
         type: asset.type,
-        size: asset.fileSize ?? null, // fileSize is not always available
+        // size: asset.fileSize ?? null, // fileSize is not always available
       });
     }
   } catch (error) {

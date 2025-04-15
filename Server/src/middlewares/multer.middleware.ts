@@ -1,14 +1,15 @@
 import multer, { StorageEngine } from "multer";
 import { Request } from "express";
 import fs from "fs";
+import path from "path";
 
 // Ensure upload directory exists
-const uploadDir = "uploads";
+const uploadDir = path.join(__dirname, "uploads");
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-// Define storage
+// Define multer storage engine
 const storage: StorageEngine = multer.diskStorage({
   destination: function (
     req: Request,
@@ -22,27 +23,36 @@ const storage: StorageEngine = multer.diskStorage({
     file: Express.Multer.File,
     cb: (error: any, filename: string) => void
   ) {
-    cb(null, `${Date.now()}-${file.originalname}`);
+    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+    cb(null, `${uniqueSuffix}-${file.originalname}`);
   },
 });
 
-// Allow only .json file uploads
+// Allow only common media files and JSON if needed
 const fileFilter = (
   req: Request,
   file: Express.Multer.File,
   cb: (error: any, isAllowed: boolean) => void
 ) => {
-  const allowedTypes = ["application/json", "text/plain"];
+  const allowedTypes = [
+    "image/png",
+    "image/jpeg",
+    "image/jpg",
+    "video/mp4",
+    "video/mpeg",
+    "application/json", // Optional
+  ];
+
   if (allowedTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error("Only JSON files are allowed!"), false);
+    cb(new Error("Only image, video, or JSON files are allowed!"), false);
   }
 };
 
-// Export upload middleware
+// Configure and export upload middleware
 export const upload = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  limits: { fileSize: 20 * 1024 * 1024 }, // 20MB limit
   fileFilter,
 });

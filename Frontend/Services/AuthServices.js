@@ -3,7 +3,7 @@ import * as FileSystem from "expo-file-system";
 import { saveUserInfo } from "../utils/chatStorage";
 import { userFilePath, friendsFilePath } from "../utils/chatStorage";
 
-export const BACKEND_URL = "http://192.168.195.25:5000"
+export const BACKEND_URL = "http://10.10.15.70:5000"
 
 export const API_URL = `${BACKEND_URL}/api/v1/users`; // Replace with your backend URL
 
@@ -106,3 +106,27 @@ const handleError = (error) => {
     };
   }
 };
+
+
+
+// -------------------- UPLOAD STATUS -----------------------
+
+export const uploadStatus = async (formData) => {
+  try {
+    console.log("formData",formData)
+    const response = await axios.post(`${API_URL}/status_Upload`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    console.log(response.data, "response")
+
+    if (response.data.success) {
+      return { success: true, message: "Status uploaded successfully" };
+    } else {
+      return { success: false, message: response.data.message };
+    }
+  } catch (error) {
+    return handleError(error);
+  }
+}

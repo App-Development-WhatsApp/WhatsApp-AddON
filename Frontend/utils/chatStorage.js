@@ -22,7 +22,7 @@ export const initSocketConnection = async () => {
     socket.emit("join", user._id);
     console.log("Joined room for user:", user._id);
   }
-};
+};1
 
 
 
