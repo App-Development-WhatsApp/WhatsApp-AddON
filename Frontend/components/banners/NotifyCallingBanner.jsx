@@ -11,12 +11,11 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import { useSocket } from "../../context/SocketContext";
 import { Ionicons } from "@expo/vector-icons";
-import socket from "../../utils/socket";
 import { Audio } from "expo-av";
 import * as Haptics from "expo-haptics";
 
 const IncomingCallBanner = () => {
-  const { incomingCall, setIncomingCall } = useSocket();
+  const { incomingCall, setIncomingCall,socket } = useSocket();
   const navigation = useNavigation();
 
   const slideAnim = useRef(new Animated.Value(-100)).current;

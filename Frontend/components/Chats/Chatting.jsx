@@ -69,13 +69,6 @@ export default function Chatting() {
       }
     };
     setup();
-    // socket.on("userTyping", (userId) => {
-    //   console.log(userId);
-    //   setTyping(true);
-    //   setTimeout(() => {
-    //     setTyping(false);
-    //   }, 1000);
-    // });
   }, []);
 
   useEffect(() => {
