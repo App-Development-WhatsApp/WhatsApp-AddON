@@ -2,9 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import socket from '../../utils/socket';
-
+import { useSocket } from '../../context/SocketContext';
 const AudioScreen = () => {
+  const { socket } = useSocket();
   const navigation = useNavigation();
   const route = useRoute();
   const { callerId, friendId, friendName, Profile } = route.params;

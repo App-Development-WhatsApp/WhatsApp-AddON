@@ -76,7 +76,7 @@ io.on("connection", (socket: Socket) => {
 
     await markMessagesAsDelivered(pendingMessages);
   });
-  // Handle incoming message
+  // -----------------------------------------Handle incoming message------------------------------------------------
   socket.on("sendMessage", async (message: Message) => {
     // console.log("Received message:", message);
     message.timestamp = new Date();
@@ -94,10 +94,7 @@ io.on("connection", (socket: Socket) => {
       await saveMessageToDB(message); // Save with `delivered: false`
     }
   });
-  socket.on('user-disconnected', (userId: string) => {
-    console.log("User disconnected:", userId);
-    onlineUsers.delete(userId);
-  });
+  // -----------------------------------------------------------------------------------------------------------------
 
   // --------------------------------------------calling--------------------------------------------------------------
   socket.on('call-user',async(props:any)=>{
@@ -111,7 +108,12 @@ io.on("connection", (socket: Socket) => {
       });
     }
   })
-  
+  // --------------------------------------------------------------------------------------------------------------------
+
+  socket.on('user-disconnected', (userId: string) => {
+    console.log("User disconnected:", userId);
+    onlineUsers.delete(userId);
+  });
 
   // On disconnect
   socket.on("disconnect", () => {

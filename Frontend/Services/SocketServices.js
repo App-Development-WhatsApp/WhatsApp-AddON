@@ -1,24 +1,23 @@
 import { saveChatMessage } from "../utils/chatStorage";
-import socket from "../utils/socket";
 
-const registerReceiveMessage = (callback) => {
+const registerReceiveMessage = (socket, callback) => {
   socket.on("receiveMessage", callback);
 };
 
-const unregisterReceiveMessage = (callback) => {
+const unregisterReceiveMessage = (socket, callback) => {
   socket.off("receiveMessage", callback);
 };
 
-const sendMessage =async (message) => {
+const sendMessage = async (socket, message) => {
   await saveChatMessage(message.receiverId, message);
   socket.emit("sendMessage", message);
 };
 
-const onPendingMessages = (callback) => {
+const onPendingMessages = (socket, callback) => {
   socket.on("receivePendingMessage", callback);
 };
 
-const removeAllListeners = () => {
+const removeAllListeners = (socket) => {
   socket.removeAllListeners();
 };
 

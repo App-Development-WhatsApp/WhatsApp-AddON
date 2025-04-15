@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import socket from "../utils/socket";
 import { useNetInfo } from "@react-native-community/netinfo";
 import { loadUserInfo } from "../utils/chatStorage";
 import { getSocket } from "../utils/socket";
@@ -45,6 +44,7 @@ export const SocketProvider = ({ children }) => {
     if (!netInfo.isConnected || !userData) return;
 
     if (!socket.connected) {
+      console.log("connecting socket...");
       socket.connect();
     }
 
@@ -61,8 +61,10 @@ export const SocketProvider = ({ children }) => {
     });
 
     return () => {
-      socket.disconnect();
-      console.log('Socket manually disconnected on unmount');
+      socket.off("connect");
+      socket.off("disconnect");
+      socket.off("incoming-call");
+      socket.off("user-connected");
     };
   }, [netInfo.isConnected, userData]);
 

@@ -39,9 +39,10 @@ import { renderMessage } from "./RenderMessages";
 import SocketServices from "../../Services/SocketServices";
 import { useNetInfo } from "@react-native-community/netinfo";
 import OneTimeView from "./OneTimeView";
-// import ThreeDots from "react-loader-spinner";
+import { useSocket } from "../../context/SocketContext";
 
 export default function Chatting() {
+  const { socket } = useSocket();
   const navigation = useNavigation();
   const netInfo = useNetInfo();
   const route = useRoute();
@@ -81,9 +82,9 @@ export default function Chatting() {
       await saveChatMessage(formatted.senderId, formatted);
     };
 
-    SocketServices.registerReceiveMessage(messageListener);
+    SocketServices.registerReceiveMessage(socket,messageListener);
     return () => {
-      SocketServices.unregisterReceiveMessage(messageListener);
+      SocketServices.unregisterReceiveMessage(socket,messageListener);
     };
   }, [friendId, netInfo.isConnected, currentUserId, typing]);
 
@@ -103,7 +104,7 @@ export default function Chatting() {
       console.log(newMsg)
 
       setChats((prev) => [...prev, { ...newMsg }]);
-      SocketServices.sendMessage(newMsg);
+      SocketServices.sendMessage(socket,newMsg);
 
       setMessage("");
       setSelectedFiles([]);
