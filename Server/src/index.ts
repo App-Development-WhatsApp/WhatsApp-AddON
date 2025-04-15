@@ -76,7 +76,6 @@ io.on("connection", (socket: Socket) => {
 
     await markMessagesAsDelivered(pendingMessages);
   });
-
   // Handle incoming message
   socket.on("sendMessage", async (message: Message) => {
     // console.log("Received message:", message);
@@ -92,25 +91,27 @@ io.on("connection", (socket: Socket) => {
         io.to(sockId).emit("receiveMessage", message);
       });
     } else {
-      // ❌ Receiver is offline — store in DB
       await saveMessageToDB(message); // Save with `delivered: false`
     }
   });
-  socket.on("typing", async ( props:any ) => {
-    console.log("Typing event:", props);
-    const receiverSocketIds = onlineUsers.get(props.friendId);
-    console.log("Receiver socket IDs:", receiverSocketIds);
-    if (receiverSocketIds) {
-      // Receiver is online — send typing event
-      receiverSocketIds.forEach((sockId) => {
-        io.to(sockId).emit("userTyping",props.userid);
-      });
-    }
-  })
   socket.on('user-disconnected', (userId: string) => {
     console.log("User disconnected:", userId);
     onlineUsers.delete(userId);
   });
+
+  // --------------------------------------------calling--------------------------------------------------------------
+  socket.on('call-user',async(props:any)=>{
+    console.log("Call user event:", props);
+    const receiverSocketIds = onlineUsers.get(props.to);
+    if(receiverSocketIds){
+      // Receiver is online — send call event
+      console.log("Receiver socket IDs:", receiverSocketIds,"----", props.to);
+      receiverSocketIds.forEach((sockId) => {
+        io.to(sockId).emit("incoming-call", props);
+      });
+    }
+  })
+  
 
   // On disconnect
   socket.on("disconnect", () => {
@@ -140,3 +141,17 @@ connectDB()
   .catch((error) => {
     console.error("MongoDB Connection Failed!!!", error);
   });
+
+
+
+  // socket.on("typing", async ( props:any ) => {
+  //   console.log("Typing event:", props);
+  //   const receiverSocketIds = onlineUsers.get(props.friendId);
+  //   console.log("Receiver socket IDs:", receiverSocketIds);
+  //   if (receiverSocketIds) {
+  //     // Receiver is online — send typing event
+  //     receiverSocketIds.forEach((sockId) => {
+  //       io.to(sockId).emit("userTyping",props.userid);
+  //     });
+  //   }
+  // })

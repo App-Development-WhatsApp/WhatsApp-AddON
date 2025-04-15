@@ -16,10 +16,8 @@ import { useNetInfo } from "@react-native-community/netinfo";
 import { MaterialCommunityIcons, Feather, Entypo } from '@expo/vector-icons';
 import Menu from '../Menu/Menu';
 import { friendsFilePath, loadUserInfo, setReceivedMessage } from '../../utils/chatStorage';
-import { SocketContext } from '../../context/SocketContext';
 
 export default function Chat() {
-  const socket = useContext(SocketContext);
   
   const netInfo = useNetInfo();
   const navigation = useNavigation();
@@ -35,7 +33,7 @@ export default function Chat() {
       }
     }
     setUserData(userInfo);
-    console.log(userData, "userData")
+    // console.log(userData, "userData")
   
     setUserData();
     // console.log("Main Page")

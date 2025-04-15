@@ -6,11 +6,12 @@ import { ApiResponse } from "../utils/APIResponse";
 import { User } from "../models/user.model";
 import { uploadOnCloudinary } from "../utils/cloudinary";
 // import { subscription } from "../models/subscription.model";
-import mongoose from "mongoose";
-
-import { Types } from "mongoose";
-import { Chat } from "../models/Chat.model";
-
+// import mongoose from "mongoose";
+// import { Types } from "mongoose";
+// import { Chat } from "../models/Chat.model";
+import { getVideoDuration, splitVideo } from "../utils/Ffmpeg";
+import fs from "fs";
+import path from "path";
 
 
 // --------------------------Register---------------------------
@@ -100,74 +101,12 @@ export const uploadProfilePic = asyncHandler(async (req: any, res) => {
 // // ----------------------------LOgOut-------------------------
 export const logoutUser = asyncHandler(async (req, res) => {
   try {
-      await User.findByIdAndDelete(req.user.id);
-      res.status(200).json({ success: true, message: "User deleted successfully" });
-  } catch (error:any) {
-      res.status(500).json({ success: false, message: "Error deleting user", error: error.message });
+    await User.findByIdAndDelete(req.user.id);
+    res.status(200).json({ success: true, message: "User deleted successfully" });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: "Error deleting user", error: error.message });
   }
 });
-
-// // ----------------------------Refresh Token---------------------------------
-// const refreshAccessToken = asyncHandler(async (req, res) => {
-//   const incomingrefreshToken =
-//     req.cookies.refreshToken || req.body.refreshToken;
-//   if (!incomingrefreshToken) {
-//     throw new ApiError(401, "unauthorized request");
-//   }
-//   try {
-//     const decodedToken = jwt.verify(
-//       incomingrefreshToken,
-//       process.env.REFRESH_TOKEN_SECRET || ''
-//     );
-//     const user = await User.findById(decodedToken?._id);
-//     if (!user) {
-//       throw new ApiError(401, "Invalid refresh Token");
-//     }
-//     if (incomingrefreshToken !== user?.refreshToken) {
-//       throw new ApiError(401, " refresh Token expired or used");
-//     }
-//     const options = {
-//       httpOnly: true,
-//       secure: true,
-//     };
-//     const { accessToken, newrefreshToken } =
-//       await generateAccessAndRefereshTokens(user._id);
-//     return res
-//       .status(200)
-//       .cookie("accessToken", accessToken, options)
-//       .cookie("refreshToken", newrefreshToken, options)
-//       .json(
-//         new ApiError(
-//           200,
-//           {
-//             accessToken,
-//             refreshToken: newrefreshToken,
-//           },
-//           "Acccess Token refreshed token succesfully"
-//         )
-//       );
-//   } catch (error) {
-//     throw new ApiError(401, error?.message || "Invalid refresh Token ");
-//   }
-// });
-
-// // ----------------------------changeCurrentPassword ---------------------------------
-
-// const changeCurrentPassword = asyncHandler(async (req, res) => {
-//   const { oldPassword, newPassword } = req.body;
-//   // password change kar pa raha hai to wo login to hai malab middleware se wo req.body le sakta hai
-//   const user = await User.findById(req.body.user?._id);
-//   const isPasswordCorrect = await user.isPasswordCorrect(oldPassword);
-
-//   if (!isPasswordCorrect) throw new ApiError(400, "Invalid Old Password");
-
-//   user.password = newPassword;
-//   user.save({ validateBeforeSave: false });
-
-//   return res
-//     .status(200)
-//     .json(new ApiResponse(200, {}, "Password Changed Successfully"));
-// });
 
 // // ----------------------------getCurrentUser ---------------------------------
 
@@ -232,29 +171,57 @@ export const getFriends = asyncHandler(async (req: Request, res: Response) => {
   }
 });
 
+// ------------------------------Upload Status---------------------------------
 
-// // ----------------------------updateAccountdetails ---------------------------------
+export const UploadStatus = asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.body;
+    const statusFiles = req.files as Express.Multer.File[]; // Cast to the correct type
 
-// const updateAccountdetails = asyncHandler(async (req, res) => {
-//   const { fullName, email } = req.body;
-//   if (!fullName || !email) {
-//     throw new ApiError(400, "alll field are required");
-//   }
-//   const user = User.findByIdAndUpdate(
-//     req.body.user?._id,
-//     {
-//       $set: {
-//         fullName,
-//         email: email,
-//       },
-//     },
-//     { new: true }
-//   ).select("-password");
+    if (!statusFiles || statusFiles.length === 0) {
+      return res.status(400).json({ message: 'No files uploaded' });
+    }
 
-//   return res
-//     .status(200)
-//     .json(new ApiResponse(200, user, "Account details updated successfully"));
-// });
+    const statusUrls: string[] = [];
+
+    for (const file of statusFiles) {
+      const ext = path.extname(file.originalname).toLowerCase();
+      const filePath = file.path;
+
+      if (ext === ".mp4" || ext === ".mov" || ext === ".avi" || ext === ".mkv") {
+        const duration = await getVideoDuration(filePath);
+
+        if (duration > 20) {
+          // Split into chunks
+          const chunkPaths = await splitVideo(filePath);
+          for (const chunk of chunkPaths) {
+            const uploaded = await uploadOnCloudinary(chunk);
+            statusUrls.push(uploaded.secure_url);
+            fs.unlinkSync(chunk); // cleanup
+          }
+        } else {
+          const uploaded = await uploadOnCloudinary(filePath);
+          statusUrls.push(uploaded.secure_url);
+        }
+      } else {
+        // Upload photo directly
+        const uploaded = await uploadOnCloudinary(filePath);
+        statusUrls.push(uploaded.secure_url);
+      }
+
+      // Cleanup original file
+      fs.unlinkSync(filePath);
+    }
+    console.log(statusUrls,'------------------------',userId)
+    // Save to user
+    await User.findByIdAndUpdate(userId, { $push: { status: { $each: statusUrls } } });
+
+    res.status(200).json({ message: "Status uploaded successfully", statusUrls });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+})
 
 // // ----------------------------updateUserAvatar ---------------------------------
 
@@ -281,30 +248,7 @@ export const getFriends = asyncHandler(async (req: Request, res: Response) => {
 //     .json(new ApiResponse(200, user, "avatar Updated Successfully"));
 // });
 
-// // ----------------------------updateUserCoverImage ---------------------------------
 
-// const updateUserCoverImage = asyncHandler(async (req, res) => {
-//   // HEre we are using sigle file not as route and register we were taking files instead os file
-//   const coverLocalPath = req.body.file?.path;
-//   if (!coverLocalPath) throw new ApiError(400, "coverImage file is missing");
-
-//   const coverImage = await uploadOnCloudinary(coverLocalPath);
-//   if (!coverImage.url)
-//     throw new ApiError(400, "Error while  uploading on coverImage");
-
-//   const user = await User.findByIdAndUpdate(
-//     req.body.user?._id,
-//     {
-//       $set: {
-//         coverImage: coverImage.url,
-//       },
-//     },
-//     { new: true }
-//   ).select("-password");
-//   return res
-//     .status(200)
-//     .json(new ApiResponse(200, user, "coverImage Updated Successfully"));
-// });
 
 // // ----------------------------getuserChannelProfile ---------------------------------
 
@@ -381,73 +325,12 @@ export const getFriends = asyncHandler(async (req: Request, res: Response) => {
 //       new ApiResponse(200, channel[0], "Userr Channel fetched successfully")
 //     );
 // });
-
-// // ----------------------------getWatchHistory ---------------------------------
-
-// const getWatchHistory = asyncHandler(async (req, res) => {
-//   // const user = await User.aggregate([
-//   //   {
-//   //     $match: {
-//   //       _id: new mongoose.Types.ObjectId(req.body.user._id),
-//   //     },
-//   //   },
-//   //   {
-//   //     $lookup: {
-//   //       from: "Video",
-//   //       localField: "watchHistory",
-//   //       foreignField: "_id",
-//   //       as: "watchHistory",
-//   //       pipeline: [
-//   //         {
-//   //           $lookup: {
-//   //             from: "users",
-//   //             localField: "owner",
-//   //             foreignField: "_id",
-//   //             as: "owner",
-//   //             pipeline: [
-//   //               {
-//   //                 $project: {
-//   //                   fullName: 1,
-//   //                   username: 1,
-//   //                   avatar: 1,
-//   //                 },
-//   //               },
-//   //             ],
-//   //           },
-//   //         },
-//   //         {
-//   //           $addFields: {
-//   //             owner: {
-//   //               $first: "$owner",
-//   //             },
-//   //           },
-//   //         },
-//   //       ],
-//   //     },
-//   //   },
-//   // ]);
-
-//   return res
-//     .status(200)
-//     .json(
-//       new ApiResponse(
-//         200,
-//         // user[0].watchHistory,
-//         "Watch History fetched successfully"
-//       )
-//     );
-// });
-
 // export {
 //   registerUser,
 //   loginUser,
 //   logoutUser,
-//   refreshAccessToken,
-//   changeCurrentPassword,
 //   getCurrentUser,
 //   updateAccountdetails,
 //   updateUserAvatar,
-//   updateUserCoverImage,
 //   getuserChannelProfile,
-//   getWatchHistory,
 // };

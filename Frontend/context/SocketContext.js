@@ -2,29 +2,29 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import socket from "../utils/socket";
 import { useNetInfo } from "@react-native-community/netinfo";
 import { loadUserInfo } from "../utils/chatStorage";
-
+import { getSocket } from "../utils/socket";
 export const SocketContext = createContext();
 
 export const SocketProvider = ({ children }) => {
   const [userData, setUserData] = useState(null);
   const netInfo = useNetInfo();
+  const [socket] = useState(getSocket()); // ✅ only initialize once
 
   const [incomingCall, setIncomingCall] = useState("");
 
-  useEffect(() => {
-    socket.on('incoming-call', (data) => {
-    });
-    console.log("context")
-    setIncomingCall({
-      from:"ID2",
-      callerName:"name",
-      callerProfilePic: "",
-    }); // { from, callerName, callerProfilePic }
+  // useEffect(() => {
+  //   socket.on('incoming-call', (data) => {
+  //   setIncomingCall({
+  //     from:data.from,
+  //     callerName:,
+  //     callerProfilePic: "",
+  //   }); // { from, callerName, callerProfilePic }
+  //   });
 
-    return () => {
-      socket.off('incoming-call');
-    };
-  }, []);
+  //   return () => {
+  //     socket.off('incoming-call');
+  //   };
+  // }, []);
 
   // Load user data when network is connected
   useEffect(() => {
@@ -56,15 +56,13 @@ export const SocketProvider = ({ children }) => {
     });
 
     socket.on("disconnect", () => {
-      console.log("❌ Socket disconnected");
+      console.log("❌ Socket disconnected",socket.id);
       socket.emit("user-disconnected", userData._id);
     });
 
     return () => {
-      socket.off("connect");
-      socket.off("disconnect");
-      socket.off("receivePendingMessage");
       socket.disconnect();
+      console.log('Socket manually disconnected on unmount');
     };
   }, [netInfo.isConnected, userData]);
 

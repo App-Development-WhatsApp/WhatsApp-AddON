@@ -6792,10 +6792,17 @@ react-native-fs@^2.20.0:
     invariant "^2.2.4"
     prop-types "^15.7.2"
 
+<<<<<<< HEAD
 react-native-image-crop-picker@^0.42.0:
   version "0.42.0"
   resolved "https://registry.npmjs.org/react-native-image-crop-picker/-/react-native-image-crop-picker-0.42.0.tgz"
   integrity sha512-EOEkekPJ7g+CNf92HrWAGM4kcDJyVY02gQJUVH7MSNUOK11SHnurXVM0TnwIt410Y4T+lBkq3rfJEA1qDaDDwA==
+=======
+react-native-image-picker@^8.2.0:
+  version "8.2.0"
+  resolved "https://registry.npmjs.org/react-native-image-picker/-/react-native-image-picker-8.2.0.tgz"
+  integrity sha512-jIGllQJuJIn0YKss/JEeb0Kos1HSsnIpU+i3bYxR27sOxSyDZQyP9dKR22olssQPlfH+rGNR/Jc6xKRkhm48vw==
+>>>>>>> bd0925b7863777082de288dfdd077844ea5ac98c
 
 react-native-is-edge-to-edge@1.1.7:
   version "1.1.7"

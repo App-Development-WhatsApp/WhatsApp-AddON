@@ -7,16 +7,16 @@ import socket from '../../utils/socket';
 const AudioScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  const { callerId, calleeId, calleeName, calleeProfilePic } = route.params;
-
+  const { callerId, friendId, friendName, Profile } = route.params;
   const [status, setStatus] = useState('Calling...');
 
   useEffect(() => {
-    socket.emit('call-user', { from: callerId, to: calleeId });
+    
+    socket.emit('call-user', { from: callerId, to: friendId });
 
     socket.on('call-answered', () => {
       setStatus('Call answered');
-      navigation.replace('VoiceRoom', { callerId, calleeId });
+      navigation.replace('VoiceRoom', { callerId, friendId });
     });
 
     socket.on('call-rejected', () => {
@@ -31,16 +31,16 @@ const AudioScreen = () => {
   }, []);
 
   const cancelCall = () => {
-    socket.emit('cancel-call', { to: calleeId });
+    socket.emit('cancel-call', { to: friendId });
     navigation.goBack();
   };
-  const validImage = calleeProfilePic ? { uri: calleeProfilePic } : require('../../assets/images/blank.jpeg');
+  const validImage = Profile ? { uri: Profile } : require('../../assets/images/blank.jpeg');
 
 
   return (
     <View style={styles.container}>
       <Image source={validImage} style={styles.avatar} />
-      <Text style={styles.name}>{calleeName}</Text>
+      <Text style={styles.name}>{friendName}</Text>
       <Text style={styles.status}>{status}</Text>
       <ActivityIndicator color="#fff" size="small" style={{ marginTop: 10 }} />
 

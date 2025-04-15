@@ -1,10 +1,15 @@
 import { io } from "socket.io-client";
 import { BACKEND_URL } from "../Services/AuthServices";
 const SOCKET_URL = BACKEND_URL; // Replace with your backend URL
+let socket = null;
 
-const socket = io(SOCKET_URL, {
-  autoConnect: false,
-  transports: ["websocket"],
-});
-
+export const getSocket = () => {
+  if (!socket) {
+    socket = io(SOCKET_URL, {
+      autoConnect: false,
+      transports: ["websocket"],
+    });
+  }
+  return socket;
+};
 export default socket;
