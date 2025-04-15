@@ -48,26 +48,34 @@ const UploadImageStatus = () => {
   const startPercent = (currentMedia.startTime / currentMedia.duration) * 100;
   const endPercent = (currentMedia.endTime / currentMedia.duration) * 100;
 
-  const generateThumbnails = async () => {
-    setLoading(true);
-    const thumbList = [];
-    const interval = currentMedia.duration / 10;
-
-    for (let i = 1; i <= 9; i++) {
-      const timestamp = i * interval;
-      try {
-        const { uri: thumbnailUri } = await VideoThumbnails.getThumbnailAsync(currentMedia.uri, {
-          time: timestamp * 1000,
-        });
-        thumbList.push(thumbnailUri);
-      } catch (e) {
-        console.warn(`Could not generate thumbnail at ${timestamp}s`, e);
-      }
+  const generateThumbnails = async (uri, durationInMs) => {
+    if (!uri || !durationInMs) {
+      console.warn("Missing uri or duration for thumbnail generation.");
+      return;
     }
-
-    setThumbnails(thumbList);
-    setLoading(false);
+  
+    try {
+      setLoading(true);
+      const numberOfThumbnails = 10;
+      const interval = durationInMs / (numberOfThumbnails - 1);
+      const thumbs = [];
+  
+      for (let i = 0; i < numberOfThumbnails; i++) {
+        const time = Math.floor(i * interval);
+        if (!isNaN(time)) {
+          const { uri: thumbUri } = await VideoThumbnails.getThumbnailAsync(uri, { time });
+          thumbs.push(thumbUri);
+        }
+      }
+  
+      setThumbnails(thumbs);
+    } catch (e) {
+      console.log("Thumbnail generation error:", e);
+    } finally {
+      setLoading(false);
+    }
   };
+  
   useEffect(() => {
     const fetchUserData = async () => {
       // Assuming you have a function to get user data
@@ -79,7 +87,8 @@ const UploadImageStatus = () => {
   }, [])
   useEffect(() => {
     if (currentMedia.type === 'video') {
-      generateThumbnails();
+      // Suppose you get duration from the video metadata or file info
+      generateThumbnails(currentMedia.uri, currentMedia.duration);
     }
   }, [currentIndex]);
 
@@ -214,11 +223,11 @@ const UploadImageStatus = () => {
   return (
     <View style={{ flex: 1, backgroundColor: 'black' }}>
       {currentMedia.type.includes('image') ? (
-        <Image source={{ uri: currentMedia.uri }} style={{ flex: 1, resizeMode: 'contain' }} />
+        <Image source={{ uri: currentMedia.uri }} style={{ flex: 1, resizeMode: 'contain', maxHeight: '90%'}} />
       ) : (
         <View style={{ flex: 1 }}>
           {loading ? (
-            <ActivityIndicator size="large" color="#007BFF" style={{ marginVertical: 20 }} />
+            <ActivityIndicator size="large" color="#007BFF" style={{ marginVertical: 20}} />
           ) : (
             <View style={styles.trimContainer}>
               <View style={styles.trimTrack}>
@@ -248,10 +257,14 @@ const UploadImageStatus = () => {
             <Video
               ref={videoRef}
               source={{ uri: currentMedia.uri }}
-              style={{ flex: 1 }}
+              style={{width: '100%', height: '90%', alignItems: 'center', top: 50}}
               resizeMode="contain"
               isLooping
               shouldPlay={false}
+              onLoad={(meta) => {
+                const duration = meta.durationMillis; // in ms
+                generateThumbnails(currentMedia.uri, duration);
+              }}
             />
             {!isPlaying && (
               <Ionicons name="play-circle-outline" size={64} color="white" style={styles.centerPlayIcon} />
@@ -261,15 +274,15 @@ const UploadImageStatus = () => {
         </View>
       )}
 
-      <View style={styles.topIcons}>
+      <View style={styles.topBar}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={28} color="white" />
+          <Ionicons name="close" size={28} color="white" />
         </TouchableOpacity>
-        <View style={{ flexDirection: 'row', gap: 18 }}>
-          <Entypo name="music" size={24} color="white" />
-          <MaterialCommunityIcons name="sticker-emoji" size={24} color="white" />
-          <Feather name="edit-3" size={24} color="white" />
-          <Ionicons name="text" size={24} color="white" />
+        <View style={styles.iconRow}>
+          <TouchableOpacity><Ionicons name="musical-notes" size={22} color="white" style={styles.icon} /></TouchableOpacity>
+          <TouchableOpacity><Ionicons name="happy" size={22} color="white" style={styles.icon} /></TouchableOpacity>
+          <TouchableOpacity><Ionicons name="text" size={22} color="white" style={styles.icon} /></TouchableOpacity>
+          <TouchableOpacity><Ionicons name="crop" size={22} color="white" style={styles.icon} /></TouchableOpacity>
         </View>
       </View>
 
@@ -285,24 +298,25 @@ const UploadImageStatus = () => {
         </View>
       )}
 
-      <View style={styles.captionWrapper}>
-        <Ionicons name="add-circle-outline" size={26} color="#ccc" onPress={handlePickMedia} />
-        <TextInput
-          placeholder="Add a caption..."
-          placeholderTextColor="#ccc"
-          style={styles.captionInput}
-          value={currentMedia.caption}
-          onChangeText={(text) => {
-            const updated = [...selectedMedia];
-            updated[currentIndex].caption = text;
-            setSelectedMedia(updated);
-          }}
-        />
+      <View style={styles.bottomBar}>
+        <View style={styles.captionInputWrapper}>
+          <Ionicons name="add-circle-outline" size={26} color="#ccc" onPress={handlePickMedia} />
+          <TextInput
+            placeholder="Add a caption..."
+            placeholderTextColor="#aaa"
+            style={styles.captionInput}
+            value={currentMedia.caption}
+            onChangeText={(text) => {
+              const updated = [...selectedMedia];
+              updated[currentIndex].caption = text;
+              setSelectedMedia(updated);
+            }}
+          />
+          <TouchableOpacity style={styles.sendButton} onPress={handleUploadStatus}>
+            {uploading ? <ActivityIndicator size="small" color="white" /> : <Ionicons name="send" size={22} color="white" />}
+          </TouchableOpacity>
+        </View>
       </View>
-
-      <TouchableOpacity disabled={uploading} style={styles.sendButton} onPress={handleUploadStatus}>
-        {uploading ? <ActivityIndicator size="small" color="white" /> : <Text style={styles.sendText}>Upload Status</Text>}
-      </TouchableOpacity>
     </View>
   );
 };
@@ -313,13 +327,14 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   selectedMediaBox: {
-    borderColor: '#00f',
+    borderRadius: 6,
     borderWidth: 2,
+    borderColor: 'white'
   },
   imageThumb: {
     width: 60,
     height: 60,
-    borderRadius: 6,
+    borderRadius: 5,
   },
   videoWrapper: {
     width: 60,
@@ -339,21 +354,27 @@ const styles = StyleSheet.create({
   },
   deleteButton: {
     position: 'absolute',
-    top: 0,
-    right: 0,
-    padding: 2,
+    top: 2,
+    right: 2,
+    padding: 1,
     backgroundColor: 'rgba(0,0,0,0.4)',
     borderRadius: 10,
   },
   centerPlayIcon: {
     position: 'absolute',
-    top: '45%',
-    left: '45%',
-  },
+    top: '50%',
+    left: '50%',
+    transform: [{ translateX: -32 }, { translateY: -32 }],
+    zIndex: 2,
+  },  
   trimContainer: {
+    position: 'absolute',
+    top: 20,
+    left: 0,
+    right: 0,
     paddingHorizontal: 10,
-    paddingVertical: 10,
-  },
+    zIndex: 5,
+  },  
   trimTrack: {
     height: 60,
     backgroundColor: '#222',
@@ -397,36 +418,56 @@ const styles = StyleSheet.create({
     color: '#ccc',
     textAlign: 'center',
   },
-  topIcons: {
+  topBar: {
     position: 'absolute',
-    top: 40,
-    left: 20,
-    right: 20,
+    top: 30,
+    left: 0,
+    right: 0,
     flexDirection: 'row',
     justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    zIndex: 10,
   },
+  iconRow: {
+    flexDirection: 'row',
+  },
+  icon: {
+    marginLeft: 16,
+  },  
   mediaListWrapper: {
     position: 'absolute',
-    bottom: 130,
+    bottom: 70,
     width: '100%',
     paddingVertical: 10,
   },
-  captionWrapper: {
+  bottomBar: {
+    position: 'absolute',
+    bottom: 0,
+    width: '100%',
+    paddingLeft: 10,
+    paddingRight: 10,
+    marginBottom: 20,
+    backgroundColor: '#000',
+  },
+  captionInputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#111',
+    backgroundColor: '#1e1e1e',
+    borderRadius: 20,
     paddingHorizontal: 10,
-    paddingVertical: 5,
+    marginTop: 10,
+    height: 50
   },
   captionInput: {
-    color: '#fff',
     flex: 1,
-    marginLeft: 10,
+    color: 'white',
+    paddingVertical: 8,
   },
   sendButton: {
-    backgroundColor: '#1e90ff',
-    padding: 12,
-    alignItems: 'center',
+    padding: 8,
+    backgroundColor: '#25D366',
+    borderRadius: 20,
+    marginLeft: 10,
   },
   sendText: {
     color: 'white',
