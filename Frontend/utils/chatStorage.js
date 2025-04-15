@@ -16,13 +16,13 @@ export const socket = io(SOCKET_SERVER_URL, {
 });
 
 // Join room once connected
-export const initSocketConnection = async () => {
-  const user = await loadUserInfo();
-  if (user && user._id) {
-    socket.emit("join", user._id);
-    console.log("Joined room for user:", user._id);
-  }
-};1
+// export const initSocketConnection = async () => {
+//   const user = await loadUserInfo();
+//   if (user && user._id) {
+//     socket.emit("join", user._id);
+//     console.log("Joined room for user:", user._id);
+//   }
+// };
 
 
 

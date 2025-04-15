@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
+import { enableScreens } from 'react-native-screens';
 
 // Import Screens
 import MyTabs from "./components/Tabs";
@@ -37,6 +38,7 @@ import IncomingCallBanner from "./components/banners/NotifyCallingBanner";
 export default function App() {
   const [loading, setLoading] = useState(true);
   const [language, setLanguage] = useState("English");
+  enableScreens();
 
   useEffect(() => {
     // Load saved language on app start

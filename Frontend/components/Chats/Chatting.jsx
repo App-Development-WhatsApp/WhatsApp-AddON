@@ -40,6 +40,7 @@ import SocketServices from "../../Services/SocketServices";
 import { useNetInfo } from "@react-native-community/netinfo";
 import OneTimeView from "./OneTimeView";
 import { useSocket } from "../../context/SocketContext";
+import { createUser,getAllUser } from "../db/userProfileDb";
 
 export default function Chatting() {
   const { socket } = useSocket();
@@ -64,6 +65,7 @@ export default function Chatting() {
         const user = await loadUserInfo();
         setCurrentUserId(user._id);
         const chatsdata = await loadChatHistory(friendId);
+        createUser('JohnDoe', '1234567890', 'https://example.com/johndoe.jpg', 'Hey there!',user._id);
         setChats(chatsdata);
       } catch (err) {
         console.error("Error loading user or chats:", err);

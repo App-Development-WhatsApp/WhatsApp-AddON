@@ -1,19 +1,33 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
   Alert,
-  Dimensions,
   Platform,
 } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import { MaterialIcons } from '@expo/vector-icons';
-import { WebView } from 'react-native-webview';
+import * as Print from 'expo-print';
+import { Screen } from 'react-native-screens';
+import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect } from '@react-navigation/native';
+import { NativeModules } from 'react-native';
 
 export default function PDFViewer() {
   const [pdfUri, setPdfUri] = useState(null);
+
+  useFocusEffect(() => {
+    if (Platform.OS === 'android') {
+      NativeModules?.RNPreventScreenshot?.forbid();
+    }
+    return () => {
+      if (Platform.OS === 'android') {
+        NativeModules?.RNPreventScreenshot?.allow();
+      }
+    };
+  });
 
   const pickPDF = async () => {
     try {
@@ -32,6 +46,18 @@ export default function PDFViewer() {
     }
   };
 
+  const handleViewPDF = async () => {
+    if (pdfUri) {
+      try {
+        await Print.printAsync({ uri: pdfUri });
+      } catch (error) {
+        Alert.alert('Print Error', 'Unable to render PDF');
+      }
+    } else {
+      Alert.alert('No PDF Selected', 'Please select a PDF first.');
+    }
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>📄 PDF Viewer</Text>
@@ -41,18 +67,18 @@ export default function PDFViewer() {
         <Text style={styles.buttonText}>Select PDF</Text>
       </TouchableOpacity>
 
-      {pdfUri && (
-        <View style={styles.pdfWrapper}>
-          <WebView
-            source={{ uri: pdfUri }}
-            style={styles.pdfViewer}
-            showsHorizontalScrollIndicator={false}
-          />
-        </View>
-      )}
+      <TouchableOpacity
+        style={[styles.button, { marginTop: 20 }]}
+        onPress={handleViewPDF}
+        disabled={!pdfUri}
+      >
+        <MaterialIcons name="visibility" size={24} color="white" />
+        <Text style={styles.buttonText}>View PDF</Text>
+      </TouchableOpacity>
     </View>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: {
@@ -60,11 +86,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     alignItems: 'center',
     flex: 1,
-    justifyContent: 'flex-start',
+    justifyContent: 'center',
   },
   title: {
     fontSize: 24,
-    marginVertical: 20,
+    marginBottom: 20,
     fontWeight: 'bold',
   },
   button: {
@@ -74,27 +100,10 @@ const styles = StyleSheet.create({
     padding: 12,
     paddingHorizontal: 20,
     borderRadius: 10,
-    marginBottom: 20,
   },
   buttonText: {
     color: '#fff',
     marginLeft: 10,
     fontSize: 16,
-  },
-  pdfWrapper: {
-    width: '80%',
-    height: 805,
-    borderRadius: 12,
-    overflow: 'hidden',
-    elevation: 4,
-    backgroundColor: '#fff',
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 5 },
-    alignSelf: 'center',
-  },
-  pdfViewer: {
-    flex: 1,
   },
 });
