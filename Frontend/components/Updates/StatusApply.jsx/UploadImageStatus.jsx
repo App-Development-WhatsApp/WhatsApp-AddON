@@ -42,28 +42,21 @@ const UploadImageStatus = () => {
   const generateThumbnails = async (uri) => {
     try {
       setLoading(true);
-      const sample = await VideoThumbnails.getThumbnailAsync(uri, { time: 1 });
-      const videoDuration = sample.duration || 6000;
-      setDuration(videoDuration);
-      setStart(0);
-      setEnd(videoDuration);
-      setTrimStartPos(0);
-      setTrimEndPos(100);
       const thumbs = [];
-
+  
       for (let i = 0; i < 9; i++) {
-        const time = (i * videoDuration) / 9;
+        const time = i * 1000; // default spacing (every second)
         const { uri: thumbUri } = await VideoThumbnails.getThumbnailAsync(uri, { time });
         thumbs.push(thumbUri);
       }
-
+  
       setThumbnails(thumbs);
     } catch (e) {
       console.log(e);
     } finally {
       setLoading(false);
     }
-  };
+  };  
 
   useEffect(() => {
     const mainMedia = selectedMedia[currentIndex];
@@ -116,6 +109,13 @@ const UploadImageStatus = () => {
     },
   });
 
+  const formatTime = (duration) => {
+    const mins = Math.floor(duration / 60);
+    const secs = Math.floor(duration % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+  
+
   const renderMediaPreview = ({ item, index }) => {
     const isImage = item.type.includes('image');
     const isSelected = index === currentIndex;
@@ -166,6 +166,13 @@ const UploadImageStatus = () => {
               resizeMode="contain"
               isLooping
               shouldPlay={false}
+              onLoad={({ durationMillis }) => {
+                setDuration(durationMillis);
+                setStart(0);
+                setEnd(durationMillis);
+                setTrimStartPos(0);
+                setTrimEndPos(100);
+              }}                                          
             />
             {!isPlaying && (
               <Ionicons name="play-circle-outline" size={64} color="white" style={styles.centerPlayIcon} />
@@ -198,7 +205,7 @@ const UploadImageStatus = () => {
                 </View>
               </View>
               <Text style={styles.trimLabel}>
-                 Start: {(start/1000).toFixed(2)}s - End: {(end/1000).toFixed(2)}s
+                Start: {formatTime(start / 1000)} - End: {formatTime(end / 1000)}
               </Text>
             </View>
           )}
