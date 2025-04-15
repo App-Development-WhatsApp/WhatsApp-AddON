@@ -4446,6 +4446,16 @@ expo-modules-core@2.2.3:
   dependencies:
     invariant "^2.2.4"
 
+expo-print@~14.0.3:
+  version "14.0.3"
+  resolved "https://registry.npmjs.org/expo-print/-/expo-print-14.0.3.tgz"
+  integrity sha512-VEGl7SX3q2Z3ZKwvxtOBAlXm9yDX8Jodewr+kouQcg2EaV0ciAH9rqLwRWZhAtEETpVdEG53ow7IAmwJU7jInA==
+
+expo-sqlite@~15.1.4:
+  version "15.1.4"
+  resolved "https://registry.npmjs.org/expo-sqlite/-/expo-sqlite-15.1.4.tgz"
+  integrity sha512-1SG5Qi6/L2SK/o5EKtvEmlMVGdra/wYYh/intI94/ovsUfZGFrDG31YGtTt4rLpE95M6FwHUVpALO8g9/G9B2Q==
+
 expo-status-bar@~2.0.1:
   version "2.0.1"
   resolved "https://registry.npmjs.org/expo-status-bar/-/expo-status-bar-2.0.1.tgz"
@@ -6792,7 +6802,6 @@ react-native-fs@^2.20.0:
     invariant "^2.2.4"
     prop-types "^15.7.2"
 
-
 react-native-image-picker@^8.2.0:
   version "8.2.0"
   resolved "https://registry.npmjs.org/react-native-image-picker/-/react-native-image-picker-8.2.0.tgz"
@@ -6872,9 +6881,9 @@ react-native-tab-view@^3.5.2, "react-native-tab-view@>= 3.0.0":
     use-latest-callback "^0.1.5"
 
 react-native-video-processing@^1.7.2:
-  version "1.7.2"
-  resolved "https://registry.npmjs.org/react-native-video-processing/-/react-native-video-processing-1.7.2.tgz"
-  integrity sha512-EgAe6TguynyhccDXEiRtZraPFvERaZTZ5c+YTjC0lr09gFv8mLgpnJlbyDMt2fOYCpDInEcoR/dLs/MdDNw9ng==
+  version "1.20.0"
+  resolved "https://registry.npmjs.org/react-native-video-processing/-/react-native-video-processing-1.20.0.tgz"
+  integrity sha512-cLroQ3DcWUKdD9OKMf+HR0slj1KhhpxwhBVRqWU5w9B63uLvHlA1OQNj0XTRuB7Ju2nyt8iPcgpTQeLqIHF5xw==
   dependencies:
     babel-preset-es2015 "^6.24.1"
     babel-preset-react "^6.24.1"
@@ -6910,15 +6919,15 @@ react-native-webrtc@^124.0.5:
     debug "4.3.4"
     event-target-shim "6.0.2"
 
-react-native-webview@*, react-native-webview@^13.12.5:
-  version "13.13.5"
-  resolved "https://registry.npmjs.org/react-native-webview/-/react-native-webview-13.13.5.tgz"
-  integrity sha512-MfC2B+woL4Hlj2WCzcb1USySKk+SteXnUKmKktOk/H/AQy5+LuVdkPKm8SknJ0/RxaxhZ48WBoTRGaqgR137hw==
+react-native-webview@*, react-native-webview@13.12.5:
+  version "13.12.5"
+  resolved "https://registry.npmjs.org/react-native-webview/-/react-native-webview-13.12.5.tgz"
+  integrity sha512-INOKPom4dFyzkbxbkuQNfeRG9/iYnyRDzrDkJeyvSWgJAW2IDdJkWFJBS2v0RxIL4gqLgHkiIZDOfiLaNnw83Q==
   dependencies:
     escape-string-regexp "^4.0.0"
     invariant "2.2.4"
 
-react-native@*, "react-native@^0.0.0-0 || >=0.60 <1.0", react-native@>=0.30.0, react-native@>=0.40, react-native@>=0.40.0, react-native@>=0.47, react-native@>=0.59, react-native@>=0.59.0, react-native@>=0.60.0, react-native@>=0.70.0, react-native@0.76.9:
+react-native@*, "react-native@^0.0.0-0 || >=0.60 <1.0", react-native@>=0.30.0, react-native@>=0.40, react-native@>=0.47, react-native@>=0.59, react-native@>=0.59.0, react-native@>=0.60.0, react-native@>=0.70.0, react-native@0.76.9:
   version "0.76.9"
   resolved "https://registry.npmjs.org/react-native/-/react-native-0.76.9.tgz"
   integrity sha512-+LRwecWmTDco7OweGsrECIqJu0iyrREd6CTCgC/uLLYipiHvk+MH9nd6drFtCw/6Blz6eoKTcH9YTTJusNtrWg==

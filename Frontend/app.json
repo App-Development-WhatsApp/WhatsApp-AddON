@@ -46,7 +46,8 @@
           "supportsPictureInPicture": true
         }
       ],
-      "react-native-compressor"
+      "react-native-compressor",
+      "expo-sqlite"
     ]
   }
 }

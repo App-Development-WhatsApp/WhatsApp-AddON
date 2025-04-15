@@ -3,7 +3,7 @@ import { View, Image, Text, TouchableOpacity } from 'react-native';
 import Video from 'react-native-video';
 import { Audio } from 'expo-av';
 // import Pdf from 'react-native-pdf';
-import FileViewer from 'react-native-file-viewer';
+// import FileViewer from 'react-native-file-viewer';
 
 const OneTimeViewer = ({ route, navigation }) => {
   const { file, onViewed } = route.params;
@@ -17,7 +17,7 @@ const OneTimeViewer = ({ route, navigation }) => {
 
   const openWithExternalViewer = async () => {
     try {
-      await FileViewer.open(file.uri || file.url, { showOpenWithDialog: true });
+      // await FileViewer.open(file.uri || file.url, { showOpenWithDialog: true });
     } catch (error) {
       console.error('Error opening file:', error);
     }
