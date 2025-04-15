@@ -92,21 +92,9 @@ io.on("connection", (socket: Socket) => {
         io.to(sockId).emit("receiveMessage", message);
       });
     } else {
-      // ❌ Receiver is offline — store in DB
       await saveMessageToDB(message); // Save with `delivered: false`
     }
   });
-  socket.on("typing", async ( props:any ) => {
-    console.log("Typing event:", props);
-    const receiverSocketIds = onlineUsers.get(props.friendId);
-    console.log("Receiver socket IDs:", receiverSocketIds);
-    if (receiverSocketIds) {
-      // Receiver is online — send typing event
-      receiverSocketIds.forEach((sockId) => {
-        io.to(sockId).emit("userTyping",props.userid);
-      });
-    }
-  })
   socket.on('user-disconnected', (userId: string) => {
     console.log("User disconnected:", userId);
     onlineUsers.delete(userId);
@@ -140,3 +128,17 @@ connectDB()
   .catch((error) => {
     console.error("MongoDB Connection Failed!!!", error);
   });
+
+
+
+  // socket.on("typing", async ( props:any ) => {
+  //   console.log("Typing event:", props);
+  //   const receiverSocketIds = onlineUsers.get(props.friendId);
+  //   console.log("Receiver socket IDs:", receiverSocketIds);
+  //   if (receiverSocketIds) {
+  //     // Receiver is online — send typing event
+  //     receiverSocketIds.forEach((sockId) => {
+  //       io.to(sockId).emit("userTyping",props.userid);
+  //     });
+  //   }
+  // })

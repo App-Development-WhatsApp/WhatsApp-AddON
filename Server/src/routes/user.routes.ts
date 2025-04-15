@@ -14,6 +14,7 @@ import {
   // updateUserCoverImage,
   // getuserChannelProfile,
   // getWatchHistory,
+  UploadStatus
 } from "../controllers/user.controller";
 import { upload } from "../middlewares/multer.middleware";
 import { verifyJWT } from "../middlewares/auth.middleware";
@@ -25,6 +26,7 @@ router.route("/getAllUsers").get(GetAllUsers);
 router.route("/getAllChattedUsers").get(GetAllChattedUsers);
 router.route("/friends/:userId").post(getFriends);
 router.route("/logout").post(logoutUser);
+router.route("/status_Upload").post(upload.array("status"),UploadStatus)
 
 
 

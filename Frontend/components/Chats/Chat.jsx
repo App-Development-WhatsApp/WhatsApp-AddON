@@ -35,7 +35,7 @@ export default function Chat() {
       }
     }
     setUserData(userInfo);
-    console.log(userData, "userData")
+    // console.log(userData, "userData")
   
     setUserData();
     // console.log("Main Page")

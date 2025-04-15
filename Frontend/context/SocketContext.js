@@ -9,22 +9,22 @@ export const SocketProvider = ({ children }) => {
   const [userData, setUserData] = useState(null);
   const netInfo = useNetInfo();
 
-  const [incomingCall, setIncomingCall] = useState("");
+  // const [incomingCall, setIncomingCall] = useState("");
 
-  useEffect(() => {
-    socket.on('incoming-call', (data) => {
-    });
-    console.log("context")
-    setIncomingCall({
-      from:"ID2",
-      callerName:"name",
-      callerProfilePic: "",
-    }); // { from, callerName, callerProfilePic }
+  // useEffect(() => {
+  //   socket.on('incoming-call', (data) => {
+  //   });
+  //   console.log("context")
+  //   setIncomingCall({
+  //     from:"ID2",
+  //     callerName:"name",
+  //     callerProfilePic: "",
+  //   }); // { from, callerName, callerProfilePic }
 
-    return () => {
-      socket.off('incoming-call');
-    };
-  }, []);
+  //   return () => {
+  //     socket.off('incoming-call');
+  //   };
+  // }, []);
 
   // Load user data when network is connected
   useEffect(() => {

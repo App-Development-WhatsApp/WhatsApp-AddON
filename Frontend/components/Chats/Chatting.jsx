@@ -39,7 +39,6 @@ import { renderMessage } from "./RenderMessages";
 import SocketServices from "../../Services/SocketServices";
 import { useNetInfo } from "@react-native-community/netinfo";
 import OneTimeView from "./OneTimeView";
-import loader from "../../assets/loader.gif";
 // import ThreeDots from "react-loader-spinner";
 
 export default function Chatting() {
@@ -54,6 +53,7 @@ export default function Chatting() {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [oneTimeView, setOneTimeView] = useState(false);
   const [typing, setTyping] = useState(false);
+  const [inputBoxFocus, setinputBoxFocus] = useState(false);
 
   const [chats, setChats] = useState([]);
 
@@ -64,20 +64,18 @@ export default function Chatting() {
         setCurrentUserId(user._id);
         const chatsdata = await loadChatHistory(friendId);
         setChats(chatsdata);
-        // console.log(chatsdata)
-        // console.log(chats, "-----")
       } catch (err) {
         console.error("Error loading user or chats:", err);
       }
     };
     setup();
-    socket.on("userTyping", (userId) => {
-      console.log(userId);
-      setTyping(true);
-      setTimeout(() => {
-        setTyping(false);
-      }, 1000);
-    });
+    // socket.on("userTyping", (userId) => {
+    //   console.log(userId);
+    //   setTyping(true);
+    //   setTimeout(() => {
+    //     setTyping(false);
+    //   }, 1000);
+    // });
   }, []);
 
   useEffect(() => {
@@ -86,7 +84,6 @@ export default function Chatting() {
         ...msg,
         timestamp: Date.now().toString(), // overwrite existing timestamp
       };
-      // console.log("Received message:", formatted);
       setChats((prev) => [...prev, formatted]);
       await saveChatMessage(formatted.senderId, formatted);
     };
@@ -110,17 +107,16 @@ export default function Chatting() {
         ...(selectedFiles.length > 0 && { files: selectedFiles }),
         oneTimeView: oneTimeView,
       };
+      console.log(newMsg)
 
       setChats((prev) => [...prev, { ...newMsg }]);
       SocketServices.sendMessage(newMsg);
-      // await sendMessageSocket( friendId, newMsg);
 
       setMessage("");
       setSelectedFiles([]);
       setTimeout(() => {
         flatListRef.current?.scrollToEnd({ animated: true });
       }, 100);
-      // console.log("kjhgufytd->", chats)
     } catch (err) {
       console.error("Error sending message:", err);
       Alert.alert("Failed", "Unable to send message. Please try again.");
@@ -243,9 +239,9 @@ export default function Chatting() {
             onPress={() => {
               navigation.navigate("AudioScreen", {
                 callerId: currentUserId,
-                calleeId: friendId,
-                calleeName: name,
-                calleeProfilePic: image,
+                friendId: friendId,
+                friendName: name,
+                Profile: image,
               });
             }}
           >
@@ -262,7 +258,7 @@ export default function Chatting() {
 
       {/* Chat list */}
       <KeyboardAvoidingView
-        style={{ flex: 0.91, scrollToEnd: true }}
+        style={{ flex: inputBoxFocus ? 0.82 : 0.99, scrollToEnd: true }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={80}
       >
@@ -342,10 +338,16 @@ export default function Chatting() {
             placeholder="Type a message..."
             placeholderTextColor="#888"
             value={message}
-            onChangeText={(v) => {
-              setMessage(v),
-                socket.emit("typing", { userId: currentUserId, friendId });
+            onFocus={() => {
+              setShowEmojiPicker(false)
+              // console.log("hello")
+              setinputBoxFocus(true)
             }}
+            onBlur={() => {
+              console.log("hello")
+              setinputBoxFocus(false)
+            }}
+            onChangeText={(text) => setMessage(text)}
           />
           <TouchableOpacity onPress={pickFiles} style={styles.attachButton}>
             <Text style={{ fontSize: 18 }}>📎</Text>
