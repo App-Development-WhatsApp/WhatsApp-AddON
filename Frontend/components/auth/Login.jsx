@@ -25,7 +25,7 @@ const LoginScreen = ({ navigation }) => {
     // navigation.replace("Main");
     const checkAuth = async () => {
       const userInfo = await loadUserInfo();
-      console.log(userInfo, "userInfo---");
+      // console.log(userInfo, "userInfo---");
       if (userInfo) {
         navigation.replace("Main");
       }

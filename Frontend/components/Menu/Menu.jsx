@@ -20,7 +20,7 @@ export default function MenuBar() {
           text: "Logout", 
           onPress: async () => {
             try {
-              console.log("Handling logout...");
+              // console.log("Handling logout...");
               // Delete user and friends JSON files
               const filesToDelete = [userFilePath, friendsFilePath];
 
@@ -31,7 +31,7 @@ export default function MenuBar() {
                 }
               }
 
-              console.log("User data deleted. Redirecting to login...");
+              // console.log("User data deleted. Redirecting to login...");
               navigation.replace("Login"); // Navigate to Login screen
             } catch (error) {
               console.error("Logout error:", error);

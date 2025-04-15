@@ -111,7 +111,7 @@ export const loadUserInfo = async () => {
       return data ? JSON.parse(data) : null;
     } else {
       const data = await FileSystem.readAsStringAsync(userFilePath);
-      console.log(data);
+      // console.log(data,"data");
       return data ? JSON.parse(data) : null;
     }
   } catch (error) {

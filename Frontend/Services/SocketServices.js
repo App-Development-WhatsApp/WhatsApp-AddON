@@ -9,7 +9,7 @@ const unregisterReceiveMessage = (socket, callback) => {
 };
 
 const sendMessage = async (socket, message) => {
-  await saveChatMessage(message.receiverId, message);
+  // await saveChatMessage(message.receiverId, message);
   socket.emit("sendMessage", message);
 };
 

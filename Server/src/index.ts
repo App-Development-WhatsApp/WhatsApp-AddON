@@ -33,7 +33,7 @@ const saveMessageToDB = async (message: Message): Promise<void> => {
 };
 
 // Maps to track online users (userId -> Set of socketIds)
-const onlineUsers = new Map<string, Set<string>>();
+const onlineUsers = new Map();
 
 // Create HTTP server and Socket.IO
 const httpServer = http.createServer(app);
@@ -59,75 +59,53 @@ io.on("connection", (socket: Socket) => {
   // On user connected
   socket.on("user-connected", async (userId: string) => {
     socket.userId = userId;
-    console.log("User connected:", userId);
 
-    if (!onlineUsers.has(userId)) {
-      onlineUsers.set(userId, new Set());
-    }
-    onlineUsers.get(userId)!.add(socket.id);
+    onlineUsers.set(userId, socket.id);
 
     console.log(`${userId} connected with socket ${socket.id}`);
 
     // Deliver pending messages
-    const pendingMessages = await getPendingMessages(userId);
-    pendingMessages.forEach((msg) => {
-      io.to(socket.id).emit("receiveMessage", msg);
-    });
+    // const pendingMessages = await getPendingMessages(userId);
+    // pendingMessages.forEach((msg) => {
+    //   io.to(socket.id).emit("receiveMessage", msg);
+    // });
 
-    await markMessagesAsDelivered(pendingMessages);
+    // await markMessagesAsDelivered(pendingMessages);
   });
   // -----------------------------------------Handle incoming message------------------------------------------------
   socket.on("sendMessage", async (message: Message) => {
-    // console.log("Received message:", message);
     message.timestamp = new Date();
+    const receiverSocketId = onlineUsers.get(message.receiverId);
+    // console.log("Received message:", message);
 
-
-    const receiverSocketIds = onlineUsers.get(message.receiverId);
-
-    if (receiverSocketIds) {
-      // ✅ Receiver is online — send message instantly
-      console.log("Receiver is online, sending message:", message, "----", receiverSocketIds);
-      receiverSocketIds.forEach((sockId) => {
-        io.to(sockId).emit("receiveMessage", message);
-      });
+    if (receiverSocketId) {
+      console.log("Receiver is online, sending message:", message, " ----", receiverSocketId);
+      io.to(receiverSocketId).emit("receiveMessage", message);
     } else {
-      await saveMessageToDB(message); // Save with `delivered: false`
+      console.log("Receiver is offline, message saved as pending.");
+      // Store to DB or in-memory queue
     }
   });
   // -----------------------------------------------------------------------------------------------------------------
 
   // --------------------------------------------calling--------------------------------------------------------------
-  socket.on('call-user',async(props:any)=>{
+  socket.on('call-user', async (props: any) => {
     console.log("Call user event:", props);
-    const receiverSocketIds = onlineUsers.get(props.to);
-    if(receiverSocketIds){
-      // Receiver is online — send call event
-      console.log("Receiver socket IDs:", receiverSocketIds,"----", props.to);
-      receiverSocketIds.forEach((sockId) => {
-        io.to(sockId).emit("incoming-call", props);
-      });
+    const receiverSocketId = onlineUsers.get(props.to);
+    if (receiverSocketId) {
+      console.log("Receiver socket IDs:", receiverSocketId, "----", props.to);
+      io.to(receiverSocketId).emit("incoming-call", props);
     }
   })
   // --------------------------------------------------------------------------------------------------------------------
 
-  socket.on('user-disconnected', (userId: string) => {
-    console.log("User disconnected:", userId);
-    onlineUsers.delete(userId);
-  });
-
   // On disconnect
   socket.on("disconnect", () => {
-    const userId = socket.userId;
-    if (userId) {
-      const userSockets = onlineUsers.get(userId);
-      if (userSockets) {
-        userSockets.delete(socket.id);
-        if (userSockets.size === 0) {
-          onlineUsers.delete(userId);
-        }
-      }
+    console.log(`❌ Socket disconnected: ${socket.id}`);
+    if (socket.userId) {
+      onlineUsers.delete(socket.userId);
+      console.log(`User disconnected: ${socket.userId}`);
     }
-    console.log(`Socket ${socket.id} disconnected`);
   });
 });
 
@@ -146,14 +124,14 @@ connectDB()
 
 
 
-  // socket.on("typing", async ( props:any ) => {
-  //   console.log("Typing event:", props);
-  //   const receiverSocketIds = onlineUsers.get(props.friendId);
-  //   console.log("Receiver socket IDs:", receiverSocketIds);
-  //   if (receiverSocketIds) {
-  //     // Receiver is online — send typing event
-  //     receiverSocketIds.forEach((sockId) => {
-  //       io.to(sockId).emit("userTyping",props.userid);
-  //     });
-  //   }
-  // })
+// socket.on("typing", async ( props:any ) => {
+//   console.log("Typing event:", props);
+//   const receiverSocketIds = onlineUsers.get(props.friendId);
+//   console.log("Receiver socket IDs:", receiverSocketIds);
+//   if (receiverSocketIds) {
+//     // Receiver is online — send typing event
+//     receiverSocketIds.forEach((sockId) => {
+//       io.to(sockId).emit("userTyping",props.userid);
+//     });
+//   }
+// })
