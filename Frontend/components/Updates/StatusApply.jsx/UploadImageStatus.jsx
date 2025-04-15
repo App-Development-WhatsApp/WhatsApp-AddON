@@ -176,27 +176,28 @@ const UploadImageStatus = () => {
 
   const handleUploadStatus = async () => {
     setUploading(true);
-
+  
     const formData = new FormData();
     formData.append('userId', userData._id); // Assuming you have user data
-
+  
+    // Instead of appending directly to formData['status'], loop through and append each file separately
     selectedMedia.forEach((item, index) => {
       const fileExtension = item.uri.split('.').pop();
       const mimeType = item.type === 'video'
         ? `video/${fileExtension}`
         : `image/${fileExtension}`;
-
-      formData.append('status', {
+  
+      // Append each file as a new part in the formData
+      formData.append('status[]', JSON.stringify({
         uri: item.uri,
         type: mimeType,
         name: `upload_${index}.${fileExtension}`,
-      });
-
-      formData.append(`caption_${index}`, item.caption);
-      formData.append(`startTime_${index}`, item.startTime);
-      formData.append(`endTime_${index}`, item.endTime);
+        caption: item.caption,
+        startTime: item.startTime,
+        endTime: item.endTime,
+      }));
     });
-
+  
     try {
       console.log('Uploading status...');
       const response = await uploadStatus(formData);
@@ -208,7 +209,7 @@ const UploadImageStatus = () => {
       setUploading(false);
     }
   };
-
+  
 
   return (
     <View style={{ flex: 1, backgroundColor: 'black' }}>

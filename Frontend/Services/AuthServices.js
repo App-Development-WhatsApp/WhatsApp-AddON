@@ -123,9 +123,10 @@ export const uploadStatus = async (formData) => {
 
     if (response.data.success) {
       return { success: true, message: "Status uploaded successfully" };
-    } else {
-      return { success: false, message: response.data.message };
-    }
+    } 
+    // else {
+      // return { success: false, message: response.data.message };
+    // }
   } catch (error) {
     return handleError(error);
   }

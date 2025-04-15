@@ -18,7 +18,7 @@ interface IUser extends Document {
   lastSeen: Date;
   online: boolean;
   isVerified: boolean;
-  status: { media?: string; text?: string; timestamp?: Date }[];
+  status: { type: string; uri: string; caption?: string; timestamp?: Date }[];
   callLogs: mongoose.Types.ObjectId[];
   lastMessage: {
     text: string;
@@ -42,7 +42,7 @@ const userSchema = new Schema<IUser>(
     lastSeen: { type: Date, default: Date.now },
     online: { type: Boolean, default: true },
     isVerified: { type: Boolean, default: false },
-    status: [{ media: String, text: String, timestamp: Date }],
+    status: [{ type: String, uri: String, caption: String, timestamp: Date }],
     callLogs: [{ type: mongoose.Schema.Types.ObjectId, ref: "Call" }],
     lastMessage: {
       text: { type: String, default: "" },
@@ -53,23 +53,23 @@ const userSchema = new Schema<IUser>(
   { timestamps: true }
 );
 
-// Generate access token
-userSchema.methods.generateAccessToken = function (): string {
-  return jwt.sign(
-    { id: this._id, phoneNumber: this.phoneNumber },
-    ACCESS_TOKEN_SECRET,
-    { expiresIn: "1h" }
-  );
-};
+// // Generate access token
+// userSchema.methods.generateAccessToken = function (): string {
+//   return jwt.sign(
+//     { id: this._id, phoneNumber: this.phoneNumber },
+//     ACCESS_TOKEN_SECRET,
+//     { expiresIn: "1h" }
+//   );
+// };
 
-// Generate refresh token
-userSchema.methods.generateRefreshToken = function (): string {
-  return jwt.sign(
-    { id: this._id, phoneNumber: this.phoneNumber },
-    REFRESH_TOKEN_SECRET,
-    { expiresIn: "7d" }
-  );
-};
+// // Generate refresh token
+// userSchema.methods.generateRefreshToken = function (): string {
+//   return jwt.sign(
+//     { id: this._id, phoneNumber: this.phoneNumber },
+//     REFRESH_TOKEN_SECRET,
+//     { expiresIn: "7d" }
+//   );
+// };
 
 const User: Model<IUser> = mongoose.model<IUser>("User", userSchema);
 
