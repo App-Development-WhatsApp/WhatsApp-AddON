@@ -90,10 +90,10 @@ export default function MyTabs() {
         tabBarPressOpacity: 1,
       })}
     >
-      <Tab.Screen name="Chats" component={Chat} />
-      <Tab.Screen name="Updates" component={Updates} />
-      <Tab.Screen name="Community" component={Communities} />
-      <Tab.Screen name="Calls" component={Calls} />
+      <Tab.Screen key={'Chats'} name="Chats" component={Chat} />
+      <Tab.Screen key={'Updates'} name="Updates" component={Updates} />
+      <Tab.Screen key={'Community'} name="Community" component={Communities} />
+      <Tab.Screen key={'Calls'} name="Calls" component={Calls} />
     </Tab.Navigator>
   ) : null;
 }

@@ -1,29 +1,15 @@
 import * as FileSystem from "expo-file-system";
-import io from "socket.io-client";
 import { BACKEND_URL } from "../Services/AuthServices";
 import { Platform } from 'react-native';
 const API_URL = `${BACKEND_URL}/api/v1/users`;
 const SOCKET_SERVER_URL = BACKEND_URL;
+import localStorage from '@react-native-async-storage/async-storage';
+import { getUserInfoById } from "../database/curd";
+
 
 // File paths
 export const userFilePath = FileSystem.documentDirectory + "userInfo.json";
 export const friendsFilePath = FileSystem.documentDirectory + "friendsInfo.json";
-
-// Socket instance
-export const socket = io(SOCKET_SERVER_URL, {
-  transports: ["websocket"],
-  jsonp: false,
-});
-
-// Join room once connected
-// export const initSocketConnection = async () => {
-//   const user = await loadUserInfo();
-//   if (user && user._id) {
-//     socket.emit("join", user._id);
-//     console.log("Joined room for user:", user._id);
-//   }
-// };
-
 
 
 
@@ -47,19 +33,6 @@ export const writeJsonFile = async (filePath, data) => {
     console.error("Error writing JSON file:", error);
   }
 };
-
-export const clearChatFile = async (otherUserId) => {
-  try {
-    const filePath = await getSharedChatFilePath(otherUserId);
-    if (filePath) {
-      await writeJsonFile(filePath, { messages: [] });
-      console.log("Chat file cleared!");
-    }
-  } catch (error) {
-    console.error("Error clearing chat file:", error);
-  }
-};
-
 
 // --------- Message Handlers ---------- //
 
@@ -110,9 +83,9 @@ export const loadUserInfo = async () => {
       const data = localStorage.getItem('user');
       return data ? JSON.parse(data) : null;
     } else {
-      const data = await FileSystem.readAsStringAsync(userFilePath);
-      // console.log(data,"data");
-      return data ? JSON.parse(data) : null;
+      const userId = await localStorage.getItem('userId')
+      const user = await getUserInfoById(userId);
+      return user ? user: null;
     }
   } catch (error) {
     console.error("Error loading user info:", error);

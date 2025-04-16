@@ -15,7 +15,7 @@ import { Audio } from "expo-av";
 import * as Haptics from "expo-haptics";
 
 const IncomingCallBanner = () => {
-  const { incomingCall, setIncomingCall,socket } = useSocket();
+  const { incomingCall, setIncomingCall,cancelCall,AcceptCall } = useSocket();
   const navigation = useNavigation();
 
   const slideAnim = useRef(new Animated.Value(-100)).current;
@@ -92,12 +92,13 @@ const IncomingCallBanner = () => {
   const handleAccept = () => {
     stopRingtone();
     clearTimeout(autoDismissTimer.current);
-    socket.emit("call-accepted", { to: incomingCall.from });
+    // socket.emit("call-accepted", { to: incomingCall.from });
+    AcceptCall({ friendId: incomingCall.from, callerId: incomingCall.callerId });
 
-    navigation.navigate("AudioScreen", {
+    navigation.navigate("callScreen", {
       callerId: incomingCall.from,
-      calleeName: incomingCall.callerName,
-      calleeProfilePic: incomingCall.callerProfilePic,
+      calleeName: "incomingCall.callerName",
+      calleeProfilePic: "incomingCall.callerProfilePic",
     });
 
     setIncomingCall(null);
@@ -106,7 +107,7 @@ const IncomingCallBanner = () => {
   const handleReject = () => {
     stopRingtone();
     clearTimeout(autoDismissTimer.current);
-    socket.emit("call-rejected", { to: incomingCall.from });
+    cancelCall({ friendId: incomingCall.from, callerId: incomingCall.callerId });
     setIncomingCall(null);
   };
 
@@ -126,7 +127,7 @@ const IncomingCallBanner = () => {
         style={styles.avatar}
       />
       <View style={{ flex: 1, marginLeft: 10 }}>
-        <Text style={styles.name}>{incomingCall.callerName}</Text>
+        <Text style={styles.name}>{incomingCall.from}</Text>
         <Text style={styles.callText}>Incoming voice call...</Text>
       </View>
       <TouchableOpacity style={styles.iconButtonRed} onPress={handleReject}>

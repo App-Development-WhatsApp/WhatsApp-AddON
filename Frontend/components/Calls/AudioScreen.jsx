@@ -1,37 +1,74 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { Audio } from "expo-av";
 import { useSocket } from '../../context/SocketContext';
 const AudioScreen = () => {
-  const { socket } = useSocket();
+  const { callFriend, RegistercalcelCall, UnRegistercalcelCall, RegisterAcceptCall, UnRegisterAcceptCall } = useSocket();
   const navigation = useNavigation();
   const route = useRoute();
+  const ringtone = useRef(null);
   const { callerId, friendId, friendName, Profile } = route.params;
   const [status, setStatus] = useState('Calling...');
+  useEffect(() => {
+    // Play ringtone
+    playRingtone();
+  }, [])
 
   useEffect(() => {
-    
-    socket.emit('call-user', { from: callerId, to: friendId });
 
-    socket.on('call-answered', () => {
-      setStatus('Call answered');
-      navigation.replace('VoiceRoom', { callerId, friendId });
-    });
+    callFriend({ callerId, friendId });
+    RegistercalcelCall((props) => {
+      console.log("Cancel call props:", props);
+      stopRingtone();
+      setStatus('Call cancelled');
+      navigation.replace("Chatting", { userId: friendId, name: friendName, image: Profile }); // Replace with your desired fallback
+    })
+    RegisterAcceptCall((props) => {
+      console.log("Accept call props:", props);
+      setStatus('Call accepted');
+      stopRingtone();
+      navigation.replace("callScreen", {
+        callerId: props,
+        calleeName: "incomingCall.callerName",
+        calleeProfilePic: "incomingCall.callerProfilePic",
+      });
+    })
 
-    socket.on('call-rejected', () => {
-      setStatus('Call rejected');
-      setTimeout(() => navigation.goBack(), 2000);
-    });
 
     return () => {
-      socket.off('call-answered');
-      socket.off('call-rejected');
+      // Cleanup function to unregister incoming call listeners
+      UnRegisterAcceptCall();
+      UnRegistercalcelCall();
+      // Stop the ringtone if it's playing
+      if (ringtone.current) {
+        ringtone.current.stopAsync();
+      }
     };
-  }, []);
+  }, [RegistercalcelCall]);
 
+  const playRingtone = async () => {
+    try {
+      const { sound } = await Audio.Sound.createAsync(
+        require("../../assets/ringtone.mp3") // make sure this path is correct
+      );
+      ringtone.current = sound;
+      await ringtone.current.setIsLoopingAsync(true);
+      await ringtone.current.playAsync();
+    } catch (err) {
+      console.error("Error playing ringtone:", err);
+    }
+  };
+
+  const stopRingtone = async () => {
+    if (ringtone.current) {
+      await ringtone.current.stopAsync();
+      await ringtone.current.unloadAsync();
+      ringtone.current = null;
+    }
+  };
   const cancelCall = () => {
-    socket.emit('cancel-call', { to: friendId });
     navigation.goBack();
   };
   const validImage = Profile ? { uri: Profile } : require('../../assets/images/blank.jpeg');

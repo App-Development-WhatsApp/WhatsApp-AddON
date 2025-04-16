@@ -2,7 +2,7 @@ import axios from "axios";
 import * as FileSystem from "expo-file-system";
 import { saveUserInfo } from "../utils/chatStorage";
 import { userFilePath, friendsFilePath } from "../utils/chatStorage";
-import { createUser,getAllUser } from "../db/userProfileDb";
+import { createAllTables, createUser,getAllUser } from "../database/tables";
 export const BACKEND_URL = "http://10.10.15.70:5000"
 
 export const API_URL = `${BACKEND_URL}/api/v1/users`; // Replace with your backend URL
@@ -14,9 +14,10 @@ export const login = async (formData) => {
   try {
     // console.log(formData)
     const response = await axios.post(`${API_URL}/login`, formData, {
-      headers: { 'Content-Type': 'application/json' }
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
     });
-    // console.log(formData, "formData")
     
     if (response.data.success && response.data.data?.user) {
       await saveUserInfo(response.data.data.user); // Save user to local storage
@@ -120,13 +121,14 @@ export const uploadStatus = async (formData) => {
       },
     });
     console.log(response.data, "response")
-
+    
     if (response.data.success) {
+      await createAllTables();
       return { success: true, message: "Status uploaded successfully" };
     } 
-    // else {
-      // return { success: false, message: response.data.message };
-    // }
+    else {
+      return { success: false, message: response.data.message };
+    }
   } catch (error) {
     return handleError(error);
   }

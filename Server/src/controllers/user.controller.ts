@@ -16,29 +16,23 @@ import path from "path";
 // --------------------------Register---------------------------
 export const registerUser = asyncHandler(async (req, res) => {
   const { username, fullName, phoneNumber } = req.body;
-  console.log(req.body.username)
 
-  // Validate required fields
   if ([fullName, username, phoneNumber].some((field) => field?.trim() === "")) {
     return new ApiError(400, "All fields are required");
   }
 
-  // Check if username or phone number already exists
   const userId = await User.findOne({ phoneNumber }).select("_id");
 
   if (userId) {
     throw new ApiError(400, "User Already exist");
   }
 
-  // Create user first without image
   const newUser = await User.create({ username: username, fullName, phoneNumber });
 
-  // Handle Image Upload (Optional)
   if (req.file) {
     const avatarLocalPath = req.file.path;
     console.log("Avatar Local Path:", avatarLocalPath);
 
-    // Upload to Cloudinary
     const avatar = await uploadOnCloudinary(avatarLocalPath);
 
     if (!avatar) {
@@ -46,21 +40,16 @@ export const registerUser = asyncHandler(async (req, res) => {
     }
     console.log("Avatar URL:", avatar.secure_url);
 
-    // Update user with profile picture URL
     await User.findByIdAndUpdate(newUser._id, { profilePic: avatar.secure_url });
   }
 
   const loggedInUser = await User.findById(newUser._id).select(
     " -refreshToken"
   );
-  // Makiing cookies
-  // By default cookies is changable from frontend
   const options = {
-    // by true this cookkies is only accessable and modifiable   from server side
     httpOnly: true,
     secure: true,
   };
-  console.log(loggedInUser)
 
   return res.json(new ApiResponse(
     200,
@@ -183,16 +172,16 @@ export const UploadStatus = asyncHandler(async (req: Request, res: Response) => 
     const statusArray = formData.status;
 
     if (statusArray && Array.isArray(statusArray)) {
-      statusArray.forEach(async(stat: any, index: number) => {
+      statusArray.forEach(async (stat: any, index: number) => {
         try {
-          const parsedStat = JSON.parse(stat); 
+          const parsedStat = JSON.parse(stat);
           console.log('Parsed Status:', parsedStat);
 
           if (parsedStat) {
             if (parsedStat.type === 'video') {
               const startTime = parsedStat.startTime || 0;
               const endTime = parsedStat.endTime || 1000;
-              const videoPath = parsedStat.uri; 
+              const videoPath = parsedStat.uri;
 
 
               // Split video into 20-second segments
@@ -201,7 +190,7 @@ export const UploadStatus = asyncHandler(async (req: Request, res: Response) => 
               // Upload the trimmed video to Cloudinary
               for (const segmentPath of videoSegments) {
                 const videoUrl = await uploadOnCloudinary(segmentPath);
-                 
+
                 // Use findByIdAndUpdate to add the video status
                 await User.findByIdAndUpdate(
                   userId,

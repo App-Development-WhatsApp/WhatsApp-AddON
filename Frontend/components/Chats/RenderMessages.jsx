@@ -82,14 +82,14 @@ const formatTime = (timestamp) => {
     return `${formattedHours}:${formattedMinutes} ${ampm}`;
 };
 
-export const renderMessage = ({ item, currentUserId }) => {
+export const renderMessage = ({ item, currentUserId,index }) => {
     const isMyMessage = item.senderId === currentUserId;
     const formattedTime = item.timestamp ? formatTime(item.timestamp) : "";
     const isShortMessage = item.text && item.text.length < 40;
     // console.log(item)
 
     return (
-        <View style={styles.messageContainer}>
+        <View key={index} style={styles.messageContainer}>
             <View style={[styles.messageBubble, isMyMessage ? styles.myMessage : styles.theirMessage]}>
                 {Array.isArray(item.files) &&
                     item.files.map((file, index) => (

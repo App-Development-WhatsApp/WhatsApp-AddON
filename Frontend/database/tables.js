@@ -1,31 +1,29 @@
-// db.js
-import * as SQLite from 'expo-sqlite';
+// tables.js
+import { getDB } from "./AllDatabase";
 
-let db;
-
-export const initDatabase = async () => {
-  db = await SQLite.openDatabase('whatsappDB');
-
-  // Create tables if they don't exist
+export const createUserInfoTable = async () => {
+  const db = getDB();
   await db.execAsync(`
-    PRAGMA journal_mode = WAL;
-
-    -- Create user profile table
     CREATE TABLE IF NOT EXISTS userinfo (
       id TEXT UNIQUE NOT NULL,
       username TEXT NOT NULL,
-      phone TEXT UNIQUE NOT NULL,
-      avatar TEXT,
+      phoneNumber TEXT UNIQUE NOT NULL,
+      profilePic TEXT,
       status TEXT DEFAULT 'Hey there! I am using WhatsApp.',
       userId TEXT UNIQUE NOT NULL,
       last_seen DATETIME DEFAULT CURRENT_TIMESTAMP
     );
+  `);
+  console.log("🧱 'userinfo' table created");
+};
 
-    -- Create friend list table
+export const createFriendListTable = async () => {
+  const db = getDB();
+  await db.execAsync(`
     CREATE TABLE IF NOT EXISTS friend_list (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id INTEGER NOT NULL,
-      friend_id INTEGER NOT NULL,
+      user_id TEXT NOT NULL,
+      friend_id TEXT NOT NULL,
       friend_name TEXT,
       friend_avatar TEXT,
       friend_status TEXT,
@@ -33,8 +31,13 @@ export const initDatabase = async () => {
       FOREIGN KEY(user_id) REFERENCES userinfo(id),
       FOREIGN KEY(friend_id) REFERENCES userinfo(id)
     );
+  `);
+  console.log("🧱 'friend_list' table created");
+};
 
-    -- Track pending operations for sync
+export const createPendingSyncTable = async () => {
+  const db = getDB();
+  await db.execAsync(`
     CREATE TABLE IF NOT EXISTS pending_sync (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       operation TEXT,
@@ -42,14 +45,12 @@ export const initDatabase = async () => {
       status TEXT DEFAULT 'pending'
     );
   `);
-
-  console.log('📦 SQLite DB initialized with userinfo, friend_list, and pending_sync tables.');
-  return db;
+  console.log("🧱 'pending_sync' table created");
 };
 
-export const getDB = () => {
-    if (!db) {
-        console.error('❌ DB not initialized. Call initDatabase() first.');
-      }
-      return db;
+// Optional: bundle all in one if needed
+export const createAllTables = async () => {
+  await createUserInfoTable();
+  await createFriendListTable();
+  await createPendingSyncTable();
 };

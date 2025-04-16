@@ -34,6 +34,7 @@ const saveMessageToDB = async (message: Message): Promise<void> => {
 
 // Maps to track online users (userId -> Set of socketIds)
 const onlineUsers = new Map();
+const onlineSockets = new Map();
 
 // Create HTTP server and Socket.IO
 const httpServer = http.createServer(app);
@@ -61,7 +62,7 @@ io.on("connection", (socket: Socket) => {
     socket.userId = userId;
 
     onlineUsers.set(userId, socket.id);
-
+    onlineSockets.set(socket.id, userId)
     console.log(`${userId} connected with socket ${socket.id}`);
 
     // Deliver pending messages
@@ -97,14 +98,45 @@ io.on("connection", (socket: Socket) => {
       io.to(receiverSocketId).emit("incoming-call", props);
     }
   })
+
+  socket.on('call-cancel', async (props: any) => {
+    console.log("Call cancel event:", props);
+    const receiverSocketId = onlineUsers.get(props.to);
+    if (receiverSocketId) {
+      console.log("Receiver socket IDs:", receiverSocketId, "----", props.to);
+      io.to(receiverSocketId).emit("cancel-call", props);
+    }
+  })
+  socket.on('call-accepted', async (props: any) => {
+    console.log("Call accepted event:", props);
+    const receiverSocketId = onlineUsers.get(props.to);
+    if (receiverSocketId) {
+      console.log("Receiver socket IDs:", receiverSocketId, "----", props.to);
+      io.to(receiverSocketId).emit("accepted-call", props);
+    }
+  })
+
+
   // --------------------------------------------------------------------------------------------------------------------
 
+
+  socket.on('user-disconnected', (userId) => {
+    console.log(`❌ user disconnected: ${userId}`);
+    const socketId = onlineUsers.get(userId)
+    if (socketId) {
+      onlineUsers.delete(userId);
+      onlineSockets.delete(socket.id);
+      console.log(`User disconnected: ${userId}   ${socket.id}`);
+    }
+  })
   // On disconnect
   socket.on("disconnect", () => {
     console.log(`❌ Socket disconnected: ${socket.id}`);
-    if (socket.userId) {
-      onlineUsers.delete(socket.userId);
-      console.log(`User disconnected: ${socket.userId}   ${socket.id}`);
+    const userId = onlineSockets.get(socket.id)
+    if (userId) {
+      onlineUsers.delete(userId);
+      onlineSockets.delete(socket.id);
+      console.log(`User disconnected: ${userId}   ${socket.id}`);
     }
   });
 });

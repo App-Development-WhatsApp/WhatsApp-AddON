@@ -20,9 +20,10 @@ export default function History() {
             <Text style={styles.header}>Call History</Text>
 
             <FlatList
+                nestedScrollEnabled={true}
                 data={userCalls}
-                renderItem={({ item }) => (
-                    <View style={styles.historyItem}>
+                renderItem={({ item,index }) => (
+                    <View key={index} style={styles.historyItem}>
                         {item.datetime.map((entry, index) => (
                             <View key={index} style={styles.entry}>
                                 <Text style={styles.date}>{entry.date}</Text>

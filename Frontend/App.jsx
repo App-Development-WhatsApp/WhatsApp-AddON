@@ -4,6 +4,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { enableScreens } from 'react-native-screens';
+import { SQLiteProvider, useSQLiteContext } from 'expo-sqlite';
 
 // Import Screens
 import MyTabs from "./components/Tabs";
@@ -35,28 +36,33 @@ import OneTimeViewer from "./components/Chats/OneTimeView";
 import AudioScreen from "./components/Calls/AudioScreen";
 import IncomingCallBanner from "./components/banners/NotifyCallingBanner";
 import WhatsAppLoading from "./components/WhatsAppLoading";
-
+import { initDatabase } from "./database/AllDatabase";
+import CallScreen from "./components/Calls/callScreen";
+import CommunityFlow from "./components/Communities/CreateCommunity";
+import Communities from "./components/Communities/Communities";
+import CommunityScreen from "./components/Communities/CommunityScreen";
+import CreateGroupScreen from "./components/AllContacts/CreateGroup";
 export default function App() {
-  const [loading, setLoading] = useState(true);
-  const [language, setLanguage] = useState("English");
+  const [loading, setLoading] = useState(false);
   enableScreens();
-
   useEffect(() => {
-    // Load saved language on app start
-    const loadLanguage = async () => {
-      const storedLang = await AsyncStorage.getItem("appLanguage");
-      if (storedLang) {
-        setLanguage(storedLang);
+    const initialize = async () => {
+      setLoading(true);
+      try {
+        await initDatabase();
+      } catch (error) {
+        console.error("❌ Failed to initialize DB", error);
       }
-      setLoading(false);
     };
-    loadLanguage();
+
+    initialize();
+    setLoading(false);
   }, []);
 
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <WhatsAppLoading/>
+        <WhatsAppLoading />
       </View>
     );
   }
@@ -94,6 +100,11 @@ export default function App() {
             <Stack.Screen name="Invite" component={InviteFriendScreen} />
             <Stack.Screen name="Video" component={VideoEditing} />
             <Stack.Screen name="AppUpdate" component={AppUpdateScreen} />
+            <Stack.Screen name="CreateCommunity" component={CommunityFlow} />
+            <Stack.Screen name="Communities" component={Communities} />
+            <Stack.Screen name="CommunityScreen" component={CommunityScreen} />
+            <Stack.Screen name="CreateGroup" component={CreateGroupScreen}/>
+            <Stack.Screen name="callScreen" component={CallScreen} />
           </Stack.Navigator>
           <IncomingCallBanner />
         </GestureHandlerRootView>

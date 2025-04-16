@@ -55,7 +55,7 @@ export default function Contacts() {
                 userId: id,
                 name,
                 image,
-                roomId: generateRoomId(currUser?._id, id)
+                roomId: generateRoomId(currUser?.id, id)
             });
 
         } catch (error) {
@@ -75,7 +75,7 @@ export default function Contacts() {
                         resizeMode="cover"
                     />
                     <View style={styles.msgCtn}>
-                        <Text style={styles.name}>{userName}</Text>
+                        <Text style={styles.name}>{userName} {userId}</Text>
                         {/* You can add status/subtext here if available */}
                     </View>
                 </View>
@@ -83,11 +83,9 @@ export default function Contacts() {
         );
     };
 
-    const ActionButton = ({ icon, text, rightIcon }) => (
-        <TouchableOpacity style={styles.actionBtn}>
-            <View style={styles.iconWrap}>
-                {icon}
-            </View>
+    const ActionButton = ({ icon, text, rightIcon, onPress }) => (
+        <TouchableOpacity style={styles.actionBtn} onPress={onPress}>
+            <View style={styles.iconWrap}>{icon}</View>
             <Text style={styles.actionText}>{text}</Text>
             {rightIcon && <View style={styles.qrWrap}>{rightIcon}</View>}
         </TouchableOpacity>
@@ -117,19 +115,25 @@ export default function Contacts() {
             ) : (
                 <ScrollView>
                     <View style={styles.actionsContainer}>
-                        <ActionButton icon={<Ionicons name="people" size={24} color="white" />} text="New group" />
+                        <ActionButton
+                            icon={<Ionicons name="people" size={24} color="white" />}
+                            text="New group"
+                            onPress={() => {
+                                console.log("hi");
+                                navigation.navigate("CreateGroup");
+                            }} />
                         <ActionButton
                             icon={<Ionicons name="person-add" size={24} color="white" />}
                             text="New contact"
                             rightIcon={<MaterialIcons name="qr-code" size={18} color="white" />}
                         />
-                        <ActionButton icon={<Ionicons name="people-circle" size={24} color="white" />} text="New community" />
-                        <ActionButton icon={<MaterialCommunityIcons name="robot-outline" size={24} color="white" />} text="Chat with AIs" />
+
                     </View>
 
                     <Text style={styles.contactsLabel}>Contacts on WhatsApp</Text>
 
                     <FlatList
+                        nestedScrollEnabled={true}
                         data={users}
                         renderItem={({ item }) => (
                             <Item key={item._id} userId={item._id} userName={item.username} image={item.profilePic} />

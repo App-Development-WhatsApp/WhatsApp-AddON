@@ -31,14 +31,18 @@ import { loadChatHistory } from "../../utils/chatStorage";
 import { Video } from "expo-av";
 import * as ImagePicker from "expo-image-picker";
 import { renderMessage } from "./RenderMessages";
-// import SocketServices from "../../Services/SocketServices";
 import { useNetInfo } from "@react-native-community/netinfo";
 // import OneTimeView from "./OneTimeView";
-// import { useSocket } from "../../context/SocketContext";
+import { useSocket } from "../../context/SocketContext";
+
 
 export default function Chatting() {
-  // const { socket } = useSocket();
   const navigation = useNavigation();
+  const {
+    sendMessage,
+    registerReceiveMessage,
+    unregisterReceiveMessage
+  } = useSocket();
   const netInfo = useNetInfo();
   const route = useRoute();
   const { userId: friendId, name, image } = route.params;
@@ -56,9 +60,10 @@ export default function Chatting() {
     const setup = async () => {
       try {
         const user = await loadUserInfo();
-        setCurrentUserId(user._id);
+        setCurrentUserId(user.id);
         const chatsdata = await loadChatHistory(friendId);
         setChats(chatsdata);
+        console.log(route.params);
       } catch (err) {
         console.error("Error loading user or chats:", err);
       }
@@ -76,9 +81,9 @@ export default function Chatting() {
       await saveChatMessage(formatted.senderId, formatted);
     };
 
-    // SocketServices.registerReceiveMessage(socket,messageListener);
+    registerReceiveMessage(messageListener);
     return () => {
-      // SocketServices.unregisterReceiveMessage(socket,messageListener);
+      unregisterReceiveMessage(messageListener);
     };
   }, [ netInfo.isConnected]);
 
@@ -98,7 +103,7 @@ export default function Chatting() {
       console.log(newMsg)
 
       setChats((prev) => [...prev, { ...newMsg }]);
-      // SocketServices.sendMessage(socket,newMsg);
+      sendMessage(newMsg);
 
       setMessage("");
       setSelectedFiles([]);
@@ -247,13 +252,15 @@ export default function Chatting() {
         keyboardVerticalOffset={80}
       >
         <FlatList
+         nestedScrollEnabled={true}
           ref={flatListRef}
           data={chats}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => {
+          renderItem={({ item,index }) => {
             if (item.oneTimeView && item.files?.length === 1) {
               return (
                 <TouchableOpacity
+                key={index}
                   onPress={() => handleOneTimeView(item.id, item.files[0])}
                 >
                   <View style={[styles.messageBubble, styles.theirMessage]}>
@@ -262,7 +269,7 @@ export default function Chatting() {
                 </TouchableOpacity>
               );
             } else {
-              return renderMessage({ item, currentUserId });
+              return renderMessage({ item, currentUserId,index });
             }
           }}
           contentContainerStyle={styles.chatList}

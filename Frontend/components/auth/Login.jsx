@@ -1,18 +1,22 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
-  TextInput,
   Text,
-  Alert,
-  Image,
+  TextInput,
   TouchableOpacity,
+  Image,
   StyleSheet,
-  BackHandler,
   ActivityIndicator,
+  Animated,
+  BackHandler
 } from "react-native";
 import * as DocumentPicker from "expo-document-picker";
 import { login } from "../../Services/AuthServices";
 import { loadUserInfo } from "../../utils/chatStorage";
+import FormData from "form-data";
+import { addUser, getUserInfoById } from "../../database/curd";
+import localStorage from '@react-native-async-storage/async-storage';
+
 
 const LoginScreen = ({ navigation }) => {
   const [fullName, setFullName] = useState("");
@@ -20,12 +24,19 @@ const LoginScreen = ({ navigation }) => {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [profilePic, setProfilePic] = useState(null);
   const [loading, setLoading] = useState(false);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // navigation.replace("Main");
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 800,
+      useNativeDriver: true,
+    }).start();
+  }, []);
+
+  useEffect(() => {
     const checkAuth = async () => {
       const userInfo = await loadUserInfo();
-      // console.log(userInfo, "userInfo---");
       if (userInfo) {
         navigation.replace("Main");
       }
@@ -84,9 +95,11 @@ const LoginScreen = ({ navigation }) => {
     }
 
     const result = await login(formData);
-    setLoading(false);
 
     if (result.success) {
+      await localStorage.setItem('userId', result.user._id);
+      await addUser(result.user);
+      setLoading(false);
       navigation.replace("Main");
     } else {
       Alert.alert("Login Failed", result.message || "An error occurred.");
@@ -94,15 +107,16 @@ const LoginScreen = ({ navigation }) => {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Welcome to WhatsChat</Text>
+    <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
+      <Text style={styles.title}>Welcome to</Text>
+      <Text style={styles.brand}>WhatsChat</Text>
 
       <TouchableOpacity onPress={pickImage} style={styles.imagePicker}>
         {profilePic ? (
           <Image source={{ uri: profilePic }} style={styles.profileImage} />
         ) : (
           <View style={styles.placeholderImage}>
-            <Text style={{ color: "#888" }}>+</Text>
+            <Text style={styles.plus}>+</Text>
           </View>
         )}
       </TouchableOpacity>
@@ -111,14 +125,14 @@ const LoginScreen = ({ navigation }) => {
         value={fullName}
         onChangeText={setFullName}
         placeholder="Full Name"
-        placeholderTextColor="#666"
+        placeholderTextColor="#aaa"
         style={styles.input}
       />
       <TextInput
         value={username}
         onChangeText={setUsername}
         placeholder="Username"
-        placeholderTextColor="#666"
+        placeholderTextColor="#aaa"
         style={styles.input}
       />
       <TextInput
@@ -126,7 +140,7 @@ const LoginScreen = ({ navigation }) => {
         onChangeText={setPhoneNumber}
         placeholder="Phone Number"
         keyboardType="phone-pad"
-        placeholderTextColor="#666"
+        placeholderTextColor="#aaa"
         style={styles.input}
       />
 
@@ -137,67 +151,79 @@ const LoginScreen = ({ navigation }) => {
           <Text style={styles.loginButtonText}>Continue</Text>
         </TouchableOpacity>
       )}
-    </View>
+    </Animated.View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#E5F4EC",
+    backgroundColor: "#121212",
     paddingHorizontal: 30,
-    paddingTop: 80,
+    paddingTop: 70,
     alignItems: "center",
   },
   title: {
-    fontSize: 26,
+    fontSize: 22,
+    fontWeight: "600",
+    color: "#CCCCCC",
+    marginBottom: 5,
+  },
+  brand: {
+    fontSize: 30,
     fontWeight: "bold",
-    color: "#075E54",
-    marginBottom: 30,
+    color: "#25D366",
+    marginBottom: 25,
   },
   imagePicker: {
     marginBottom: 25,
+    borderWidth: 2,
+    borderColor: "#25D366",
+    borderRadius: 70,
+    padding: 4,
   },
   profileImage: {
     width: 120,
     height: 120,
     borderRadius: 60,
-    borderWidth: 2,
-    borderColor: "#25D366",
   },
   placeholderImage: {
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: "#ccc",
+    backgroundColor: "#2C2C2C",
     justifyContent: "center",
     alignItems: "center",
+  },
+  plus: {
     fontSize: 40,
-    borderColor: "#aaa",
-    borderWidth: 1,
+    color: "#666",
   },
   input: {
     width: "100%",
-    backgroundColor: "#fff",
+    backgroundColor: "#1E1E1E",
+    color: "#fff",
     padding: 15,
-    borderRadius: 10,
+    borderRadius: 12,
     marginBottom: 15,
     fontSize: 16,
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: "#333",
   },
   loginButton: {
     backgroundColor: "#25D366",
     width: "100%",
     paddingVertical: 15,
-    borderRadius: 10,
+    borderRadius: 12,
     marginTop: 10,
     alignItems: "center",
+    elevation: 3,
   },
   loginButtonText: {
-    color: "#fff",
-    fontSize: 16,
+    color: "#000",
+    fontSize: 17,
     fontWeight: "600",
+    textTransform: "uppercase",
   },
 });
 
