@@ -59,10 +59,10 @@
     "bridgeless": false,
     "entryPoint": "./node_modules/expo/AppEntry.js",
     "doctor": {
-    "reactNativeDirectoryCheck": {
-      "listUnknownPackages": false
+      "reactNativeDirectoryCheck": {
+        "listUnknownPackages": false
+      }
     }
-  }
   },
   "private": true
 }

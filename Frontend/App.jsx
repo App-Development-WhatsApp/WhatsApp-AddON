@@ -33,6 +33,10 @@ import { SocketProvider } from "./context/SocketContext";
 import OneTimeViewer from "./components/Chats/OneTimeView";
 import AudioScreen from "./components/Calls/AudioScreen";
 import IncomingCallBanner from "./components/banners/NotifyCallingBanner";
+import CommunityFlow from "./components/Communities/CreateCommunity";
+import Communities from "./components/Communities/Communities";
+import CommunityScreen from "./components/Communities/CommunityScreen";
+import CreateGroupScreen from "./components/AllContacts/CreateGroup";
 
 export default function App() {
   const [loading, setLoading] = useState(true);
@@ -91,6 +95,10 @@ export default function App() {
             <Stack.Screen name="Invite" component={InviteFriendScreen} />
             <Stack.Screen name="Video" component={VideoEditing} />
             <Stack.Screen name="AppUpdate" component={AppUpdateScreen} />
+            <Stack.Screen name="CreateCommunity" component={CommunityFlow} />
+            <Stack.Screen name="Communities" component={Communities} />
+            <Stack.Screen name="CommunityScreen" component={CommunityScreen} />
+            <Stack.Screen name="CreateGroup" component={CreateGroupScreen} />
           </Stack.Navigator>
           <IncomingCallBanner />
         </GestureHandlerRootView>

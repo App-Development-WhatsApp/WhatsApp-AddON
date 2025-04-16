@@ -1,4 +1,4 @@
-import React, { useEffect, useState,useContext } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   StyleSheet,
   Text,
@@ -16,6 +16,8 @@ import { useNetInfo } from "@react-native-community/netinfo";
 import { MaterialCommunityIcons, Feather, Entypo } from '@expo/vector-icons';
 import Menu from '../Menu/Menu';
 import { friendsFilePath, loadUserInfo, setReceivedMessage } from '../../utils/chatStorage';
+import { loadGroups } from '../../utils/groupStorage';
+
 
 export default function Chat() {
   
@@ -24,26 +26,30 @@ export default function Chat() {
   const [loading, setLoading] = useState(true);
   const [userData, setUserData] = useState(null);
   const [friends, setFriends] = useState([]);
+  const [groups, setGroups] = useState([]);
 
   useEffect(() => {
-    const userInfo = async () => {
-      const user = await loadUserInfo();
-      if (user) {
-        setUserData(user);
-      }
-    }
-    setUserData(userInfo);
-    // console.log(userData, "userData")
-  
-    setUserData();
-    // console.log("Main Page")
-    const loadUserAndFriends = async () => {
-      setLoading(true)
+    const fetchData = async () => {
       try {
+        // Load user data
+        const user = await loadUserInfo();
+        if (user) {
+          setUserData(user);
+        }
+
+        // Load friends data
         const fileExists = await FileSystem.getInfoAsync(friendsFilePath);
         if (fileExists.exists) {
           const storedData = await FileSystem.readAsStringAsync(friendsFilePath);
           setFriends(JSON.parse(storedData) || []);
+        }
+
+        // Load groups data
+        const groupFilePath = `${FileSystem.documentDirectory}group.json`;
+        const groupFileExists = await FileSystem.getInfoAsync(groupFilePath);
+        if (groupFileExists.exists) {
+          const storedGroups = await FileSystem.readAsStringAsync(groupFilePath);
+          setGroups(JSON.parse(storedGroups) || []);
         }
       } catch (error) {
         console.error("Error loading data:", error);
@@ -51,28 +57,56 @@ export default function Chat() {
         setLoading(false);
       }
     };
-    loadUserAndFriends();
+
+    fetchData(); // Call async function to load data
 
   }, [netInfo.isConnected]);
 
+  useEffect(() => {
+    (async () => {
+      const groups = await loadGroups();
+      setGroups(groups);
+      console.log("Stored groups:", groups);
+      groups.forEach(group => {
+        console.log("Group name:", group.name);
+      });
+    })();
+  }, []);
+
   const handleChatPress = async (id, name, image) => {
     navigation.navigate('Chatting', { userId: id, name, image });
-
   };
 
-  const Item = ({ userId, userName, image, message, time }) => {
+  const Item = ({ userId, userName, image, message, time, isGroup, groupId, name }) => {
+    const navigation = useNavigation();
+  
+    // Fallbacks for name and image
+    const displayName = isGroup ? name || "Unnamed Group" : userName || "Unknown User";
+    const displayMessage = message || (isGroup ? "Group created" : "");
+    const displayTime = time || "";
+  
+    const id = isGroup ? groupId : userId;
     const validImage = image ? { uri: image } : require('../../assets/images/blank.jpeg');
-
+  
+    const handlePress = () => {
+      if (isGroup) {
+        navigation.navigate('Chatting', { groupId: id, name, image });
+      } else {
+        // Assumes handleChatPress is defined in the parent component
+        handleChatPress(id, displayName, image);
+      }
+    };
+  
     return (
-      <TouchableOpacity activeOpacity={0.6} onPress={() => handleChatPress(userId, userName, image)}>
+      <TouchableOpacity activeOpacity={0.6} onPress={handlePress}>
         <View style={styles.userCtn}>
           <Image style={styles.image} source={validImage} borderRadius={50} resizeMode='cover' />
           <View style={styles.msgCtn}>
             <View style={styles.userDetail}>
-              <Text style={styles.name}>{userName}</Text>
-              <Text style={styles.message}>{message}</Text>
+              <Text style={styles.name}>{displayName}</Text>
+              <Text style={styles.message}>{displayMessage}</Text>
             </View>
-            <Text style={styles.time}>{time}</Text>
+            <Text style={styles.time}>{displayTime}</Text>
           </View>
         </View>
       </TouchableOpacity>
@@ -108,12 +142,21 @@ export default function Chat() {
           <Text style={styles.loadingText}>Fetching data...</Text>
         </View>
       ) : (
-        <FlatList
-          data={friends}
-          renderItem={({ item }) => <Item {...item} />}
-          keyExtractor={(item) => String(item.userId)}
-          ListEmptyComponent={<Text style={styles.emptyText}>Start Chatting</Text>}
-        />
+        <>
+          <FlatList
+            data={groups}
+            renderItem={({ item }) => <Item {...item} isGroup={true} />}
+            keyExtractor={(item, index) => `group-${item.groupId || index}`}
+            ListFooterComponent={() => (
+              <FlatList
+                data={friends}
+                renderItem={({ item }) => <Item {...item} />}
+                keyExtractor={(item, index) => `user-${item.userId || index}`}
+                scrollEnabled={false}
+              />
+            )}
+          />
+        </>
       )}
 
       {/* Floating Action Button */}
