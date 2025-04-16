@@ -37,8 +37,8 @@ export default function StatusScreen() {
         </TouchableOpacity>
         <Text style={styles.title}>Status Archive</Text>
       </View>
-      <FlatList style={styles.section} data={videoData} keyExtractor={(item) => item.id} numColumns={3} renderItem={({ item }) => (
-          <View style={styles.videoWrapper}>
+      <FlatList style={styles.section} data={videoData} keyExtractor={(item) => item.id} numColumns={3} renderItem={({ item,index }) => (
+          <View key={index} style={styles.videoWrapper}>
             <TouchableOpacity style={styles.videoItem} onPress={() => navigation.navigate("VideoPlayer", { videoUrl: item.url })}>
               <Video
                 source={{ uri: item.url }}

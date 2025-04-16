@@ -26,9 +26,10 @@ export default function InviteFriendScreen({ navigation }) {
       {/* Contact List */}
       <Text style={styles.sectionTitle}>From Contacts</Text>
       <FlatList
+      nestedScrollEnabled={true}
         data={contacts}
         keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => <ContactItem name={item.name} phone={item.phone} />}
+        renderItem={({ item,index }) => <ContactItem key={index} name={item.name} phone={item.phone} />}
       />
     </View>
   );

@@ -3,9 +3,13 @@ import { View, Text, TouchableOpacity, StyleSheet, Modal, Pressable, Alert } fro
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import * as FileSystem from "expo-file-system";
-import { userFilePath,friendsFilePath } from '../../utils/chatStorage';
+import { userFilePath, friendsFilePath } from '../../utils/chatStorage';
+import { initDatabase } from '../../database/AllDatabase';
+import { dropAllTables } from '../../database/resetTables';
 
 export default function MenuBar() {
+
+  
   const [menuVisible, setMenuVisible] = useState(false);
   const navigation = useNavigation();
 
@@ -16,12 +20,10 @@ export default function MenuBar() {
       "Are you sure you want to logout?",
       [
         { text: "Cancel", style: "cancel" },
-        { 
-          text: "Logout", 
+        {
+          text: "Logout",
           onPress: async () => {
             try {
-              // console.log("Handling logout...");
-              // Delete user and friends JSON files
               const filesToDelete = [userFilePath, friendsFilePath];
 
               for (const file of filesToDelete) {
@@ -31,12 +33,12 @@ export default function MenuBar() {
                 }
               }
 
-              // console.log("User data deleted. Redirecting to login...");
+              await dropAllTables();     // Clear all data
               navigation.replace("Login"); // Navigate to Login screen
             } catch (error) {
               console.error("Logout error:", error);
             }
-          } 
+          }
         }
       ]
     );

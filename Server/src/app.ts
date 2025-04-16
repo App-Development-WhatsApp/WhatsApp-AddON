@@ -6,6 +6,7 @@ import userRouter from './routes/user.routes';
 import chatRouter from './routes/chat.routes';
 import messageRouter from './routes/messages.routes';
 import notificationRouter from './routes/notifications.routes';
+import path from "path";
 
 const app = express();
 
@@ -22,7 +23,7 @@ app.use(express.json({ limit: "10mb" }));  // Increase to 50MB
 app.use(express.urlencoded({ limit: "10mb", extended: true }));
 
 // Serve static files (e.g., PDFs, images)
-app.use(express.static("public"));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Middleware to parse cookies
 app.use(cookieParser());

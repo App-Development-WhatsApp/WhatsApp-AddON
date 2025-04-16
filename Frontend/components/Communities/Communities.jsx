@@ -104,6 +104,7 @@ export default function Communities({ navigation, route }) {
         <Text style={styles.messageSubtitle}>Welcome to the group: General</Text>
       </View>
       <Text style={styles.viewAll}>› View all</Text>
+
     </View>
     </TouchableOpacity>
   );

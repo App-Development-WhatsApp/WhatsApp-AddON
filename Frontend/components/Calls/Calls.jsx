@@ -1,13 +1,13 @@
 import React from 'react';
 import {
-  StyleSheet,
-  Text,
-  View,
-  Image,
-  StatusBar,
-  ScrollView,
-  TouchableOpacity,
-  FlatList
+    StyleSheet,
+    Text,
+    View,
+    Image,
+    StatusBar,
+    ScrollView,
+    TouchableOpacity,
+    FlatList
 } from 'react-native';
 import { Ionicons, Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { CallHistory } from '../../lib/data';
@@ -15,17 +15,17 @@ import { useNavigation } from '@react-navigation/native';
 import Menu from '../Menu/Menu';
 
 const getLatestCalls = () => {
-  const uniqueCalls = {};
-  CallHistory.forEach(call => {
-      const userId = call.UserId;
-      if (!uniqueCalls[userId] || 
-          new Date(call.datetime.slice(-1)[0].date + " " + call.datetime.slice(-1)[0].time) >
-          new Date(uniqueCalls[userId].datetime.slice(-1)[0].date + " " + uniqueCalls[userId].datetime.slice(-1)[0].time)
-      ) {
-          uniqueCalls[userId] = call;
-      }
-  });
-  return Object.values(uniqueCalls);
+    const uniqueCalls = {};
+    CallHistory.forEach(call => {
+        const userId = call.UserId;
+        if (!uniqueCalls[userId] ||
+            new Date(call.datetime.slice(-1)[0].date + " " + call.datetime.slice(-1)[0].time) >
+            new Date(uniqueCalls[userId].datetime.slice(-1)[0].date + " " + uniqueCalls[userId].datetime.slice(-1)[0].time)
+        ) {
+            uniqueCalls[userId] = call;
+        }
+    });
+    return Object.values(uniqueCalls);
 };
 
 const CallsHeader = () => (
@@ -39,30 +39,30 @@ const CallsHeader = () => (
 );
 
 const Item = ({ id, name, image, datetime, status, missed, UserId }) => {
-  const navigation = useNavigation();
-  return (
-      <TouchableOpacity
-          activeOpacity={0.6}
-          style={styles.touchable}
-          onPress={() => navigation.navigate('History', { UserId, name })}
-      >
-          <View style={styles.userCtn}>
-              <Image style={styles.image} source={image} borderRadius={50} resizeMode='cover' />
-              <View style={styles.msgCtn}>
-                  <Text style={styles.name}>{name}</Text>
-                  <View style={styles.statusCtn}>
-                      <MaterialCommunityIcons 
-                          name={status === 'incoming' ? "arrow-bottom-left" : "arrow-top-right"} 
-                          size={15} 
-                          color={missed ? '#ba0c2f' : "rgb(95, 252, 123)"} 
-                      />
-                      <Text style={styles.textSub}>{datetime.slice(-1)[0].time}</Text>
-                  </View>
-              </View>
-              <Ionicons name="call-outline" size={20} color="rgb(95, 252, 123)" />
-          </View>
-      </TouchableOpacity>
-  );
+    const navigation = useNavigation();
+    return (
+        <TouchableOpacity
+            activeOpacity={0.6}
+            style={styles.touchable}
+            onPress={() => navigation.navigate('History', { UserId, name })}
+        >
+            <View style={styles.userCtn}>
+                <Image style={styles.image} source={image} borderRadius={50} resizeMode='cover' />
+                <View style={styles.msgCtn}>
+                    <Text style={styles.name}>{name}</Text>
+                    <View style={styles.statusCtn}>
+                        <MaterialCommunityIcons
+                            name={status === 'incoming' ? "arrow-bottom-left" : "arrow-top-right"}
+                            size={15}
+                            color={missed ? '#ba0c2f' : "rgb(95, 252, 123)"}
+                        />
+                        <Text style={styles.textSub}>{datetime.slice(-1)[0].time}</Text>
+                    </View>
+                </View>
+                <Ionicons name="call-outline" size={20} color="rgb(95, 252, 123)" />
+            </View>
+        </TouchableOpacity>
+    );
 };
 
 const FavoriteItem = ({ name, image }) => (
@@ -73,29 +73,31 @@ const FavoriteItem = ({ name, image }) => (
 );
 
 export default function Calls() {
-  return (
-      <View style={styles.container}>
-          <CallsHeader />
-          <ScrollView>
-              <View style={styles.favoritesContainer}>
-                  <Text style={styles.sectionTitle}>Favorites</Text>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                      <FavoriteItem name="Sahil" image={require('../../assets/images/samuel.jpg')} />
-                      <FavoriteItem name="Sajal" image={require('../../assets/images/tomi.png')} />
-                  </ScrollView>
-              </View>
-              <FlatList
-                  data={getLatestCalls()}
-                  renderItem={({ item }) => <Item {...item} />}
-                  keyExtractor={item => item.id}
-                  style={styles.FlatlistStyle}
-              />
-          </ScrollView>
-          <TouchableOpacity style={styles.newCall}>
-              <Ionicons name="call" size={30} color="black" />
-          </TouchableOpacity>
-      </View>
-  );
+    return (
+        <View style={styles.container}>
+            <CallsHeader />
+            <ScrollView>
+                <View style={styles.favoritesContainer}>
+                    <Text style={styles.sectionTitle}>Favorites</Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                        <FavoriteItem name="Sahil" image={require('../../assets/images/samuel.jpg')} />
+                        <FavoriteItem name="Sajal" image={require('../../assets/images/tomi.png')} />
+                    </ScrollView>
+                </View>
+                <FlatList
+                    nestedScrollEnabled={true}
+                    showsVerticalScrollIndicator={false}
+                    data={getLatestCalls()}
+                    renderItem={({ item,index }) => <Item key={index} {...item} />}
+                    keyExtractor={item => item.id}
+                    style={styles.FlatlistStyle}
+                />
+            </ScrollView>
+            <TouchableOpacity style={styles.newCall}>
+                <Ionicons name="call" size={30} color="black" />
+            </TouchableOpacity>
+        </View>
+    );
 }
 
 const styles = StyleSheet.create({
@@ -124,17 +126,17 @@ const styles = StyleSheet.create({
         gap: 5,
     },
     FlatlistStyle: {
-      marginTop: 5,
+        marginTop: 5,
     },
     textSub: {
         color: '#889b9f',
         fontSize: 13,
     },
     userCtn: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingVertical: 10,
-      paddingHorizontal: 15,
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 10,
+        paddingHorizontal: 15,
     },
     statusCtn: {
         flexDirection: 'row',
@@ -142,13 +144,13 @@ const styles = StyleSheet.create({
         gap: 5,
     },
     msgCtn: {
-      flex: 1,
-      justifyContent: 'center',
+        flex: 1,
+        justifyContent: 'center',
     },
     name: {
-      fontWeight: 'bold',
-      fontSize: 16,
-      color: 'white',
+        fontWeight: 'bold',
+        fontSize: 16,
+        color: 'white',
     },
     image: {
         width: 45,
@@ -157,8 +159,8 @@ const styles = StyleSheet.create({
         marginRight: 10
     },
     touchable: {
-      borderRadius: 10,
-      paddingVertical: 5,
+        borderRadius: 10,
+        paddingVertical: 5,
     },
     newCall: {
         backgroundColor: 'rgb(95, 252, 123)',

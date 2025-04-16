@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 import React, { useEffect, useState } from 'react';
+=======
+import React, { useEffect, useState, useContext } from 'react';
+>>>>>>> fc34eda657cbf70aee3499a01a5008e459c1da64
 import {
   StyleSheet,
   Text,
@@ -18,15 +22,28 @@ import Menu from '../Menu/Menu';
 import { friendsFilePath, loadUserInfo, setReceivedMessage } from '../../utils/chatStorage';
 import { loadGroups } from '../../utils/groupStorage';
 
+// import { createUser, getAllUser} from '../../db/userProfileDb.js'
+import { getUserInfoById } from '../../database/curd.js';
+import localStorage from '@react-native-async-storage/async-storage';
 
 export default function Chat() {
-  
+
   const netInfo = useNetInfo();
   const navigation = useNavigation();
   const [loading, setLoading] = useState(true);
   const [userData, setUserData] = useState(null);
   const [friends, setFriends] = useState([]);
   const [groups, setGroups] = useState([]);
+  useEffect(() => {
+    (async () => {
+      const groups = await loadGroups();
+      setGroups(groups);
+      console.log("Stored groups:", groups);
+      groups.forEach(group => {
+        console.log("Group name:", group.name);
+      });
+    })();
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -79,7 +96,6 @@ export default function Chat() {
 
   const Item = ({ userId, userName, image, message, time, isGroup, groupId, name }) => {
     const navigation = useNavigation();
-  
     // Fallbacks for name and image
     const displayName = isGroup ? name || "Unnamed Group" : userName || "Unknown User";
     const displayMessage = message || (isGroup ? "Group created" : "");
@@ -87,7 +103,7 @@ export default function Chat() {
   
     const id = isGroup ? groupId : userId;
     const validImage = image ? { uri: image } : require('../../assets/images/blank.jpeg');
-  
+
     const handlePress = () => {
       if (isGroup) {
         navigation.navigate('Chatting', { groupId: id, name, image });
@@ -96,7 +112,6 @@ export default function Chat() {
         handleChatPress(id, displayName, image);
       }
     };
-  
     return (
       <TouchableOpacity activeOpacity={0.6} onPress={handlePress}>
         <View style={styles.userCtn}>
@@ -152,6 +167,7 @@ export default function Chat() {
                 data={friends}
                 renderItem={({ item }) => <Item {...item} />}
                 keyExtractor={(item, index) => `user-${item.userId || index}`}
+
                 scrollEnabled={false}
               />
             )}

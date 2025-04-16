@@ -10,23 +10,33 @@ cloudinary.config({
 });
 
 // Type definition for the local file path parameter
-const uploadOnCloudinary = async (localFilePath: string): Promise<any | null> => {
+const uploadOnCloudinary = async (localFilePath: string, fileUrl?: string, public_id?: string): Promise<any | null> => {
   try {
-    if (!localFilePath) return null;
+    if (!localFilePath && !fileUrl) {
+      console.error("Either localFilePath or fileUrl must be provided.");
+      return null;
+    }
 
     // Upload the file to Cloudinary
-    const response = await cloudinary.uploader.upload(localFilePath, {
-      resource_type: "auto", // auto means for every type of file
+    const uploadSource = localFilePath;
+
+    const response = await cloudinary.uploader.upload(uploadSource, {
+      resource_type: "auto",
+      public_id,
+    }).catch((error: any) => {
+      console.log(error);
     });
 
     // File has been uploaded successfully
-    console.log("File is uploaded successfully on Cloudinary", response.url);
+    console.log("File is uploaded successfully on Cloudinary", response!.secure_url);
 
     // Remove the locally saved temporary file after successful upload
-    fs.unlinkSync(localFilePath);
+    if (localFilePath && fs.existsSync(localFilePath)) {
+      fs.unlinkSync(localFilePath);
+    }
 
     return response;
-  } catch (error:any) {
+  } catch (error: any) {
     // Remove the locally saved temporary file in case of failure
     if (localFilePath) {
       fs.unlinkSync(localFilePath);

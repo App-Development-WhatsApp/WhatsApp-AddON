@@ -1,78 +1,154 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { useNetInfo } from "@react-native-community/netinfo";
-import { loadUserInfo } from "../utils/chatStorage";
-import { getSocket } from "../utils/socket";
+import { loadUserInfo, saveChatMessage } from "../utils/chatStorage";
+import { io } from "socket.io-client";
+import { BACKEND_URL } from "../Services/AuthServices";
+
 export const SocketContext = createContext();
+const SOCKET_URL = BACKEND_URL;
+
+const getSocket = () => {
+  return io(SOCKET_URL, {
+    autoConnect: false,
+    transports: ["websocket"],
+  });
+};
 
 export const SocketProvider = ({ children }) => {
-  const [userData, setUserData] = useState(null);
   const netInfo = useNetInfo();
-  const [socket] = useState(getSocket()); // ✅ only initialize once
-
+  const [socket] = useState(getSocket()); // Initialized once
+  const [userData, setUserData] = useState(null);
   const [incomingCall, setIncomingCall] = useState("");
 
-  // useEffect(() => {
-  //   socket.on('incoming-call', (data) => {
-  //   setIncomingCall({
-  //     from:data.from,
-  //     callerName:,
-  //     callerProfilePic: "",
-  //   }); // { from, callerName, callerProfilePic }
-  //   });
-
-  //   return () => {
-  //     socket.off('incoming-call');
-  //   };
-  // }, []);
-
-  // Load user data when network is connected
+  // Load user info
   useEffect(() => {
-    const checkAuth = async () => {
+    const setup = async () => {
       const userInfo = await loadUserInfo();
-      if (userInfo) {
-        setUserData(userInfo);
-      }
+      if (userInfo) setUserData(userInfo);
     };
-
-    if (netInfo.isConnected) {
-      checkAuth();
-    }
+    setup();
   }, [netInfo.isConnected]);
 
-  // Connect socket once userData is available
+  // Connect and handle socket events
   useEffect(() => {
     if (!netInfo.isConnected || !userData) return;
 
     if (!socket.connected) {
-      console.log("connecting socket...");
+      console.log("🔌 Connecting socket...");
       socket.connect();
     }
 
     socket.on("connect", () => {
       console.log("✅ Socket connected:", socket.id);
-
-      // Register this user with the server
-      socket.emit("user-connected", userData._id);
+      socket.emit("user-connected", userData.id);
     });
 
     socket.on("disconnect", () => {
-      console.log("❌ Socket disconnected",socket.id);
-      socket.emit("user-disconnected", userData._id);
+      console.log("❌ Socket disconnected", socket.connected);
+      socket.emit("user-disconnected", userData.id);
     });
 
     return () => {
       socket.off("connect");
       socket.off("disconnect");
-      socket.off("incoming-call");
-      socket.off("user-connected");
     };
   }, [netInfo.isConnected, userData]);
+  useEffect(() => {
+    const incomingcall=async (props) => {
+      setIncomingCall(props)
+      console.log("Incoming call props:", props);
+    }
+    RegisterIncomingCall(incomingcall);
+    // Register incoming call listener
+      
+    return () => {
+      // Cleanup function to unregister incoming call listeners
+      UnRegisterIncomingCall();
+    }
+   
+  },[])
+  // Custom socket methods
+  const callFriend = ({ friendId, callerId }) => {
+    socket.emit("call-user", { from: callerId, to: friendId });
+  }
+  const RegisterIncomingCall=(callback)=>{
+    socket.on("incoming-call", callback);
+  }
+  const UnRegisterIncomingCall=(callback)=>{
+    socket.off("incoming-call", callback);
+  }
+
+  const cancelCall = ({ friendId, callerId }) => {
+    socket.emit("call-cancel", { from: callerId, to: friendId });
+  }
+  const RegistercalcelCall=(callback)=>{
+    socket.on("cancel-call", callback);
+  }
+  const UnRegistercalcelCall=(callback)=>{
+    socket.on("cancel-call", callback);
+  }
+
+  const AcceptCall = ({ friendId, callerId }) => {
+    socket.emit("call-accepted", { from: callerId, to: friendId });
+  }
+
+  const RegisterAcceptCall=(callback)=>{
+    socket.on("accepted-call", callback);
+  }
+  const UnRegisterAcceptCall=(callback)=>{
+    socket.on("accepted-call", callback);
+  }
+  // ---------------------MEssage------------------------
+  const registerReceiveMessage = (callback) => {
+    socket.on("receiveMessage", callback);
+  };
+  const unregisterReceiveMessage = (callback) => {
+    socket.off("receiveMessage", callback);
+  };
+  const sendMessage = async (message) => {
+    await saveChatMessage(message.receiverId, message);
+    socket.emit("sendMessage", message);
+  };
+  const onPendingMessages = (callback) => {
+    socket.on("receivePendingMessage", callback);
+  };
+  // ----------------------------------------------------
+
+  const removeAllListeners = () => {
+    socket.removeAllListeners();
+  };
 
   return (
-    <SocketContext.Provider value={{ socket, incomingCall, setIncomingCall }}>
+    <SocketContext.Provider
+      value={{
+        socket,
+        incomingCall,
+        setIncomingCall,
+        registerReceiveMessage,
+        unregisterReceiveMessage,
+        sendMessage,
+        onPendingMessages,
+        removeAllListeners,
+        callFriend,
+        RegisterIncomingCall,
+        UnRegisterIncomingCall,
+        RegistercalcelCall,
+        UnRegistercalcelCall,
+        cancelCall,
+        AcceptCall,
+        RegisterAcceptCall,
+        UnRegisterAcceptCall
+      }}
+    >
       {children}
     </SocketContext.Provider>
   );
 };
 
-export const useSocket = () => useContext(SocketContext);
+export const useSocket = () => {
+  const context = useContext(SocketContext);
+  if (!context) {
+    throw new Error("useSocket must be used within a SocketProvider");
+  }
+  return context;
+};
