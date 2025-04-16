@@ -16,7 +16,8 @@ import { useNetInfo } from "@react-native-community/netinfo";
 import { MaterialCommunityIcons, Feather, Entypo } from '@expo/vector-icons';
 import Menu from '../Menu/Menu';
 import { friendsFilePath, loadUserInfo, setReceivedMessage } from '../../utils/chatStorage';
-import { createUser,getAllUser } from "../db/userProfileDb";
+// import { createUser, getAllUser} from '../../db/userProfileDb.js'
+import { getAllUsers } from '../../Services/AuthServices.js';
 
 export default function Chat() {
   
@@ -31,9 +32,10 @@ export default function Chat() {
       const user = await loadUserInfo();
       if (user) {
         setUserData(user);
-        createUser('JohnDoe', '1234567890', 'https://example.com/johndoe.jpg', 'Hey there!',user._id);
-        const data=getAllUsers();
-        console.log(data,"data")
+        // console.log(user, "user")
+        // createUser(user.username, user.phoneNumber, user.profilePic,user.about, 'Hey there!',user._id);
+        // const data=getAllUser();
+        // console.log(data,"data")
       }
     }
     setUserData(userInfo);

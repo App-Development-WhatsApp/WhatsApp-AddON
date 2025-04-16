@@ -16,8 +16,8 @@ export const initDatabase = async () => {
       username TEXT NOT NULL,
       phone TEXT UNIQUE NOT NULL,
       avatar TEXT,
-      userId TEXT UNIQUE NOT NULL,
       status TEXT DEFAULT 'Hey there! I am using WhatsApp.',
+      userId TEXT UNIQUE NOT NULL,
       last_seen DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
@@ -44,6 +44,12 @@ export const initDatabase = async () => {
   `);
 
   console.log('📦 SQLite DB initialized with userinfo, friend_list, and pending_sync tables.');
+  return db;
 };
 
-export const getDB = () => db;
+export const getDB = () => {
+    if (!db) {
+        console.error('❌ DB not initialized. Call initDatabase() first.');
+      }
+      return db;
+};

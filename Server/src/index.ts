@@ -104,7 +104,7 @@ io.on("connection", (socket: Socket) => {
     console.log(`❌ Socket disconnected: ${socket.id}`);
     if (socket.userId) {
       onlineUsers.delete(socket.userId);
-      console.log(`User disconnected: ${socket.userId}`);
+      console.log(`User disconnected: ${socket.userId}   ${socket.id}`);
     }
   });
 });

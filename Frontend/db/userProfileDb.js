@@ -1,10 +1,18 @@
 // crudOperations.js
-import { getDB } from './db';
+import { getDB, initDatabase } from "./AllDatabase";
 
 // CRUD operations for userinfo table
 
 export const createUser = (username, phone, avatar, status,userId) => {
+    console.log("Creating user:", username, phone, avatar, status,userId);
   const db = getDB();
+  if(!db){
+    const setup=async()=>{
+        db=await initDatabase();
+    }
+    setup()
+  }
+  console.log(db, "db")
   db.transaction(tx => {
     tx.executeSql(
       'INSERT INTO userinfo (id,username, phone, avatar, status,userId) VALUES (?, ?, ?, ?);',
@@ -21,16 +29,17 @@ export const createUser = (username, phone, avatar, status,userId) => {
 };
 
 export const getAllUser = () => {
+    console.log("Fetching all users");
   const db = getDB();
   db.transaction(tx => {
     tx.executeSql(
       'SELECT * FROM userinfo;',
       [],
       (_, { rows }) => {
-        console.log('Fetched users:', rows._array);
+        console.log('Fetched user:', rows._array);
       },
       (_, error) => {
-        console.error('Error fetching users:', error);
+        console.error('Error fetching user:', error);
         return false;
       }
     );

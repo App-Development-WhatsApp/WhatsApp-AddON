@@ -34,6 +34,7 @@ import { SocketProvider } from "./context/SocketContext";
 import OneTimeViewer from "./components/Chats/OneTimeView";
 import AudioScreen from "./components/Calls/AudioScreen";
 import IncomingCallBanner from "./components/banners/NotifyCallingBanner";
+import WhatsAppLoading from "./components/WhatsAppLoading";
 
 export default function App() {
   const [loading, setLoading] = useState(true);
@@ -55,7 +56,7 @@ export default function App() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Loading...</Text>
+        <WhatsAppLoading/>
       </View>
     );
   }

@@ -17,33 +17,27 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import {
   MaterialCommunityIcons,
   FontAwesome,
-  Entypo,
   Ionicons,
   Feather,
 } from "@expo/vector-icons";
 import EmojiPicker from "react-native-emoji-picker-staltz";
 import {
   loadUserInfo,
-  getSharedChatFilePath,
-  readJsonFile,
-  sendMessageSocket,
-  socket,
   clearChatFile,
   saveChatMessage,
 } from "../../utils/chatStorage";
 import { loadChatHistory } from "../../utils/chatStorage";
-import * as DocumentPicker from "expo-document-picker";
+// import * as DocumentPicker from "expo-document-picker";
 import { Video } from "expo-av";
 import * as ImagePicker from "expo-image-picker";
 import { renderMessage } from "./RenderMessages";
-import SocketServices from "../../Services/SocketServices";
+// import SocketServices from "../../Services/SocketServices";
 import { useNetInfo } from "@react-native-community/netinfo";
-import OneTimeView from "./OneTimeView";
-import { useSocket } from "../../context/SocketContext";
-import { createUser,getAllUser } from "../db/userProfileDb";
+// import OneTimeView from "./OneTimeView";
+// import { useSocket } from "../../context/SocketContext";
 
 export default function Chatting() {
-  const { socket } = useSocket();
+  // const { socket } = useSocket();
   const navigation = useNavigation();
   const netInfo = useNetInfo();
   const route = useRoute();
@@ -54,7 +48,6 @@ export default function Chatting() {
   const flatListRef = useRef(null);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [oneTimeView, setOneTimeView] = useState(false);
-  const [typing, setTyping] = useState(false);
   const [inputBoxFocus, setinputBoxFocus] = useState(false);
 
   const [chats, setChats] = useState([]);
@@ -65,7 +58,6 @@ export default function Chatting() {
         const user = await loadUserInfo();
         setCurrentUserId(user._id);
         const chatsdata = await loadChatHistory(friendId);
-        createUser('JohnDoe', '1234567890', 'https://example.com/johndoe.jpg', 'Hey there!',user._id);
         setChats(chatsdata);
       } catch (err) {
         console.error("Error loading user or chats:", err);
@@ -84,11 +76,11 @@ export default function Chatting() {
       await saveChatMessage(formatted.senderId, formatted);
     };
 
-    SocketServices.registerReceiveMessage(socket,messageListener);
+    // SocketServices.registerReceiveMessage(socket,messageListener);
     return () => {
-      SocketServices.unregisterReceiveMessage(socket,messageListener);
+      // SocketServices.unregisterReceiveMessage(socket,messageListener);
     };
-  }, [friendId, netInfo.isConnected, currentUserId, typing]);
+  }, [ netInfo.isConnected]);
 
   const handleSend = async () => {
     if (!message.trim() && selectedFiles.length === 0) return;
@@ -106,7 +98,7 @@ export default function Chatting() {
       console.log(newMsg)
 
       setChats((prev) => [...prev, { ...newMsg }]);
-      SocketServices.sendMessage(socket,newMsg);
+      // SocketServices.sendMessage(socket,newMsg);
 
       setMessage("");
       setSelectedFiles([]);
@@ -224,10 +216,6 @@ export default function Chatting() {
           />
           <View>
             <Text style={styles.name}>{name}</Text>
-
-            {typing && (
-              <Text style={{ color: "white", fontSize: 12 }}>Typing...</Text>
-            )}
           </View>
         </View>
         <View style={styles.iconContainer}>
