@@ -3,7 +3,8 @@ import * as FileSystem from "expo-file-system";
 import { saveUserInfo } from "../utils/chatStorage";
 import { userFilePath, friendsFilePath } from "../utils/chatStorage";
 import { createAllTables, createUser,getAllUser } from "../database/tables";
-export const BACKEND_URL = "http://10.10.15.70:5000"
+import { addUser } from "../database/curd";
+export const BACKEND_URL = "http://192.168.224.25:5000"
 
 export const API_URL = `${BACKEND_URL}/api/v1/users`; // Replace with your backend URL
 
@@ -20,7 +21,7 @@ export const login = async (formData) => {
     });
     
     if (response.data.success && response.data.data?.user) {
-      await saveUserInfo(response.data.data.user); // Save user to local storage
+      await addUser(response.data.data.user)
       return { success: true, user: response.data.data.user };
     } else {
       return {

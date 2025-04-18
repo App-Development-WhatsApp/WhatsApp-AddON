@@ -6,7 +6,6 @@ const SOCKET_SERVER_URL = BACKEND_URL;
 import localStorage from '@react-native-async-storage/async-storage';
 import { getUserInfoById } from "../database/curd";
 
-
 // File paths
 export const userFilePath = FileSystem.documentDirectory + "userInfo.json";
 export const friendsFilePath = FileSystem.documentDirectory + "friendsInfo.json";
@@ -65,17 +64,6 @@ export const deleteMessage = async (otherUserId, messageId) => {
 
 // --------- User & Friends ---------- //
 
-export const saveUserInfo = async (user) => {
-  try {
-    if (Platform.OS === 'web') {
-      localStorage.setItem('user', JSON.stringify(user));
-    } else {
-      await FileSystem.writeAsStringAsync(userFilePath, JSON.stringify(user));
-    }
-  } catch (error) {
-    console.error("Error saving user info:", error);
-  }
-};
 
 export const loadUserInfo = async () => {
   try {
@@ -85,7 +73,7 @@ export const loadUserInfo = async () => {
     } else {
       const userId = await localStorage.getItem('userId')
       const user = await getUserInfoById(userId);
-      return user ? user: null;
+      return user ? user : null;
     }
   } catch (error) {
     console.error("Error loading user info:", error);
@@ -310,9 +298,9 @@ const updateFriendsFile = async (senderId, message, timestamp, isCurrentChatOpen
 
 
 
-export const loadChatHistory = async (friendId) => {
+export const loadChatHistory = async (id) => {
   try {
-    const fileUri = `${FileSystem.documentDirectory}chat_${friendId}.json`;
+    const fileUri = `${FileSystem.documentDirectory}chat/chat_${id}.json`;
     const fileInfo = await FileSystem.getInfoAsync(fileUri);
     if (!fileInfo.exists) {
       console.warn("Chat file does not exist, creating new one.");
@@ -329,7 +317,8 @@ export const loadChatHistory = async (friendId) => {
 
 export const saveChatMessage = async (friendId, message) => {
   try {
-    const path = `${FileSystem.documentDirectory}chat_${friendId}.json`;
+    
+    const path = `${FileSystem.documentDirectory}chat/chat_${id}.json`;
     let existingChats = [];
     const fileInfo = await FileSystem.getInfoAsync(path);
     if (!fileInfo.exists) {

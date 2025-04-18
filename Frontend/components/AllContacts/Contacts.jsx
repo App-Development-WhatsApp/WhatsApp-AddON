@@ -7,80 +7,116 @@ import {
     TouchableOpacity,
     Image,
     ScrollView,
-    ActivityIndicator
+    ActivityIndicator,
+    Linking,
 } from 'react-native';
-import * as FileSystem from 'expo-file-system';
 import { useNavigation } from '@react-navigation/native';
 import { getAllUsers } from '../../Services/AuthServices';
 import { useNetInfo } from '@react-native-community/netinfo';
 import { loadUserInfo } from '../../utils/chatStorage';
-import { Ionicons, MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
+import * as Contact from 'expo-contacts';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+
 
 export default function Contacts() {
     const navigation = useNavigation();
     const netInfo = useNetInfo();
     const [loading, setLoading] = useState(false);
-    const [users, setUsers] = useState([]);
-    const [currUser, setcurrUser] = useState(null);
+    const [appUsers, setAppUsers] = useState([]);
+    const [nonAppUsers, setNonAppUsers] = useState([]);
+    const [currUser, setCurrUser] = useState(null);
 
     useEffect(() => {
-        setLoading(true);
-        const fetchUsers = async () => {
+        const fetchData = async () => {
+            setLoading(true);
+
             const userData = await loadUserInfo();
-            setcurrUser(userData);
+            setCurrUser(userData);
+            console.log(userData)
+
             try {
-                const res = await getAllUsers();
-                if (res.success) {
-                    setUsers(res.users);
-                }
-            } catch (err) {
-                console.error("Error fetching users:", err);
+                const [usersRes, contactsRes] = await Promise.all([
+                    getAllUsers(),
+                    Contact.requestPermissionsAsync().then(async ({ status }) => {
+                        if (status === 'granted') {
+                            const { data } = await Contact.getContactsAsync({
+                                fields: [Contact.Fields.PhoneNumbers],
+                            });
+                            return data || [];
+                        }
+                        return [];
+                    })
+                ]);
+
+                if (!usersRes.success) throw new Error("Failed to fetch users");
+
+                const usersFromDB = usersRes.users;
+                const contactMap = {};
+
+                const formattedContacts = contactsRes.flatMap(contact => {
+                    return (contact.phoneNumbers || []).map(numObj => {
+                        const phone = normalizePhoneNumber(numObj.number);
+                        contactMap[phone] = {
+                            name: contact.name,
+                            number: phone
+                        };
+                        return phone;
+                    });
+                });
+
+                const appUserList = [];
+                const nonAppUserList = [];
+
+                usersFromDB.forEach(user => {
+                    const phone = normalizePhoneNumber(user.phoneNumber);
+                    if (contactMap[phone]) {
+                        appUserList.push({
+                            ...contactMap[phone],
+                            ...user
+                        });
+                        delete contactMap[phone]; // remove matched
+                    }
+                });
+
+                Object.values(contactMap).forEach(nonUser => {
+                    nonAppUserList.push(nonUser);
+                });
+
+                setAppUsers(appUserList);
+                setNonAppUsers(nonAppUserList);
+            } catch (error) {
+                console.error("Error:", error);
             } finally {
                 setLoading(false);
             }
         };
 
         if (netInfo.isConnected) {
-            fetchUsers();
+            fetchData();
         }
     }, [netInfo.isConnected]);
 
-    const handleChatPress = async (id, name, image) => {
-        try {
-            const generateRoomId = (uid1, uid2) => {
-                return ['' + uid1, '' + uid2].sort().join('_');
-            };
-
-            navigation.navigate('Chatting', {
-                userId: id,
-                name,
-                image,
-                roomId: generateRoomId(currUser?.id, id)
-            });
-
-        } catch (error) {
-            console.error("Error adding user to friends:", error);
-        }
+    const normalizePhoneNumber = (num) => {
+        return num.replace(/\D/g, '').replace(/^0+/, '');
     };
 
-    const Item = ({ userId, userName, image }) => {
-        const validImage = image ? { uri: image } : require('../../assets/images/blank.jpeg');
-        return (
-            <TouchableOpacity onPress={() => handleChatPress(userId, userName, image)}>
-                <View style={styles.userCtn}>
-                    <Image
-                        style={styles.image}
-                        source={validImage}
-                        borderRadius={50}
-                        resizeMode="cover"
-                    />
-                    <View style={styles.msgCtn}>
-                        <Text style={styles.name}>{userName} {userId}</Text>
-                        {/* You can add status/subtext here if available */}
-                    </View>
-                </View>
-            </TouchableOpacity>
-        );
+    const handleChatPress = (id, name, image) => {
+        const generateRoomId = (uid1, uid2) => {
+            return ['' + uid1, '' + uid2].sort().join('_');
+        };
+
+        navigation.navigate('Chatting', {
+            userId: id,
+            name,
+            image,
+            roomId: generateRoomId(currUser?.id, id)
+        });
+    };
+
+    const inviteUser = (number) => {
+        const message = `Hey! I'm using our Chat App. Join me here! [Link to app]`;
+        const smsUrl = `sms:${number}?body=${encodeURIComponent(message)}`;
+        Linking.openURL(smsUrl);
     };
 
     const ActionButton = ({ icon, text, rightIcon, onPress }) => (
@@ -91,6 +127,38 @@ export default function Contacts() {
         </TouchableOpacity>
     );
 
+    const ContactItem = ({ user, isAppUser }) => {
+        const validImage = isAppUser && user.profilePic ? { uri: user.profilePic } : require('../../assets/images/blank.jpeg');
+
+        return (
+            <TouchableOpacity
+                disabled={!isAppUser}
+                onPress={() =>
+                    isAppUser
+                        ? handleChatPress(user._id, user.name, user.profilePic)
+                        : inviteUser(user.number)
+                }>
+                <View style={styles.userCtn}>
+                    <Image
+                        style={styles.image}
+                        source={validImage}
+                        borderRadius={50}
+                        resizeMode="cover"
+                    />
+                    <View style={styles.msgCtn}>
+                        <Text style={styles.name}>{user.name || user.name}</Text>
+                        <Text style={styles.subtext}>{user.number}</Text>
+                    </View>
+                    {!isAppUser && (
+                        <TouchableOpacity onPress={() => inviteUser(user.number)}>
+                            <Text style={styles.inviteBtn}>Invite</Text>
+                        </TouchableOpacity>
+                    )}
+                </View>
+            </TouchableOpacity>
+        );
+    };
+
     return (
         <View style={styles.container}>
             <View style={styles.topBar}>
@@ -99,7 +167,9 @@ export default function Contacts() {
                 </TouchableOpacity>
                 <View>
                     <Text style={styles.topTitle}>Select contact</Text>
-                    <Text style={styles.topSubtitle}>{users.length} contacts</Text>
+                    <Text style={styles.topSubtitle}>
+                        {appUsers.length} on ChatApp, {nonAppUsers.length} others
+                    </Text>
                 </View>
                 <View style={styles.topIcons}>
                     <Ionicons name="search" size={22} color="white" style={{ marginRight: 20 }} />
@@ -110,7 +180,7 @@ export default function Contacts() {
             {loading ? (
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color="#00ff00" />
-                    <Text style={styles.loadingText}>Fetching profiles...</Text>
+                    <Text style={styles.loadingText}>Fetching contacts...</Text>
                 </View>
             ) : (
                 <ScrollView>
@@ -129,16 +199,19 @@ export default function Contacts() {
                         />
 
                     </View>
-
-                    <Text style={styles.contactsLabel}>Contacts on WhatsApp</Text>
-
+                    <Text style={styles.contactsLabel}>Contacts on ChatApp</Text>
                     <FlatList
-                        nestedScrollEnabled={true}
-                        data={users}
-                        renderItem={({ item }) => (
-                            <Item key={item._id} userId={item._id} userName={item.username} image={item.profilePic} />
-                        )}
-                        keyExtractor={item => item._id}
+                        data={appUsers}
+                        renderItem={({ item }) => <ContactItem user={item} isAppUser={true} />}
+                        keyExtractor={(item) => item._id}
+                        scrollEnabled={false}
+                    />
+
+                    <Text style={styles.contactsLabel}>Invite to ChatApp</Text>
+                    <FlatList
+                        data={nonAppUsers}
+                        renderItem={({ item }) => <ContactItem user={item} isAppUser={false} />}
+                        keyExtractor={(item, index) => index.toString()}
                         scrollEnabled={false}
                     />
                 </ScrollView>
@@ -172,6 +245,17 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
     },
+    contactsLabel: {
+        color: '#aaa',
+        fontSize: 13,
+        marginVertical: 10,
+    },
+    userCtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 20,
+    },
     actionsContainer: {
         marginTop: 10,
         marginBottom: 10,
@@ -195,33 +279,31 @@ const styles = StyleSheet.create({
         fontSize: 16,
         flex: 1
     },
-    qrWrap: {
-        marginRight: 15
-    },
-    contactsLabel: {
-        color: '#aaa',
-        fontSize: 13,
-        marginVertical: 10,
-    },
-    userCtn: {
-        flexDirection: 'row',
-        gap: 15,
-        alignItems: 'center',
-        marginBottom: 25,
-    },
     msgCtn: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        width: '80%',
+        marginLeft: 10,
+        flex: 1
     },
     name: {
         fontWeight: 'bold',
         fontSize: 17,
         color: 'white',
     },
+    subtext: {
+        fontSize: 13,
+        color: '#aaa'
+    },
     image: {
         width: 55,
         height: 55,
+    },
+    inviteBtn: {
+        backgroundColor: 'green',
+        color: 'white',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 6,
+        fontSize: 14,
+        marginRight: 10
     },
     loadingContainer: {
         flex: 1,
@@ -231,6 +313,6 @@ const styles = StyleSheet.create({
     loadingText: {
         marginTop: 10,
         color: '#cbd5c0',
-        fontSize: 16
-    }
+        fontSize: 16
+    }
 });

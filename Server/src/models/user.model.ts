@@ -10,6 +10,7 @@ interface IUser extends Document {
   phoneNumber: string;
   username: string;
   profilePic: string;
+  fullName: string;
   about: string;
   friends: mongoose.Types.ObjectId[];
   groups: mongoose.Types.ObjectId[];
@@ -33,6 +34,7 @@ const userSchema = new Schema<IUser>(
   {
     phoneNumber: { type: String, required: true, unique: true },
     username: { type: String, required: true },
+    fullName: { type: String, required: true },
     profilePic: { type: String, default: "" },
     about: { type: String, default: "Hey there! I am using WhatsApp." },
     friends: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],

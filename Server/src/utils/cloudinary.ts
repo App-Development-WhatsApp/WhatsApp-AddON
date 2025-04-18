@@ -10,12 +10,13 @@ cloudinary.config({
 });
 
 // Type definition for the local file path parameter
-const uploadOnCloudinary = async (localFilePath: string, fileUrl?: string, public_id?: string): Promise<any | null> => {
+const uploadOnCloudinary = async (localFilePath: string, public_id?: string): Promise<any | null> => {
   try {
-    if (!localFilePath && !fileUrl) {
+    if (!localFilePath ) {
       console.error("Either localFilePath or fileUrl must be provided.");
       return null;
     }
+    console.log("Uploading file to Cloudinary...",env.CLOUDINARY_CLOUD_NAME);
 
     // Upload the file to Cloudinary
     const uploadSource = localFilePath;

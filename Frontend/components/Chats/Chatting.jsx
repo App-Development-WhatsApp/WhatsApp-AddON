@@ -34,6 +34,7 @@ import { renderMessage } from "./RenderMessages";
 import { useNetInfo } from "@react-native-community/netinfo";
 // import OneTimeView from "./OneTimeView";
 import { useSocket } from "../../context/SocketContext";
+import { addfriends } from "../../database/curd";
 
 
 export default function Chatting() {
@@ -75,7 +76,7 @@ export default function Chatting() {
     const messageListener = async (msg) => {
       const formatted = {
         ...msg,
-        timestamp: Date.now().toString(), // overwrite existing timestamp
+        timestamp: Date.now().toString(),
       };
       setChats((prev) => [...prev, formatted]);
       await saveChatMessage(formatted.senderId, formatted);
@@ -89,31 +90,35 @@ export default function Chatting() {
 
   const handleSend = async () => {
     if (!message.trim() && selectedFiles.length === 0) return;
-
-    try {
-      const newMsg = {
-        id: Date.now().toString(),
-        senderId: currentUserId,
-        receiverId: friendId,
-        timestamp: new Date().toISOString(),
-        ...(message.trim() && { text: message.trim() }),
-        ...(selectedFiles.length > 0 && { files: selectedFiles }),
-        oneTimeView: oneTimeView,
-      };
-      console.log(newMsg)
-
-      setChats((prev) => [...prev, { ...newMsg }]);
-      sendMessage(newMsg);
-
-      setMessage("");
-      setSelectedFiles([]);
-      setTimeout(() => {
-        flatListRef.current?.scrollToEnd({ animated: true });
-      }, 100);
-    } catch (err) {
-      console.error("Error sending message:", err);
-      Alert.alert("Failed", "Unable to send message. Please try again.");
+    if(chats.length===0){
+      console.log("Hello");
+      addfriends({ _id:userId, profilePic,description:"", name, lastMessage:message,Unseen:0, isGroup:0 } )
     }
+
+    // try {
+    //   const newMsg = {
+    //     id: Date.now().toString(),
+    //     senderId: currentUserId,
+    //     receiverId: friendId,
+    //     timestamp: new Date().toISOString(),
+    //     ...(message.trim() && { text: message.trim() }),
+    //     ...(selectedFiles.length > 0 && { files: selectedFiles }),
+    //     oneTimeView: oneTimeView,
+    //   };
+    //   console.log(newMsg)
+
+    //   setChats((prev) => [...prev, { ...newMsg }]);
+    //   sendMessage(newMsg);
+
+    //   setMessage("");
+    //   setSelectedFiles([]);
+    //   setTimeout(() => {
+    //     flatListRef.current?.scrollToEnd({ animated: true });
+    //   }, 100);
+    // } catch (err) {
+    //   console.error("Error sending message:", err);
+    //   Alert.alert("Failed", "Unable to send message. Please try again.");
+    // }
   };
 
   const handleClearChat = async () => {

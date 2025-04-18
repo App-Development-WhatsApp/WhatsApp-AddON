@@ -16,6 +16,8 @@ import { loadUserInfo } from "../../utils/chatStorage";
 import FormData from "form-data";
 import { addUser, getUserInfoById } from "../../database/curd";
 import localStorage from '@react-native-async-storage/async-storage';
+import * as Contacts from 'expo-contacts';
+
 
 
 const LoginScreen = ({ navigation }) => {
@@ -25,7 +27,7 @@ const LoginScreen = ({ navigation }) => {
   const [profilePic, setProfilePic] = useState(null);
   const [loading, setLoading] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
-
+  
   useEffect(() => {
     Animated.timing(fadeAnim, {
       toValue: 1,
@@ -36,8 +38,9 @@ const LoginScreen = ({ navigation }) => {
 
   useEffect(() => {
     const checkAuth = async () => {
-      const userInfo = await loadUserInfo();
-      if (userInfo) {
+      const userId=await localStorage.getItem('userId')
+      const user=await getUserInfoById(userId);
+      if (user) {
         navigation.replace("Main");
       }
     };
@@ -98,7 +101,6 @@ const LoginScreen = ({ navigation }) => {
 
     if (result.success) {
       await localStorage.setItem('userId', result.user._id);
-      await addUser(result.user);
       setLoading(false);
       navigation.replace("Main");
     } else {

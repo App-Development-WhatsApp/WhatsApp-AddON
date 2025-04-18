@@ -1,8 +1,5 @@
-<<<<<<< HEAD
-import React, { useEffect, useState } from 'react';
-=======
+
 import React, { useEffect, useState, useContext } from 'react';
->>>>>>> fc34eda657cbf70aee3499a01a5008e459c1da64
 import {
   StyleSheet,
   Text,
@@ -21,8 +18,6 @@ import { MaterialCommunityIcons, Feather, Entypo } from '@expo/vector-icons';
 import Menu from '../Menu/Menu';
 import { friendsFilePath, loadUserInfo, setReceivedMessage } from '../../utils/chatStorage';
 import { loadGroups } from '../../utils/groupStorage';
-
-// import { createUser, getAllUser} from '../../db/userProfileDb.js'
 import { getUserInfoById } from '../../database/curd.js';
 import localStorage from '@react-native-async-storage/async-storage';
 
@@ -34,17 +29,6 @@ export default function Chat() {
   const [userData, setUserData] = useState(null);
   const [friends, setFriends] = useState([]);
   const [groups, setGroups] = useState([]);
-  useEffect(() => {
-    (async () => {
-      const groups = await loadGroups();
-      setGroups(groups);
-      console.log("Stored groups:", groups);
-      groups.forEach(group => {
-        console.log("Group name:", group.name);
-      });
-    })();
-  }, []);
-
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -89,6 +73,15 @@ export default function Chat() {
       });
     })();
   }, []);
+  useEffect(async ()=>{
+     const userId=await localStorage.getItem('userId')
+      const user=await getUserInfoById(userId);
+      if(!user){
+        navigation.navigate('login')
+      }
+      console.log(user)
+  },[])
+
 
   const handleChatPress = async (id, name, image) => {
     navigation.navigate('Chatting', { userId: id, name, image });

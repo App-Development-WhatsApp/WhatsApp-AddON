@@ -1,60 +1,112 @@
 // crud.js
 import { getDB, initDatabase } from "./AllDatabase";
-
+import { createChatsTable } from "./tables";
 
 
 export const addUser = async (user) => {
-  initDatabase(); // Make sure DB is initialized
+  console.log(user)
 
   try {
     console.log("👤 Adding user:", user);
     const db = getDB();
     console.log("📦 DB Instance:", db);
 
-    // Ensure table exists
+    // Ensure updated table exists
     await db.execAsync(`
-       CREATE TABLE IF NOT EXISTS userinfo (
-      id TEXT UNIQUE NOT NULL,
-      username TEXT NOT NULL,
-      phoneNumber TEXT UNIQUE NOT NULL,
-      profilePic TEXT,
-      status TEXT DEFAULT 'Hey there! I am using WhatsApp.',
-      userId TEXT UNIQUE NOT NULL,
-      last_seen DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
+      CREATE TABLE IF NOT EXISTS userinfo (
+        id TEXT PRIMARY KEY,
+        profilePic TEXT,
+        userName TEXT NOT NULL,
+        fullName TEXT NOT NULL,
+        about TEXT DEFAULT 'Hey there! I am using WhatsApp.',
+        Chats TEXT DEFAULT '[]',
+        last_seen DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
     `);
 
-    // Check if user exists
-    const existing = await db.getFirstAsync('SELECT * FROM userinfo WHERE id = ?', [user._id]);
-    if (existing) {
-      console.log('⚠️ User already exists:', existing);
-      return;
-    }
 
-    // INSERT user without using transactionAsync
+    // Prepare INSERT statement
     const insertStatement = await db.prepareAsync(
-      `INSERT INTO userinfo (id, username, phoneNumber, profilePic, userId)
-       VALUES ($id, $username, $phoneNumber, $profilePic, $userId)`
+      `INSERT INTO userinfo (id, profilePic, userName,fullName, about, Chats)
+       VALUES ($id, $profilePic,$fullName, $userName, $about, $Chats)`
     );
 
     await insertStatement.executeAsync({
       $id: user._id,
-      $username: user.username,
-      $phoneNumber: user.phoneNumber,
-      $profilePic: user.profilePic,
-      $userId: user._id,
-      $last_seen: new Date().toISOString(), // Set last_seen to current timestamp
+      $profilePic: user.profilePic || '',
+      $userName: user.username,
+      $fullName: user.fullName,
+      $about: user.about || 'Hey there! I am using WhatsApp.',
+      $Chats: JSON.stringify(user.Chats || []),
     });
 
     await insertStatement.finalizeAsync();
 
     console.log("✅ User added to 'userinfo' table successfully.");
-    return;
   } catch (error) {
     console.error("❌ Failed to add user to 'userinfo':", error);
-    // return;
   }
 };
+
+
+
+export const addfriends = async (props) => {
+  const { _id, profilePic,description, name, lastMessage, Unseen, isGroup } = props;
+
+  try {
+    const db = getDB();
+
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS chats (
+        id TEXT PRIMARY KEY,
+        profilePic TEXT,
+        name TEXT NOT NULL,
+        description TEXT,
+        unseenCount INTEGER DEFAULT 0,
+        lastMessage TEXT,
+        lastUpdated DATETIME DEFAULT CURRENT_TIMESTAMP,
+        isGroup BOOLEAN DEFAULT 0,
+        FOREIGN KEY (userId) REFERENCES userinfo(id) ON DELETE CASCADE
+      );
+    `);
+    console.log("💬 'chats' table ensured");
+
+    // const insertStatement = await db.prepareAsync(`
+    //   INSERT OR REPLACE INTO chats (
+    //     id,
+    //     profilePic,
+    //     name,
+    //     description,
+    //     lastMessage,
+    //     unseenCount,
+    //     isGroup
+    //   ) VALUES (
+    //     $id,
+    //     $profilePic,
+    //     $name,
+    //     $description,
+    //     $lastMessage,
+    //     $unseenCount,
+    //     $isGroup
+    //   );
+    // `);
+
+    // await insertStatement.executeAsync({
+    //   $id: _id,
+    //   $profilePic: profilePic || '',
+    //   $name: name,
+    //   $description:description,
+    //   $lastMessage: lastMessage || '',
+    //   $unseenCount: Unseen || 0,
+    //   $isGroup: isGroup ? 1 : 0
+    // });
+
+    console.log("✅ Friend/chat added successfully.");
+  } catch (error) {
+    console.error("❌ Failed to add friend to chats:", error);
+  }
+};
+
 
 
 
@@ -67,7 +119,7 @@ export const getUserByPhone = async (phone) => {
 // Get full user info by userId
 export const getUserInfoById = async (userId) => {
   const db = getDB();
-  return await db.getFirstAsync(`SELECT * FROM userinfo WHERE userId = ?`, [userId]);
+  return await db.getFirstAsync(`SELECT * FROM userinfo WHERE id = ?`, [userId]);
 };
 
 

@@ -20,6 +20,7 @@ export const registerUser = asyncHandler(async (req, res) => {
   if ([fullName, username, phoneNumber].some((field) => field?.trim() === "")) {
     return new ApiError(400, "All fields are required");
   }
+  // console.log(fullName, username, phoneNumber);
 
   const userId = await User.findOne({ phoneNumber }).select("_id");
 
@@ -27,13 +28,13 @@ export const registerUser = asyncHandler(async (req, res) => {
     throw new ApiError(400, "User Already exist");
   }
 
-  const newUser = await User.create({ username: username, fullName, phoneNumber });
+  const newUser = await User.create({ username: username, fullName:fullName, phoneNumber });
 
   if (req.file) {
     const avatarLocalPath = req.file.path;
     console.log("Avatar Local Path:", avatarLocalPath);
 
-    const avatar = await uploadOnCloudinary(avatarLocalPath);
+    const avatar = await uploadOnCloudinary(avatarLocalPath,`users/${newUser._id}/profilePic`);
 
     if (!avatar) {
       throw new ApiError(400, "Failed to upload avatar on Cloudinary");
@@ -50,6 +51,7 @@ export const registerUser = asyncHandler(async (req, res) => {
     httpOnly: true,
     secure: true,
   };
+  // console.log("Logged In User:", loggedInUser);
 
   return res.json(new ApiResponse(
     200,
