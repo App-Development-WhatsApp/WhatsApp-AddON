@@ -17,7 +17,6 @@ import { loadUserInfo } from '../../utils/chatStorage';
 import * as Contact from 'expo-contacts';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 
-
 export default function Contacts() {
     const navigation = useNavigation();
     const netInfo = useNetInfo();
@@ -26,43 +25,51 @@ export default function Contacts() {
     const [nonAppUsers, setNonAppUsers] = useState([]);
     const [currUser, setCurrUser] = useState(null);
 
+    const normalizePhoneNumber = (num) => {
+        return num.replace(/\D/g, '').replace(/^0+/, '');
+    };
+
     useEffect(() => {
         const fetchData = async () => {
             setLoading(true);
-
             const userData = await loadUserInfo();
             setCurrUser(userData);
-            console.log(userData)
+            console.log("data fetching")
 
             try {
                 const [usersRes, contactsRes] = await Promise.all([
                     getAllUsers(),
                     Contact.requestPermissionsAsync().then(async ({ status }) => {
+                        console.log("granted",status)
                         if (status === 'granted') {
                             const { data } = await Contact.getContactsAsync({
                                 fields: [Contact.Fields.PhoneNumbers],
                             });
+                            console.log('Contacts fetched:', data);
                             return data || [];
+                        }else{
+                            console.log('Permission not granted');
+                            return [];
                         }
-                        return [];
-                    })
+                    }),
                 ]);
 
                 if (!usersRes.success) throw new Error("Failed to fetch users");
-
                 const usersFromDB = usersRes.users;
                 const contactMap = {};
+                console.log(usersFromDB)
 
-                const formattedContacts = contactsRes.flatMap(contact => {
-                    return (contact.phoneNumbers || []).map(numObj => {
+                const formattedContacts = contactsRes.flatMap((contact) =>
+                    (contact.phoneNumbers || []).map(numObj => {
                         const phone = normalizePhoneNumber(numObj.number);
                         contactMap[phone] = {
                             name: contact.name,
-                            number: phone
+                            number: phone,
                         };
                         return phone;
-                    });
-                });
+                    })
+                );
+                console.log(formattedContacts,"-----------------")
 
                 const appUserList = [];
                 const nonAppUserList = [];
@@ -72,20 +79,21 @@ export default function Contacts() {
                     if (contactMap[phone]) {
                         appUserList.push({
                             ...contactMap[phone],
-                            ...user
+                            ...user,
                         });
-                        delete contactMap[phone]; // remove matched
+                        delete contactMap[phone];
                     }
                 });
 
-                Object.values(contactMap).forEach(nonUser => {
+                Object.values(contactMap).forEach((nonUser) => {
                     nonAppUserList.push(nonUser);
                 });
+                console.log("Appuserlist",appUserList)
 
                 setAppUsers(appUserList);
                 setNonAppUsers(nonAppUserList);
             } catch (error) {
-                console.error("Error:", error);
+                console.error("Error fetching contacts:", error);
             } finally {
                 setLoading(false);
             }
@@ -96,10 +104,6 @@ export default function Contacts() {
         }
     }, [netInfo.isConnected]);
 
-    const normalizePhoneNumber = (num) => {
-        return num.replace(/\D/g, '').replace(/^0+/, '');
-    };
-
     const handleChatPress = (id, name, image) => {
         const generateRoomId = (uid1, uid2) => {
             return ['' + uid1, '' + uid2].sort().join('_');
@@ -109,7 +113,7 @@ export default function Contacts() {
             userId: id,
             name,
             image,
-            roomId: generateRoomId(currUser?.id, id)
+            roomId: generateRoomId(currUser?.id, id),
         });
     };
 
@@ -128,7 +132,9 @@ export default function Contacts() {
     );
 
     const ContactItem = ({ user, isAppUser }) => {
-        const validImage = isAppUser && user.profilePic ? { uri: user.profilePic } : require('../../assets/images/blank.jpeg');
+        const validImage = isAppUser && user.profilePic
+            ? { uri: user.profilePic }
+            : require('../../assets/images/blank.jpeg');
 
         return (
             <TouchableOpacity
@@ -146,7 +152,7 @@ export default function Contacts() {
                         resizeMode="cover"
                     />
                     <View style={styles.msgCtn}>
-                        <Text style={styles.name}>{user.name || user.name}</Text>
+                        <Text style={styles.name}>{user.name}</Text>
                         <Text style={styles.subtext}>{user.number}</Text>
                     </View>
                     {!isAppUser && (
@@ -188,17 +194,16 @@ export default function Contacts() {
                         <ActionButton
                             icon={<Ionicons name="people" size={24} color="white" />}
                             text="New group"
-                            onPress={() => {
-                                console.log("hi");
-                                navigation.navigate("CreateGroup");
-                            }} />
+                            onPress={() => navigation.navigate("CreateGroup")}
+                        />
                         <ActionButton
                             icon={<Ionicons name="person-add" size={24} color="white" />}
                             text="New contact"
                             rightIcon={<MaterialIcons name="qr-code" size={18} color="white" />}
+                            onPress={() => {}}
                         />
-
                     </View>
+
                     <Text style={styles.contactsLabel}>Contacts on ChatApp</Text>
                     <FlatList
                         data={appUsers}
@@ -224,7 +229,7 @@ const styles = StyleSheet.create({
     container: {
         padding: 10,
         backgroundColor: '#121212',
-        flex: 1
+        flex: 1,
     },
     topBar: {
         flexDirection: 'row',
@@ -274,14 +279,17 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         marginRight: 15,
     },
+    qrWrap: {
+        marginLeft: 10,
+    },
     actionText: {
         color: 'white',
         fontSize: 16,
-        flex: 1
+        flex: 1,
     },
     msgCtn: {
         marginLeft: 10,
-        flex: 1
+        flex: 1,
     },
     name: {
         fontWeight: 'bold',
@@ -290,7 +298,7 @@ const styles = StyleSheet.create({
     },
     subtext: {
         fontSize: 13,
-        color: '#aaa'
+        color: '#aaa',
     },
     image: {
         width: 55,
@@ -303,16 +311,16 @@ const styles = StyleSheet.create({
         paddingVertical: 6,
         borderRadius: 6,
         fontSize: 14,
-        marginRight: 10
+        marginRight: 10,
     },
     loadingContainer: {
         flex: 1,
         justifyContent: 'center',
-        alignItems: 'center'
+        alignItems: 'center',
     },
     loadingText: {
         marginTop: 10,
         color: '#cbd5c0',
-        fontSize: 16
-    }
+        fontSize: 16,
+    },
 });

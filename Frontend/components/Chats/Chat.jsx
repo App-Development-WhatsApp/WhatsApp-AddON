@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useContext,useCallback } from 'react';
 import {
   StyleSheet,
@@ -23,28 +22,23 @@ import { deleteChat, getUserInfoById } from '../../database/curd.js';
 import localStorage from '@react-native-async-storage/async-storage';
 import { getAllChatsSorted } from '../../database/curd.js';
 import { useDatabase } from '../../context/DbContext.js';
-export default function Chat() {
 
+export default function Chat() {
   const netInfo = useNetInfo();
   const navigation = useNavigation();
   const [loading, setLoading] = useState(true);
   const [userData, setUserData] = useState(null);
   const [friends, setFriends] = useState([]);
-  const {dbInstance} = useDatabase();
+  const { dbInstance } = useDatabase();
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Load user data
-        const user = await loadUserInfo(db);
-        if (user) {
-          setUserData(user);
-        }
+        const user = await loadUserInfo(dbInstance);
+        if (user) setUserData(user);
 
-        const sortedChats = await getAllChatsSorted(db);
-        console.log(sortedChats)
-        setFriends(sortedChats)
-
+        const sortedChats = await getAllChatsSorted(dbInstance);
+        setFriends(sortedChats);
       } catch (error) {
         console.error("Error loading data:", error);
       } finally {
@@ -52,80 +46,76 @@ export default function Chat() {
       }
     };
 
-    fetchData(); // Call async function to load data
-
+    fetchData();
   }, [netInfo.isConnected]);
+  
 
-  const Item =  React.memo(({ id, profilePic, name, unseenCount, lastMessage, lastUpdated, isGroup, onDelete  }) => {
-    const navigation = useNavigation();
+  const handleDelete = useCallback((id) => {
+    setFriends(prev => prev.filter(friend => friend.id !== id));
+  }, []);
+
+  const Item = React.memo(({ id, profilePic, name, unseenCount, lastMessage, lastUpdated, isGroup, onDelete }) => {
     const lastUpdatedDate = new Date(lastUpdated);
     const formattedTime = lastUpdatedDate.toLocaleTimeString([], {
       hour: '2-digit',
       minute: '2-digit',
     });
-    const validImage = require('../../assets/images/blank.jpeg') || profilePic;
+
+    const validImage = profilePic
+      ? { uri: profilePic }
+      : require('../../assets/images/blank.jpeg');
+
     const handlePress = () => {
       navigation.navigate('Chatting', { id, name, image: profilePic, isGroup });
     };
+
     const handleLongPress = () => {
       Alert.alert(
         "Delete Chat",
         `Are you sure you want to delete your chat with "${name}"?`,
         [
-          {
-            text: "Cancel",
-            style: "cancel"
-          },
+          { text: "Cancel", style: "cancel" },
           {
             text: "Delete",
             style: "destructive",
             onPress: async () => {
-              console.log("Deleting...")
-              const success = await deleteChat(id,db);
+              const success = await deleteFriend(id, dbInstance);
               if (success) {
-                console.log(success,"hjgucfhg")
-                onDelete(id);
+                onDelete(id);  // Remove from state
+              } else {
+                Alert.alert("Error", "Failed to delete chat.");
               }
             }
           }
         ],
         { cancelable: true }
       );
-    }
+    };
 
     return (
       <TouchableOpacity activeOpacity={0.6} onPress={handlePress} onLongPress={handleLongPress}>
         <View style={styles.userCtn}>
-          <Image
-            style={styles.image}
-            source={validImage}
-            borderRadius={50}
-            resizeMode='cover'
-          />
+          <Image style={styles.image} source={validImage} borderRadius={50} resizeMode='cover' />
           <View style={styles.msgCtn}>
             <View style={styles.userDetail}>
               <Text style={styles.name}>{name}</Text>
               <Text style={styles.message}>{lastMessage}</Text>
             </View>
             <Text style={styles.time}>{formattedTime}</Text>
-            <View style={styles.unseenCountCtn}>
-              <Text style={styles.unseenCount}>{unseenCount}</Text>
-            </View>
+            {unseenCount > 0 && (
+              <View style={styles.unseenCountCtn}>
+                <Text style={styles.unseenCount}>{unseenCount}</Text>
+              </View>
+            )}
           </View>
         </View>
       </TouchableOpacity>
     );
   });
-  const handleDelete = useCallback((id) => {
-    console.log("callinfjhjgfgghjjlk;l;jlkhjg")
-    setFriends(prev => prev.filter(friend => friend.id !== id));
-  }, []);
 
   return (
     <View style={styles.container}>
       <StatusBar backgroundColor="#121212" barStyle="light-content" />
-
-      {/* Header Section */}
       <View style={styles.headerCtn}>
         <Text style={styles.logo}>WhatsApp</Text>
         <View style={styles.iconCtn}>
@@ -134,7 +124,6 @@ export default function Chat() {
         </View>
       </View>
 
-      {/* Search Bar */}
       <View style={styles.searchCtn}>
         <Feather name="search" size={20} color="#b4c7c5" style={styles.searchIcon} />
         <TextInput
@@ -150,22 +139,19 @@ export default function Chat() {
           <Text style={styles.loadingText}>Fetching data...</Text>
         </View>
       ) : (
-        friends && friends.length !== 0 ? (
+        friends && friends.length > 0 ? (
           <FlatList
             data={friends}
             renderItem={({ item }) => <Item {...item} onDelete={handleDelete} />}
             keyExtractor={(item, index) => `user-${item.id || index}`}
             initialNumToRender={10}
             maxToRenderPerBatch={10}
-            // scrollEnabled={false}
           />
         ) : (
-          <Text style={styles.noDataText}>No friends found.</Text>
+          <Text style={styles.emptyText}>No friends found.</Text>
         )
       )}
 
-
-      {/* Floating Action Button */}
       <View style={styles.newUpdate}>
         <TouchableOpacity style={styles.msg} onPress={() => navigation.navigate('Contacts')}>
           <MaterialCommunityIcons name="message-plus" size={28} color="#011513" />
@@ -189,7 +175,7 @@ const styles = StyleSheet.create({
   },
   logo: {
     color: 'white',
-    fontSize: 30, // Adjusted font size
+    fontSize: 30,
     fontWeight: 'bold',
   },
   iconCtn: {

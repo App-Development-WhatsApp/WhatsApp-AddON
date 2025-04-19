@@ -71,7 +71,7 @@ export const loadUserInfo = async (db) => {
       const data = localStorage.getItem('user');
       return data ? JSON.parse(data) : null;
     } else {
-      console.log(db,"----------------")
+      console.log(db,"----------------hi")
       const userId = await localStorage.getItem('userId')
       const user = await getUserInfoById(userId,db);
       return user ? user : null;
