@@ -30,8 +30,8 @@ import UploadStatusScreen from "./components/Updates/UploadStatusScreen";
 import UploadImageStatus from "./components/Updates/StatusApply.jsx/UploadImageStatus";
 import VideoEditing from "./components/setting/VideoEditing";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-const Stack = createStackNavigator();
 import { SocketProvider } from "./context/SocketContext";
+import { DatabaseProvider } from "./context/DbContext";
 import OneTimeViewer from "./components/Chats/OneTimeView";
 import AudioScreen from "./components/Calls/AudioScreen";
 import IncomingCallBanner from "./components/banners/NotifyCallingBanner";
@@ -42,22 +42,14 @@ import CommunityFlow from "./components/Communities/CreateCommunity";
 import Communities from "./components/Communities/Communities";
 import CommunityScreen from "./components/Communities/CommunityScreen";
 import CreateGroupScreen from "./components/AllContacts/CreateGroup";
+
+
+
+const Stack = createStackNavigator();
 export default function App() {
   const [loading, setLoading] = useState(false);
   enableScreens();
-  useEffect(() => {
-    const initialize = async () => {
-      setLoading(true);
-      try {
-        await initDatabase();
-      } catch (error) {
-        console.error("❌ Failed to initialize DB", error);
-      }
-    };
-
-    initialize();
-    setLoading(false);
-  }, []);
+  
 
   if (loading) {
     return (
@@ -68,48 +60,52 @@ export default function App() {
   }
 
   return (
-    <SocketProvider>
-      <NavigationContainer>
-        <GestureHandlerRootView style={{ flex: 1 }}>
-          <Stack.Navigator screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="Main" component={MyTabs} />
-            <Stack.Screen name="Login" component={LoginScreen} />
-            <Stack.Screen name="Settings" component={SettingsScreen} />
-            <Stack.Screen name="Status" component={StatusScreen} />
-            <Stack.Screen name="VideoPlayer" component={VideoPlayer} />
-            <Stack.Screen name="History" component={History} />
-            <Stack.Screen name="Chatting" component={Chatting} />
-            <Stack.Screen name="Contacts" component={Contacts} />
-            <Stack.Screen name="Account" component={AccountScreen} />
-            <Stack.Screen name="Privacy" component={PrivacyScreen} />
-            <Stack.Screen name="UploadStatus" component={UploadStatusScreen} />
-            {/* <Stack.Screen name="OneTimeViewer" component={OneTimeViewer} /> */}
-            <Stack.Screen
-              name="UploadImageStatus"
-              component={UploadImageStatus}
-              options={{ title: "Edit Status" }}
-            />
-            <Stack.Screen name="Avatar" component={AvatarScreen} />
-            <Stack.Screen name="List" component={ListScreen} />
-            <Stack.Screen name="ChatSetting" component={ChatScreen} />
-            <Stack.Screen name="Notification" component={NotificationScreen} />
-            <Stack.Screen name="Storage" component={StorageAndDataScreen} />
-            <Stack.Screen name="AppLanguage" component={AppLanguageScreen} />
-            <Stack.Screen name="help" component={HelpScreen} />
-            <Stack.Screen name="AudioScreen" component={AudioScreen} />
-            <Stack.Screen name="Invite" component={InviteFriendScreen} />
-            <Stack.Screen name="Video" component={VideoEditing} />
-            <Stack.Screen name="AppUpdate" component={AppUpdateScreen} />
-            <Stack.Screen name="CreateCommunity" component={CommunityFlow} />
-            <Stack.Screen name="Communities" component={Communities} />
-            <Stack.Screen name="CommunityScreen" component={CommunityScreen} />
-            <Stack.Screen name="CreateGroup" component={CreateGroupScreen}/>
-            <Stack.Screen name="callScreen" component={CallScreen} />
-          </Stack.Navigator>
-          <IncomingCallBanner />
-        </GestureHandlerRootView>
-      </NavigationContainer>
-    </SocketProvider>
+    <DatabaseProvider>
+
+      <SocketProvider>
+        <NavigationContainer>
+          <GestureHandlerRootView style={{ flex: 1 }}>
+            <Stack.Navigator screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="Main" component={MyTabs} />
+              <Stack.Screen name="Login" component={LoginScreen} />
+              <Stack.Screen name="Settings" component={SettingsScreen} />
+              <Stack.Screen name="Status" component={StatusScreen} />
+              <Stack.Screen name="VideoPlayer" component={VideoPlayer} />
+              <Stack.Screen name="History" component={History} />
+              <Stack.Screen name="Chatting" component={Chatting} />
+              <Stack.Screen name="Contacts" component={Contacts} />
+              <Stack.Screen name="Account" component={AccountScreen} />
+              <Stack.Screen name="Privacy" component={PrivacyScreen} />
+              <Stack.Screen name="UploadStatus" component={UploadStatusScreen} />
+              {/* <Stack.Screen name="OneTimeViewer" component={OneTimeViewer} /> */}
+              <Stack.Screen
+                name="UploadImageStatus"
+                component={UploadImageStatus}
+                options={{ title: "Edit Status" }}
+              />
+              <Stack.Screen name="Avatar" component={AvatarScreen} />
+              <Stack.Screen name="List" component={ListScreen} />
+              <Stack.Screen name="ChatSetting" component={ChatScreen} />
+              <Stack.Screen name="Notification" component={NotificationScreen} />
+              <Stack.Screen name="Storage" component={StorageAndDataScreen} />
+              <Stack.Screen name="AppLanguage" component={AppLanguageScreen} />
+              <Stack.Screen name="help" component={HelpScreen} />
+              <Stack.Screen name="AudioScreen" component={AudioScreen} />
+              <Stack.Screen name="Invite" component={InviteFriendScreen} />
+              <Stack.Screen name="Video" component={VideoEditing} />
+              <Stack.Screen name="AppUpdate" component={AppUpdateScreen} />
+              <Stack.Screen name="CreateCommunity" component={CommunityFlow} />
+              <Stack.Screen name="Communities" component={Communities} />
+              <Stack.Screen name="CommunityScreen" component={CommunityScreen} />
+              <Stack.Screen name="CreateGroup" component={CreateGroupScreen} />
+              <Stack.Screen name="callScreen" component={CallScreen} />
+            </Stack.Navigator>
+            <IncomingCallBanner />
+          </GestureHandlerRootView>
+        </NavigationContainer>
+      </SocketProvider>
+    </DatabaseProvider>
+
   );
 }
 

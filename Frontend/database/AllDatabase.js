@@ -4,6 +4,7 @@ import * as SQLite from 'expo-sqlite';
 let db;
 
 export const initDatabase = async () => {
+  console.log('🔄 Initializing database...');
   db = await SQLite.openDatabaseAsync('whatsappDB');
   console.log('✅ Database opened successfully');
   return db;

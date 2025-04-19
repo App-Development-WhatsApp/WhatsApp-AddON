@@ -17,7 +17,7 @@ import FormData from "form-data";
 import { addUser, getUserInfoById } from "../../database/curd";
 import localStorage from '@react-native-async-storage/async-storage';
 import * as Contacts from 'expo-contacts';
-
+import { useDatabase } from "../../context/DbContext";
 
 
 const LoginScreen = ({ navigation }) => {
@@ -27,6 +27,7 @@ const LoginScreen = ({ navigation }) => {
   const [profilePic, setProfilePic] = useState(null);
   const [loading, setLoading] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const {dbInstance}=useDatabase();
   
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -38,8 +39,10 @@ const LoginScreen = ({ navigation }) => {
 
   useEffect(() => {
     const checkAuth = async () => {
+      console.log("checking auth",dbInstance)
       const userId=await localStorage.getItem('userId')
-      const user=await getUserInfoById(userId);
+      const user=await getUserInfoById(userId,dbInstance);
+      console.log(userId,user)
       if (user) {
         navigation.replace("Main");
       }

@@ -65,14 +65,15 @@ export const deleteMessage = async (otherUserId, messageId) => {
 // --------- User & Friends ---------- //
 
 
-export const loadUserInfo = async () => {
+export const loadUserInfo = async (db) => {
   try {
     if (Platform.OS === 'web') {
       const data = localStorage.getItem('user');
       return data ? JSON.parse(data) : null;
     } else {
+      console.log(db,"----------------")
       const userId = await localStorage.getItem('userId')
-      const user = await getUserInfoById(userId);
+      const user = await getUserInfoById(userId,db);
       return user ? user : null;
     }
   } catch (error) {
@@ -298,22 +299,33 @@ const updateFriendsFile = async (senderId, message, timestamp, isCurrentChatOpen
 
 
 
+
 export const loadChatHistory = async (id) => {
   try {
-    const fileUri = `${FileSystem.documentDirectory}chat/chat_${id}.json`;
+    const chatDirectory = `${FileSystem.documentDirectory}chat/`;
+
+    // Make sure the directory exists
+    const dirInfo = await FileSystem.getInfoAsync(chatDirectory);
+    if (!dirInfo.exists) {
+      console.warn("Chat folder does not exist, creating new one.");
+      await FileSystem.makeDirectoryAsync(chatDirectory, { intermediates: true });
+    }
+
+    const fileUri = `${chatDirectory}chat_${id}.json`;
     const fileInfo = await FileSystem.getInfoAsync(fileUri);
     if (!fileInfo.exists) {
       console.warn("Chat file does not exist, creating new one.");
       await FileSystem.writeAsStringAsync(fileUri, JSON.stringify([])); // Initialize as empty array
     }
+
     const dataFromFile = await readJsonFile(fileUri);
-    // console.log("dat fronm files", dataFromFile);
     return dataFromFile || [];
   } catch (error) {
     console.error("Error loading chat history:", error);
     return [];
   }
 };
+
 
 export const saveChatMessage = async (friendId, message) => {
   try {

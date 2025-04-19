@@ -90,35 +90,38 @@ export default function Chatting() {
 
   const handleSend = async () => {
     if (!message.trim() && selectedFiles.length === 0) return;
-    if(chats.length===0){
-      console.log("Hello");
-      addfriends({ _id:userId, profilePic,description:"", name, lastMessage:message,Unseen:0, isGroup:0 } )
+    if (chats.length === 0) {
+      console.log("Calling addfriends...");
+      try {
+        await addfriends({ _id: friendId, profilePic:image, description: "", name, lastMessage: message, Unseen: 0, isGroup: 0,Ids:[userId] });
+      } catch (err) {
+        console.error("addfriends error:", err);
+      }
     }
+    try {
+      const newMsg = {
+        id: Date.now().toString(),
+        senderId: currentUserId,
+        receiverId: friendId,
+        timestamp: new Date().toISOString(),
+        ...(message.trim() && { text: message.trim() }),
+        ...(selectedFiles.length > 0 && { files: selectedFiles }),
+        oneTimeView: oneTimeView,
+      };
+      console.log(newMsg)
 
-    // try {
-    //   const newMsg = {
-    //     id: Date.now().toString(),
-    //     senderId: currentUserId,
-    //     receiverId: friendId,
-    //     timestamp: new Date().toISOString(),
-    //     ...(message.trim() && { text: message.trim() }),
-    //     ...(selectedFiles.length > 0 && { files: selectedFiles }),
-    //     oneTimeView: oneTimeView,
-    //   };
-    //   console.log(newMsg)
+      setChats((prev) => [...prev, { ...newMsg }]);
+      sendMessage(newMsg);
 
-    //   setChats((prev) => [...prev, { ...newMsg }]);
-    //   sendMessage(newMsg);
-
-    //   setMessage("");
-    //   setSelectedFiles([]);
-    //   setTimeout(() => {
-    //     flatListRef.current?.scrollToEnd({ animated: true });
-    //   }, 100);
-    // } catch (err) {
-    //   console.error("Error sending message:", err);
-    //   Alert.alert("Failed", "Unable to send message. Please try again.");
-    // }
+      setMessage("");
+      setSelectedFiles([]);
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    } catch (err) {
+      console.error("Error sending message:", err);
+      Alert.alert("Failed", "Unable to send message. Please try again.");
+    }
   };
 
   const handleClearChat = async () => {

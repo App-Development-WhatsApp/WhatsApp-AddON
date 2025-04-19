@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useEffect, useState, useContext,useCallback } from 'react';
 import {
   StyleSheet,
   Text,
@@ -7,6 +7,7 @@ import {
   FlatList,
   TouchableOpacity,
   Image,
+  Alert,
   TextInput,
   ActivityIndicator,
   StatusBar
@@ -18,9 +19,10 @@ import { MaterialCommunityIcons, Feather, Entypo } from '@expo/vector-icons';
 import Menu from '../Menu/Menu';
 import { friendsFilePath, loadUserInfo, setReceivedMessage } from '../../utils/chatStorage';
 import { loadGroups } from '../../utils/groupStorage';
-import { getUserInfoById } from '../../database/curd.js';
+import { deleteChat, getUserInfoById } from '../../database/curd.js';
 import localStorage from '@react-native-async-storage/async-storage';
-
+import { getAllChatsSorted } from '../../database/curd.js';
+import { useDatabase } from '../../context/DbContext.js';
 export default function Chat() {
 
   const netInfo = useNetInfo();
@@ -28,30 +30,21 @@ export default function Chat() {
   const [loading, setLoading] = useState(true);
   const [userData, setUserData] = useState(null);
   const [friends, setFriends] = useState([]);
-  const [groups, setGroups] = useState([]);
+  const {dbInstance} = useDatabase();
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         // Load user data
-        const user = await loadUserInfo();
+        const user = await loadUserInfo(db);
         if (user) {
           setUserData(user);
         }
 
-        // Load friends data
-        const fileExists = await FileSystem.getInfoAsync(friendsFilePath);
-        if (fileExists.exists) {
-          const storedData = await FileSystem.readAsStringAsync(friendsFilePath);
-          setFriends(JSON.parse(storedData) || []);
-        }
+        const sortedChats = await getAllChatsSorted(db);
+        console.log(sortedChats)
+        setFriends(sortedChats)
 
-        // Load groups data
-        const groupFilePath = `${FileSystem.documentDirectory}group.json`;
-        const groupFileExists = await FileSystem.getInfoAsync(groupFilePath);
-        if (groupFileExists.exists) {
-          const storedGroups = await FileSystem.readAsStringAsync(groupFilePath);
-          setGroups(JSON.parse(storedGroups) || []);
-        }
       } catch (error) {
         console.error("Error loading data:", error);
       } finally {
@@ -63,63 +56,70 @@ export default function Chat() {
 
   }, [netInfo.isConnected]);
 
-  useEffect(() => {
-    (async () => {
-      const groups = await loadGroups();
-      setGroups(groups);
-      console.log("Stored groups:", groups);
-      groups.forEach(group => {
-        console.log("Group name:", group.name);
-      });
-    })();
-  }, []);
-  useEffect(async ()=>{
-     const userId=await localStorage.getItem('userId')
-      const user=await getUserInfoById(userId);
-      if(!user){
-        navigation.navigate('login')
-      }
-      console.log(user)
-  },[])
-
-
-  const handleChatPress = async (id, name, image) => {
-    navigation.navigate('Chatting', { userId: id, name, image });
-  };
-
-  const Item = ({ userId, userName, image, message, time, isGroup, groupId, name }) => {
+  const Item =  React.memo(({ id, profilePic, name, unseenCount, lastMessage, lastUpdated, isGroup, onDelete  }) => {
     const navigation = useNavigation();
-    // Fallbacks for name and image
-    const displayName = isGroup ? name || "Unnamed Group" : userName || "Unknown User";
-    const displayMessage = message || (isGroup ? "Group created" : "");
-    const displayTime = time || "";
-  
-    const id = isGroup ? groupId : userId;
-    const validImage = image ? { uri: image } : require('../../assets/images/blank.jpeg');
-
+    const lastUpdatedDate = new Date(lastUpdated);
+    const formattedTime = lastUpdatedDate.toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+    const validImage = require('../../assets/images/blank.jpeg') || profilePic;
     const handlePress = () => {
-      if (isGroup) {
-        navigation.navigate('Chatting', { groupId: id, name, image });
-      } else {
-        // Assumes handleChatPress is defined in the parent component
-        handleChatPress(id, displayName, image);
-      }
+      navigation.navigate('Chatting', { id, name, image: profilePic, isGroup });
     };
+    const handleLongPress = () => {
+      Alert.alert(
+        "Delete Chat",
+        `Are you sure you want to delete your chat with "${name}"?`,
+        [
+          {
+            text: "Cancel",
+            style: "cancel"
+          },
+          {
+            text: "Delete",
+            style: "destructive",
+            onPress: async () => {
+              console.log("Deleting...")
+              const success = await deleteChat(id,db);
+              if (success) {
+                console.log(success,"hjgucfhg")
+                onDelete(id);
+              }
+            }
+          }
+        ],
+        { cancelable: true }
+      );
+    }
+
     return (
-      <TouchableOpacity activeOpacity={0.6} onPress={handlePress}>
+      <TouchableOpacity activeOpacity={0.6} onPress={handlePress} onLongPress={handleLongPress}>
         <View style={styles.userCtn}>
-          <Image style={styles.image} source={validImage} borderRadius={50} resizeMode='cover' />
+          <Image
+            style={styles.image}
+            source={validImage}
+            borderRadius={50}
+            resizeMode='cover'
+          />
           <View style={styles.msgCtn}>
             <View style={styles.userDetail}>
-              <Text style={styles.name}>{displayName}</Text>
-              <Text style={styles.message}>{displayMessage}</Text>
+              <Text style={styles.name}>{name}</Text>
+              <Text style={styles.message}>{lastMessage}</Text>
             </View>
-            <Text style={styles.time}>{displayTime}</Text>
+            <Text style={styles.time}>{formattedTime}</Text>
+            <View style={styles.unseenCountCtn}>
+              <Text style={styles.unseenCount}>{unseenCount}</Text>
+            </View>
           </View>
         </View>
       </TouchableOpacity>
     );
-  };
+  });
+  const handleDelete = useCallback((id) => {
+    console.log("callinfjhjgfgghjjlk;l;jlkhjg")
+    setFriends(prev => prev.filter(friend => friend.id !== id));
+  }, []);
 
   return (
     <View style={styles.container}>
@@ -150,23 +150,20 @@ export default function Chat() {
           <Text style={styles.loadingText}>Fetching data...</Text>
         </View>
       ) : (
-        <>
+        friends && friends.length !== 0 ? (
           <FlatList
-            data={groups}
-            renderItem={({ item }) => <Item {...item} isGroup={true} />}
-            keyExtractor={(item, index) => `group-${item.groupId || index}`}
-            ListFooterComponent={() => (
-              <FlatList
-                data={friends}
-                renderItem={({ item }) => <Item {...item} />}
-                keyExtractor={(item, index) => `user-${item.userId || index}`}
-
-                scrollEnabled={false}
-              />
-            )}
+            data={friends}
+            renderItem={({ item }) => <Item {...item} onDelete={handleDelete} />}
+            keyExtractor={(item, index) => `user-${item.id || index}`}
+            initialNumToRender={10}
+            maxToRenderPerBatch={10}
+            // scrollEnabled={false}
           />
-        </>
+        ) : (
+          <Text style={styles.noDataText}>No friends found.</Text>
+        )
       )}
+
 
       {/* Floating Action Button */}
       <View style={styles.newUpdate}>
@@ -278,5 +275,20 @@ const styles = StyleSheet.create({
     marginTop: 20,
     color: '#cbd5c0',
     fontSize: 16,
+  },
+  unseenCountCtn: {
+    position: 'absolute',
+    top: 0,
+    right: 10,
+    backgroundColor: 'green',
+    borderRadius: 50,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    marginTop: 20
+  },
+  unseenCount: {
+    fontSize: 12,
+    color: '#fff',
+    fontWeight: 'bold',
   },
 });
