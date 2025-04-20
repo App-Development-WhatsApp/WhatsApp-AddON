@@ -8,7 +8,6 @@ export const addUser = async (user) => {
 
   try {
     console.log("👤 Adding user:", user);
-    // const db = getDB();
     console.log("📦 DB Instance:", db);
 
     // Ensure updated table exists
