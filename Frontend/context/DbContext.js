@@ -1,11 +1,11 @@
 // DatabaseContext.js
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { initDatabase } from '../database/AllDatabase';
 
 const DatabaseContext = createContext(null);
 
 export const DatabaseProvider = ({ children }) => {
-  const [dbInstance, setDbInstance] = useState(null);
+  const [dbInstance, setDbInstance] = useMemo(null);
 
   useEffect(() => {
     const setup = async () => {

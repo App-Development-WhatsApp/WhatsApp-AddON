@@ -118,26 +118,26 @@ export default function Chatting() {
       }
   
       // Create a new message object
-      const newMsg = {
-        id: Date.now().toString(),
-        senderId: currentUserId,
-        receiverId: friendId,
-        timestamp: new Date().toISOString(),
-        ...(message.trim() && { text: message.trim() }), // Add message text if it exists
-        ...(selectedFiles.length > 0 && { files: selectedFiles }), // Add selected files if they exist
-        oneTimeView: oneTimeView, // Add one-time view setting
-      };
+      // const newMsg = {
+      //   id: Date.now().toString(),
+      //   senderId: currentUserId,
+      //   receiverId: friendId,
+      //   timestamp: new Date().toISOString(),
+      //   ...(message.trim() && { text: message.trim() }), // Add message text if it exists
+      //   ...(selectedFiles.length > 0 && { files: selectedFiles }), // Add selected files if they exist
+      //   oneTimeView: oneTimeView, // Add one-time view setting
+      // };
   
-      console.log("Sending message:", newMsg);
+      // console.log("Sending message:", newMsg);
   
-      // Update chats state (immutable update)
-      setChats((prev) => {
-        const updatedChats = [...prev, newMsg];
-        return updatedChats;
-      });
+      // // Update chats state (immutable update)
+      // setChats((prev) => {
+      //   const updatedChats = [...prev, newMsg];
+      //   return updatedChats;
+      // });
   
-      // Send the message via your messaging service
-      await sendMessage(newMsg);
+      // // Send the message via your messaging service
+      // await sendMessage(newMsg);
   
       // Clear message and selected files
       setMessage("");

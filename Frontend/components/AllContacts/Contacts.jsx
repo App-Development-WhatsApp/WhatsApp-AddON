@@ -34,33 +34,29 @@ export default function Contacts() {
             setLoading(true);
             const userData = await loadUserInfo();
             setCurrUser(userData);
-            console.log("data fetching")
 
             try {
                 const [usersRes, contactsRes] = await Promise.all([
                     getAllUsers(),
                     Contact.requestPermissionsAsync().then(async ({ status }) => {
-                        console.log("granted",status)
                         if (status === 'granted') {
                             const { data } = await Contact.getContactsAsync({
                                 fields: [Contact.Fields.PhoneNumbers],
                             });
-                            console.log('Contacts fetched:', data);
+                            // console.log('Contacts fetched:', data);
                             return data || [];
-                        }else{
-                            console.log('Permission not granted');
-                            return [];
                         }
+                        return []
                     }),
                 ]);
 
                 if (!usersRes.success) throw new Error("Failed to fetch users");
                 const usersFromDB = usersRes.users;
+                // console.log(usersFromDB)
                 const contactMap = {};
-                console.log(usersFromDB)
 
-                const formattedContacts = contactsRes.flatMap((contact) =>
-                    (contact.phoneNumbers || []).map(numObj => {
+                const formattedContacts = contactsRes.flatMap((contact) =>{
+                   return (contact.phoneNumbers || []).map(numObj => {
                         const phone = normalizePhoneNumber(numObj.number);
                         contactMap[phone] = {
                             name: contact.name,
@@ -68,8 +64,7 @@ export default function Contacts() {
                         };
                         return phone;
                     })
-                );
-                console.log(formattedContacts,"-----------------")
+                });
 
                 const appUserList = [];
                 const nonAppUserList = [];
@@ -77,6 +72,7 @@ export default function Contacts() {
                 usersFromDB.forEach(user => {
                     const phone = normalizePhoneNumber(user.phoneNumber);
                     if (contactMap[phone]) {
+                        console.log(phone,"-----------kjhgvcf-------")
                         appUserList.push({
                             ...contactMap[phone],
                             ...user,
@@ -88,9 +84,10 @@ export default function Contacts() {
                 Object.values(contactMap).forEach((nonUser) => {
                     nonAppUserList.push(nonUser);
                 });
-                console.log("Appuserlist",appUserList)
+                // console.log(usersFromDB)
+                // console.log(nonAppUserList)
 
-                setAppUsers(appUserList);
+                setAppUsers(usersFromDB);
                 setNonAppUsers(nonAppUserList);
             } catch (error) {
                 console.error("Error fetching contacts:", error);
@@ -135,13 +132,12 @@ export default function Contacts() {
         const validImage = isAppUser && user.profilePic
             ? { uri: user.profilePic }
             : require('../../assets/images/blank.jpeg');
-
         return (
             <TouchableOpacity
                 disabled={!isAppUser}
                 onPress={() =>
                     isAppUser
-                        ? handleChatPress(user._id, user.name, user.profilePic)
+                        ? handleChatPress(user._id, user.username, user.profilePic)
                         : inviteUser(user.number)
                 }>
                 <View style={styles.userCtn}>
@@ -152,8 +148,8 @@ export default function Contacts() {
                         resizeMode="cover"
                     />
                     <View style={styles.msgCtn}>
-                        <Text style={styles.name}>{user.name}</Text>
-                        <Text style={styles.subtext}>{user.number}</Text>
+                        <Text style={styles.name}>{isAppUser?user.username:user.name}</Text>
+                        <Text style={styles.subtext}>{isAppUser?user.phoneNumber:user.number}</Text>
                     </View>
                     {!isAppUser && (
                         <TouchableOpacity onPress={() => inviteUser(user.number)}>

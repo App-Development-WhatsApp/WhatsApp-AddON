@@ -1,13 +1,10 @@
 import * as FileSystem from "expo-file-system";
-import { BACKEND_URL } from "../Services/AuthServices";
 import { Platform } from 'react-native';
-const API_URL = `${BACKEND_URL}/api/v1/users`;
-const SOCKET_SERVER_URL = BACKEND_URL;
+const API_URL = `${process.env.EXPO_PUBLIC_BACKEND_URL}/api/v1/users`;
 import localStorage from '@react-native-async-storage/async-storage';
 import { getUserInfoById } from "../database/curd";
 
 // File paths
-export const userFilePath = FileSystem.documentDirectory + "userInfo.json";
 export const friendsFilePath = FileSystem.documentDirectory + "friendsInfo.json";
 
 
@@ -65,15 +62,14 @@ export const deleteMessage = async (otherUserId, messageId) => {
 // --------- User & Friends ---------- //
 
 
-export const loadUserInfo = async (db) => {
+export const loadUserInfo = async () => {
   try {
     if (Platform.OS === 'web') {
       const data = localStorage.getItem('user');
       return data ? JSON.parse(data) : null;
     } else {
-      console.log(db,"----------------hi")
       const userId = await localStorage.getItem('userId')
-      const user = await getUserInfoById(userId,db);
+      const user = await getUserInfoById(userId);
       return user ? user : null;
     }
   } catch (error) {
@@ -135,9 +131,6 @@ export const getSavedFriends = async () => {
 };
 
 // --------- Emit Message ---------- //
-
-
-
 
 
 export const uploadChatToServer = async (otherUserId) => {
@@ -227,6 +220,7 @@ export const setReceivedMessage = async (data) => {
     console.error("Error uploading chat:", error);
   }
 };
+
 function insertMessageInOrder(messages, newMessage) {
   let left = 0;
   let right = messages.length;
@@ -242,6 +236,7 @@ function insertMessageInOrder(messages, newMessage) {
 
   messages.splice(left, 0, newMessage);
 }
+
 const updateFriendsFile = async (senderId, message, timestamp, isCurrentChatOpen) => {
 
   let friends = [];
@@ -297,9 +292,6 @@ const updateFriendsFile = async (senderId, message, timestamp, isCurrentChatOpen
 };
 // --------------------------------------------------------------------------
 
-
-
-
 export const loadChatHistory = async (id) => {
   try {
     const chatDirectory = `${FileSystem.documentDirectory}chat/`;
@@ -326,11 +318,10 @@ export const loadChatHistory = async (id) => {
   }
 };
 
-
 export const saveChatMessage = async (friendId, message) => {
   try {
-    
-    const path = `${FileSystem.documentDirectory}chat/chat_${id}.json`;
+    const chatDirectory = `${FileSystem.documentDirectory}chat/`;
+    const path = `${chatDirectory}chat_${id}.json`;
     let existingChats = [];
     const fileInfo = await FileSystem.getInfoAsync(path);
     if (!fileInfo.exists) {

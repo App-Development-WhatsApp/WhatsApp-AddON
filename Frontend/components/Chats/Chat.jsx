@@ -18,10 +18,9 @@ import { MaterialCommunityIcons, Feather, Entypo } from '@expo/vector-icons';
 import Menu from '../Menu/Menu';
 import { friendsFilePath, loadUserInfo, setReceivedMessage } from '../../utils/chatStorage';
 import { loadGroups } from '../../utils/groupStorage';
-import { deleteChat, getUserInfoById } from '../../database/curd.js';
+import { deleteChat, deleteFriend, getUserInfoById } from '../../database/curd.js';
 import localStorage from '@react-native-async-storage/async-storage';
 import { getAllChatsSorted } from '../../database/curd.js';
-import { useDatabase } from '../../context/DbContext.js';
 
 export default function Chat() {
   const netInfo = useNetInfo();
@@ -29,15 +28,14 @@ export default function Chat() {
   const [loading, setLoading] = useState(true);
   const [userData, setUserData] = useState(null);
   const [friends, setFriends] = useState([]);
-  const { dbInstance } = useDatabase();
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const user = await loadUserInfo(dbInstance);
+        const user = await loadUserInfo();
         if (user) setUserData(user);
 
-        const sortedChats = await getAllChatsSorted(dbInstance);
+        const sortedChats = await getAllChatsSorted();
         setFriends(sortedChats);
       } catch (error) {
         console.error("Error loading data:", error);
@@ -79,8 +77,9 @@ export default function Chat() {
             text: "Delete",
             style: "destructive",
             onPress: async () => {
-              const success = await deleteFriend(id, dbInstance);
+              const success = await deleteFriend(id);
               if (success) {
+                console.log("Deleting")
                 onDelete(id);  // Remove from state
               } else {
                 Alert.alert("Error", "Failed to delete chat.");

@@ -1,12 +1,9 @@
 import axios from "axios";
 import * as FileSystem from "expo-file-system";
-import { saveUserInfo } from "../utils/chatStorage";
 import { userFilePath, friendsFilePath } from "../utils/chatStorage";
-import { createAllTables, createUser,getAllUser } from "../database/tables";
 import { addUser } from "../database/curd";
-export const BACKEND_URL = "http://192.168.78.93:5000"
 
-export const API_URL = `${BACKEND_URL}/api/v1/users`; // Replace with your backend URL
+export const API_URL = `${process.env.EXPO_PUBLIC_BACKEND_URL}/api/v1/users`; // Replace with your backend URL
 
 
 // -------------------- LOGIN --------------------
@@ -37,9 +34,7 @@ export const login = async (formData) => {
 // -------------------- GET ALL USERS --------------------
 export const getAllUsers = async () => {
   try {
-    // console.log("calling")
     const response = await axios.get(`${API_URL}/getAllUsers`);
-    // console.log(response)
     return {
       success: true,
       users: response.data.data || [],
@@ -124,7 +119,6 @@ export const uploadStatus = async (formData) => {
     console.log(response.data, "response")
     
     if (response.data.success) {
-      await createAllTables();
       return { success: true, message: "Status uploaded successfully" };
     } 
     else {

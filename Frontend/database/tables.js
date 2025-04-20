@@ -1,8 +1,5 @@
-// tables.js
-import { getDB } from "./AllDatabase";
 
-export const createUserInfoTable = async () => {
-  const db = getDB();
+export const createUserInfoTable = async (db) => {
   await db.execAsync(`
     CREATE TABLE IF NOT EXISTS userinfo (
       id TEXT UNIQUE NOT NULL,
@@ -16,8 +13,7 @@ export const createUserInfoTable = async () => {
   `);
   console.log("🧱 'userinfo' table created");
 };
-export const createChatsTable = async () => {
-  const db = getDB();
+export const createChatsTable = async (db) => {
   await db.execAsync(`
     CREATE TABLE IF NOT EXISTS chats (
       id TEXT PRIMARY KEY,
@@ -28,14 +24,14 @@ export const createChatsTable = async () => {
       lastMessage TEXT,
       lastUpdated DATETIME DEFAULT CURRENT_TIMESTAMP,
       isGroup BOOLEAN DEFAULT 0,
+      members TEXT DEFAULT '[]'
     );
   `);
   console.log("💬 'chats' table created");
 };
 
 
-export const createFriendListTable = async () => {
-  const db = getDB();
+export const createFriendListTable = async (db) => {
   await db.execAsync(`
     CREATE TABLE IF NOT EXISTS friend_list (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -49,8 +45,7 @@ export const createFriendListTable = async () => {
   console.log("🧱 'friend_list' table created");
 };
 
-export const createPendingSyncTable = async () => {
-  const db = getDB();
+export const createPendingSyncTable = async (db) => {
   await db.execAsync(`
     CREATE TABLE IF NOT EXISTS pending_sync (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -66,8 +61,9 @@ export const createPendingSyncTable = async () => {
 
 
 // Optional: bundle all in one if needed
-export const createAllTables = async () => {
-  await createUserInfoTable();
-  await createFriendListTable();
-  await createPendingSyncTable();
+export const createAllTables = async (db) => {
+  await createUserInfoTable(db);
+  await createFriendListTable(db);
+  await createPendingSyncTable(db);
+  console.log("Table Creation Completed");
 };

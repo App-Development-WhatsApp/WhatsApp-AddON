@@ -4,7 +4,6 @@ import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import * as FileSystem from "expo-file-system";
 import { userFilePath, friendsFilePath } from '../../utils/chatStorage';
-import { initDatabase } from '../../database/AllDatabase';
 import { dropAllTables } from '../../database/resetTables';
 
 export default function MenuBar() {
