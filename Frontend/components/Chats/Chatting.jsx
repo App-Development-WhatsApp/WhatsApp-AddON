@@ -34,7 +34,8 @@ import { renderMessage } from "./RenderMessages";
 import { useNetInfo } from "@react-native-community/netinfo";
 // import OneTimeView from "./OneTimeView";
 import { useSocket } from "../../context/SocketContext";
-import { addFriends } from "../../database/curd";
+import { addFriends, getAllChatsSorted, getChatById } from "../../database/curd";
+import * as FileSystem from 'expo-file-system';
 
 
 export default function Chatting() {
@@ -46,7 +47,7 @@ export default function Chatting() {
   } = useSocket();
   const netInfo = useNetInfo();
   const route = useRoute();
-  const { userId: friendId, name, image } = route.params;
+  const { userId: userId, name, image } = route.params;
   const [message, setMessage] = useState("");
   const [currentUserId, setCurrentUserId] = useState(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -56,15 +57,32 @@ export default function Chatting() {
   const [inputBoxFocus, setinputBoxFocus] = useState(false);
 
   const [chats, setChats] = useState([]);
+  const convertFilesToBase64 = async (files) => {
+    const base64Files = await Promise.all(
+      files.map(async (file) => {
+        const base64 = await FileSystem.readAsStringAsync(file.uri, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
 
+        return {
+          ...file,
+          base64, // attach the actual content
+        };
+      })
+    );
+
+    return base64Files;
+  };
   useEffect(() => {
+    console.log(route.params, "params------------------");
     const setup = async () => {
       try {
         const user = await loadUserInfo();
         setCurrentUserId(user.id);
-        const chatsdata = await loadChatHistory(friendId);
+        console.log(userId, "userId------------------");
+        const chatsdata = await loadChatHistory(userId);
         setChats(chatsdata);
-        console.log(route.params);
+        console.log(chatsdata, "chatsdata------------------");
       } catch (err) {
         console.error("Error loading user or chats:", err);
       }
@@ -86,63 +104,71 @@ export default function Chatting() {
     return () => {
       unregisterReceiveMessage(messageListener);
     };
-  }, [ netInfo.isConnected]);
+  }, [netInfo.isConnected]);
 
   const handleSend = async () => {
     if (!message.trim() && selectedFiles.length === 0) return; // Check if there's no message and no files
-  
+
     try {
       // Add friend if no chats exist
-      if (chats.length === 0) {
+      const existingChat = await getChatById(userId);
+      if (!existingChat) {
         console.log("Calling addFriends with:", {
-          _id: friendId,
+          _id: userId,
           profilePic: image,
           description: "",
           name,
           lastMessage: message,
           Unseen: 0,
           isGroup: 0,
-          Ids: [friendId],
+          Ids: [userId],
         });
-  
+
         await addFriends({
-          _id: friendId,
+          _id: userId,
           profilePic: image,
           description: "",
           name,
           lastMessage: message,
           Unseen: 0,
           isGroup: 0,
-          Ids: [friendId],
+          Ids: [userId],
         });
       }
-  
+
       // Create a new message object
-      // const newMsg = {
-      //   id: Date.now().toString(),
-      //   senderId: currentUserId,
-      //   receiverId: friendId,
-      //   timestamp: new Date().toISOString(),
-      //   ...(message.trim() && { text: message.trim() }), // Add message text if it exists
-      //   ...(selectedFiles.length > 0 && { files: selectedFiles }), // Add selected files if they exist
-      //   oneTimeView: oneTimeView, // Add one-time view setting
-      // };
-  
+      // let filesWithBase64 = [];
+
+      // if (selectedFiles.length > 0) {
+      //   filesWithBase64 = await convertFilesToBase64(selectedFiles);
+      // }
+
+      const newMsg = {
+        id: Date.now().toString(),
+        senderId: currentUserId,
+        receiverId: userId,
+        timestamp: new Date().toISOString(),
+        ...(message.trim() && { text: message.trim() }),
+        ...(selectedFiles.length > 0 && { files: selectedFiles }),
+        oneTimeView,
+      };
+
       // console.log("Sending message:", newMsg);
-  
+
       // // Update chats state (immutable update)
-      // setChats((prev) => {
-      //   const updatedChats = [...prev, newMsg];
-      //   return updatedChats;
-      // });
-  
-      // // Send the message via your messaging service
-      // await sendMessage(newMsg);
-  
+      setChats((prev) => {
+        const updatedChats = [...prev, newMsg];
+        return updatedChats;
+      });
+
+      // Send the message via your messaging service
+      await sendMessage(newMsg);
+
       // Clear message and selected files
       setMessage("");
       setSelectedFiles([]);
-  
+      setOneTimeView(false); // Reset one-time view setting
+
       // Scroll to the bottom of the chat list
       setTimeout(() => {
         flatListRef.current?.scrollToEnd({ animated: true });
@@ -152,7 +178,7 @@ export default function Chatting() {
       Alert.alert("Failed", "Unable to send message. Please try again.");
     }
   };
-  
+
 
   const handleClearChat = async () => {
     Alert.alert("Clear Chat", "Are you sure you want to delete all messages?", [
@@ -161,7 +187,7 @@ export default function Chatting() {
         text: "Clear",
         onPress: async () => {
           try {
-            await clearChatFile(friendId);
+            await clearChatFile(userId);
             setChats([]);
           } catch (err) {
             console.error("Error clearing chat:", err);
@@ -246,7 +272,7 @@ export default function Chatting() {
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
-          onPress={() => navigation.goBack()}
+          onPress={() => navigation.replace("Main")}
         >
           <Ionicons name="arrow-back" size={24} color="white" />
         </TouchableOpacity>
@@ -266,7 +292,7 @@ export default function Chatting() {
             onPress={() => {
               navigation.navigate("AudioScreen", {
                 callerId: currentUserId,
-                friendId: friendId,
+                userId: userId,
                 friendName: name,
                 Profile: image,
               });
@@ -290,15 +316,15 @@ export default function Chatting() {
         keyboardVerticalOffset={80}
       >
         <FlatList
-         nestedScrollEnabled={true}
+          nestedScrollEnabled={true}
           ref={flatListRef}
           data={chats}
           keyExtractor={(item) => item.id}
-          renderItem={({ item,index }) => {
+          renderItem={({ item, index }) => {
             if (item.oneTimeView && item.files?.length === 1) {
               return (
                 <TouchableOpacity
-                key={index}
+                  key={index}
                   onPress={() => handleOneTimeView(item.id, item.files[0])}
                 >
                   <View style={[styles.messageBubble, styles.theirMessage]}>
@@ -307,7 +333,7 @@ export default function Chatting() {
                 </TouchableOpacity>
               );
             } else {
-              return renderMessage({ item, currentUserId,index });
+              return renderMessage({ item, currentUserId, index });
             }
           }}
           contentContainerStyle={styles.chatList}
@@ -378,6 +404,23 @@ export default function Chatting() {
             }}
             onChangeText={(text) => setMessage(text)}
           />
+          {selectedFiles.length > 0 && (
+            <TouchableOpacity onPress={() => {
+              setOneTimeView(!oneTimeView)
+              // console.log(oneTimeView)
+            }}>
+              <Image
+                style={[
+                  styles.image,
+                  oneTimeView ? { backgroundColor: 'white', borderRadius: 50 } : { borderRadius: 50 }
+                ]}
+                source={require('../../assets/icons/onetime.png')}
+                borderRadius={50}
+                resizeMode="cover"
+              />
+            </TouchableOpacity>
+          )}
+
           <TouchableOpacity onPress={pickFiles} style={styles.attachButton}>
             <Text style={{ fontSize: 18 }}>📎</Text>
           </TouchableOpacity>
@@ -498,4 +541,12 @@ const styles = StyleSheet.create({
     overflow: "scroll",
     // backgroundColor: "red",
   },
+  attachButton: {
+    position: "absolute",
+    right: 12
+  },
+  image: {
+    height: 25,
+    width: 25,
+  }
 });

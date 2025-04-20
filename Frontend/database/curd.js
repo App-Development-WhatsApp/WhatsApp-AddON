@@ -94,7 +94,7 @@ export const getAllChatsSorted = async () => {
       SELECT * FROM chats
       ORDER BY lastUpdated DESC;
     `);
-    console.log("✅ Sorted chats retrieved:", results);
+    // console.log("✅ Sorted chats retrieved:", results);
     return results;
   } catch (error) {
     console.error("❌ Failed to fetch sorted chats:", error);

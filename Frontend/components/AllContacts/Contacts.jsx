@@ -102,6 +102,7 @@ export default function Contacts() {
     }, [netInfo.isConnected]);
 
     const handleChatPress = (id, name, image) => {
+        console.log("id->",id)
         const generateRoomId = (uid1, uid2) => {
             return ['' + uid1, '' + uid2].sort().join('_');
         };

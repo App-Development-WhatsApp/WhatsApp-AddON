@@ -3,6 +3,9 @@ import { connectDB } from "./db/config";
 import { env } from "./utils/Env";
 import http from "http";
 import { Server, Socket } from "socket.io";
+import fs from "fs";
+import path from "path";
+import { v4 as uuidv4 } from "uuid";
 
 // Message type
 interface Message {
@@ -77,15 +80,36 @@ io.on("connection", (socket: Socket) => {
   socket.on("sendMessage", async (message: Message) => {
     message.timestamp = new Date();
     const receiverSocketId = onlineUsers.get(message.receiverId);
-    // console.log("Received message:", message);
+    if (message.files && message.files.length > 0) {
+      message.files = message.files.map((file:any) => {
+        if (file.base64) {
+          const buffer = Buffer.from(file.base64, 'base64');
+          const extension = file.mimeType?.split("/")[1] || "bin";
+          const uniqueFileName = `${uuidv4()}.${extension}`;
+          const savePath = path.join(__dirname, "uploads", uniqueFileName);
 
-    if (receiverSocketId) {
-      console.log("Receiver is online, sending message:", message, " ----", receiverSocketId);
-      io.to(receiverSocketId).emit("receiveMessage", message);
-    } else {
-      console.log("Receiver is offline, message saved as pending.");
-      // Store to DB or in-memory queue
+          // Save file to local storage
+          fs.writeFileSync(savePath, buffer);
+
+          // Replace base64 with server file path or URL
+          return {
+            ...file,
+            localPath: `/uploads/${uniqueFileName}`, // You can serve this with Express later
+            base64: null, // Avoid sending base64 back to clients
+          };
+        }
+        return file;
+      });
     }
+    console.log(message)
+
+    // if (receiverSocketId) {
+    //   console.log("Receiver is online, sending message:", message, " ----", receiverSocketId);
+    //   io.to(receiverSocketId).emit("receiveMessage", message);
+    // } else {
+    //   console.log("Receiver is offline, message saved as pending.");
+    //   // Store to DB or in-memory queue
+    // }
   });
   // -----------------------------------------------------------------------------------------------------------------
 

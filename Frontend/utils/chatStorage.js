@@ -69,6 +69,7 @@ export const loadUserInfo = async () => {
       return data ? JSON.parse(data) : null;
     } else {
       const userId = await localStorage.getItem('userId')
+      console.log(userId, "userId")
       const user = await getUserInfoById(userId);
       return user ? user : null;
     }
@@ -318,7 +319,7 @@ export const loadChatHistory = async (id) => {
   }
 };
 
-export const saveChatMessage = async (friendId, message) => {
+export const saveChatMessage = async (id, message) => {
   try {
     const chatDirectory = `${FileSystem.documentDirectory}chat/`;
     const path = `${chatDirectory}chat_${id}.json`;

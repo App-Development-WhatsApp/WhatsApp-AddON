@@ -30,12 +30,14 @@ export default function Chat() {
   const [friends, setFriends] = useState([]);
 
   useEffect(() => {
+    console.log(process.env.EXPO_PUBLIC_BACKEND_URL)
     const fetchData = async () => {
       try {
         const user = await loadUserInfo();
         if (user) setUserData(user);
 
         const sortedChats = await getAllChatsSorted();
+        // console.log(sortedChats, "sortedChats")
         setFriends(sortedChats);
       } catch (error) {
         console.error("Error loading data:", error);
@@ -64,7 +66,7 @@ export default function Chat() {
       : require('../../assets/images/blank.jpeg');
 
     const handlePress = () => {
-      navigation.navigate('Chatting', { id, name, image: profilePic, isGroup });
+      navigation.navigate('Chatting', { userId:id, name, image: profilePic, isGroup });
     };
 
     const handleLongPress = () => {

@@ -31,20 +31,6 @@ export const createChatsTable = async (db) => {
 };
 
 
-export const createFriendListTable = async (db) => {
-  await db.execAsync(`
-    CREATE TABLE IF NOT EXISTS friend_list (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id TEXT NOT NULL,
-      friend_id TEXT NOT NULL,
-      last_seen DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY(user_id) REFERENCES userinfo(id),
-      FOREIGN KEY(friend_id) REFERENCES userinfo(id)
-    );
-  `);
-  console.log("🧱 'friend_list' table created");
-};
-
 export const createPendingSyncTable = async (db) => {
   await db.execAsync(`
     CREATE TABLE IF NOT EXISTS pending_sync (
@@ -63,7 +49,7 @@ export const createPendingSyncTable = async (db) => {
 // Optional: bundle all in one if needed
 export const createAllTables = async (db) => {
   await createUserInfoTable(db);
-  await createFriendListTable(db);
   await createPendingSyncTable(db);
+  await createChatsTable(db)
   console.log("Table Creation Completed");
 };

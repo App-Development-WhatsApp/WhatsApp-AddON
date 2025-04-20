@@ -2,14 +2,13 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { useNetInfo } from "@react-native-community/netinfo";
 import { loadUserInfo, saveChatMessage } from "../utils/chatStorage";
 import { io } from "socket.io-client";
-import { BACKEND_URL } from "../Services/AuthServices";
 
 export const SocketContext = createContext();
-const SOCKET_URL = BACKEND_URL;
+const SOCKET_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
 
 const getSocket = () => {
   return io(SOCKET_URL, {
-    autoConnect: false,
+    autoConnect: true,
     transports: ["websocket"],
   });
 };
@@ -34,7 +33,7 @@ export const SocketProvider = ({ children }) => {
     if (!netInfo.isConnected || !userData) return;
 
     if (!socket.connected) {
-      console.log("🔌 Connecting socket...");
+      console.log(SOCKET_URL,"🔌 Connecting socket...");
       socket.connect();
     }
 
@@ -106,7 +105,7 @@ export const SocketProvider = ({ children }) => {
     socket.off("receiveMessage", callback);
   };
   const sendMessage = async (message) => {
-    await saveChatMessage(message.receiverId, message);
+    // await saveChatMessage(message.receiverId, message);
     socket.emit("sendMessage", message);
   };
   const onPendingMessages = (callback) => {
