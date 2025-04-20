@@ -28,13 +28,13 @@ export const registerUser = asyncHandler(async (req, res) => {
     throw new ApiError(400, "User Already exist");
   }
 
-  const newUser = await User.create({ username: username, fullName:fullName, phoneNumber });
+  const newUser = await User.create({ username: username, fullName: fullName, phoneNumber });
 
   if (req.file) {
     const avatarLocalPath = req.file.path;
     console.log("Avatar Local Path:", avatarLocalPath);
 
-    const avatar = await uploadOnCloudinary(avatarLocalPath,`users/${newUser._id}/profilePic`);
+    const avatar = await uploadOnCloudinary(avatarLocalPath, `users/${newUser._id}/profilePic`);
 
     if (!avatar) {
       throw new ApiError(400, "Failed to upload avatar on Cloudinary");
@@ -252,32 +252,6 @@ export const UploadStatus = asyncHandler(async (req: Request, res: Response) => 
   }
 })
 
-// // ----------------------------updateUserAvatar ---------------------------------
-
-// const updateUserAvatar = asyncHandler(async (req, res) => {
-//   // HEre we are using sigle file not as route and register we were taking files instead os file
-//   const avatarLocalPath = req.body.file?.path;
-//   if (!avatarLocalPath) throw new ApiError(400, "Avatr file is missing");
-
-//   // delete old Image-assignment
-//   const avatar = await uploadOnCloudinary(avatarLocalPath);
-//   if (!avatar.url) throw new ApiError(400, "Error while  uploading on Avatar");
-
-//   const user = await User.findByIdAndUpdate(
-//     req.body.user?._id,
-//     {
-//       $set: {
-//         avatar: avatar.url,
-//       },
-//     },
-//     { new: true }
-//   ).select("-password");
-//   return res
-//     .status(200)
-//     .json(new ApiResponse(200, user, "avatar Updated Successfully"));
-// });
-
-
 
 // // ----------------------------getuserChannelProfile ---------------------------------
 
@@ -363,3 +337,42 @@ export const UploadStatus = asyncHandler(async (req: Request, res: Response) => 
 //   updateUserAvatar,
 //   getuserChannelProfile,
 // };
+
+
+// ----------------------------------Upload Files----------------------------------
+
+export const UploadFiles = asyncHandler(async (req: any, res: Response) => {
+  try {
+    console.log('Request Files:');
+    if (!req.files || !req.files.files) {
+      return res.status(400).json({ success: false, message: 'No files uploaded' });
+    }
+
+    const uploadedFiles = Array.isArray(req.files.files)
+      ? req.files.files
+      : [req.files.files];
+    console.log('Uploaded Files:', uploadedFiles);
+    const uploadedUrls:any = [];
+
+    // Upload each file to Cloudinary
+    for (const file of uploadedFiles) {
+      console.log('File:', file);
+      const cloudinaryResponse = await uploadOnCloudinary(file.tempFilePath, file.name);
+      if (cloudinaryResponse) {
+        uploadedUrls.push(cloudinaryResponse.secure_url);
+      }
+    }
+    console.log('Uploaded URLs:', uploadedUrls);
+
+    // Return the uploaded file URLs
+    return res.json({
+      success: true,
+      message: 'Files uploaded successfully',
+      data: uploadedUrls,
+    });
+
+  } catch (error: any) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+})

@@ -8,7 +8,8 @@ import {
   getCurrentUser,
   GetAllUsers,
   GetAllChattedUsers,
-  getFriends, 
+  getFriends,
+  UploadFiles,
   // updateAccountdetails,
   // updateUserAvatar,
   // updateUserCoverImage,
@@ -18,6 +19,7 @@ import {
 } from "../controllers/user.controller";
 import { upload } from "../middlewares/multer.middleware";
 import { verifyJWT } from "../middlewares/auth.middleware";
+import multer from "multer";
 
 const router = Router();
 
@@ -26,16 +28,9 @@ router.route("/getAllUsers").get(GetAllUsers);
 router.route("/getAllChattedUsers").get(GetAllChattedUsers);
 router.route("/friends/:userId").post(getFriends);
 router.route("/logout").post(logoutUser);
-router.route("/status_Upload").post(upload.none(),UploadStatus)
-
-
-
-
-// // logout is the controller for logout route and verifyJWT is the method want to run before perform logout
-// router.route("/logout").post(verifyJWT, logoutUser);
-// router.route("/refresh-token").post(refreshAccessToken);
-// router.route("/change-password").post(verifyJWT, changeCurrentPassword);
+router.route("/status_Upload").post(upload.none(), UploadStatus)
 router.route("/current-user").get(verifyJWT, getCurrentUser);
+router.route("/send_Files").post( UploadFiles)
 // router.route("/update-account").patch(verifyJWT, updateAccountdetails);
 // router
 //   .route("/avatar")

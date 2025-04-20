@@ -36,6 +36,7 @@ import { useNetInfo } from "@react-native-community/netinfo";
 import { useSocket } from "../../context/SocketContext";
 import { addFriends, getAllChatsSorted, getChatById } from "../../database/curd";
 import * as FileSystem from 'expo-file-system';
+import { sendFiles } from "../../Services/AuthServices";
 
 
 export default function Chatting() {
@@ -135,39 +136,49 @@ export default function Chatting() {
           Ids: [userId],
         });
       }
-
-      // Create a new message object
-      // let filesWithBase64 = [];
-
-      // if (selectedFiles.length > 0) {
-      //   filesWithBase64 = await convertFilesToBase64(selectedFiles);
-      // }
-
       const newMsg = {
         id: Date.now().toString(),
         senderId: currentUserId,
         receiverId: userId,
+        Loadinig: true,
+        send: false,
         timestamp: new Date().toISOString(),
         ...(message.trim() && { text: message.trim() }),
         ...(selectedFiles.length > 0 && { files: selectedFiles }),
         oneTimeView,
       };
-
-      // console.log("Sending message:", newMsg);
-
-      // // Update chats state (immutable update)
       setChats((prev) => {
         const updatedChats = [...prev, newMsg];
         return updatedChats;
       });
+      if (selectedFiles.length > 0) {
+        const result = await sendFiles(selectedFiles)
+      }
+      console.log(result, "result")
+      if (result.success) {
+        // console.log("Sending message:", newMsg);
+        // also Loading=false, send=true
+        setChats((prev) =>
+          prev.map((msg) =>
+            msg.id === newMsg.id
+              ? { ...msg, Loading: false, send: true }
+              : msg
+          )
+        );
+        await sendMessage(newMsg);
+      } else {
+        setChats((prev) =>
+          prev.map((msg) =>
+            msg.id === newMsg.id
+              ? { ...msg, Loading: false, send: false }
+              : msg
+          )
+        );
+      }
 
-      // Send the message via your messaging service
-      await sendMessage(newMsg);
-
-      // Clear message and selected files
-      setMessage("");
-      setSelectedFiles([]);
-      setOneTimeView(false); // Reset one-time view setting
+      // setMessage("");
+      // setSelectedFiles([]);
+      // setOneTimeView(false); // Reset one-time view setting
 
       // Scroll to the bottom of the chat list
       setTimeout(() => {
@@ -198,7 +209,7 @@ export default function Chatting() {
   };
 
   const pickFiles = async () => {
-    setSelectedFiles([]); // Clears previous selected files
+    // setSelectedFiles([]); // Clears previous selected files
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.All, // Supports both images and videos

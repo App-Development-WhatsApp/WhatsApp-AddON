@@ -16,7 +16,7 @@ export const login = async (formData) => {
         'Content-Type': 'multipart/form-data',
       },
     });
-    
+
     if (response.data.success && response.data.data?.user) {
       await addUser(response.data.data.user)
       return { success: true, user: response.data.data.user };
@@ -110,17 +110,17 @@ const handleError = (error) => {
 
 export const uploadStatus = async (formData) => {
   try {
-    console.log("formData",formData)
+    console.log("formData", formData)
     const response = await axios.post(`${API_URL}/status_Upload`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
     });
     console.log(response.data, "response")
-    
+
     if (response.data.success) {
       return { success: true, message: "Status uploaded successfully" };
-    } 
+    }
     else {
       return { success: false, message: response.data.message };
     }
@@ -128,3 +128,40 @@ export const uploadStatus = async (formData) => {
     return handleError(error);
   }
 }
+
+
+// ---------------------SendFiles----------------------------
+
+export const sendFiles = async (selectedFiles) => {
+  try {
+    const formData = new FormData();
+    
+    // Add each file to the formData
+    selectedFiles.forEach(file => {
+      formData.append('files', {
+        uri: file.uri,
+        name: file.fileName || 'file.jpg',
+        type: file.mimeType || 'image/jpeg',
+      });
+    });
+    console.log("selectedFiles",formData)
+
+    console.log("formData", formData._parts[0]);
+    const response = await axios.post(`${API_URL}/send_Files`,formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        'Accept': 'application/json',
+      },
+    });
+    console.log(response.data.data, "response")
+
+    if (response.data.success) {
+      return { success: true, message: "Status uploaded successfully",response: response.data.data };
+    }
+    else {
+      return { success: false, message: response.data.message };
+    }
+  } catch (error) {
+    return handleError(error);
+  }
+};

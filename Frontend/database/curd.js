@@ -110,11 +110,11 @@ export const getChatById = async (chatId) => {
       WHERE id = $id;
     `, { $id: chatId });
 
-    if (result) {
-      console.log("✅ Chat found:", result);
-    } else {
-      console.log("ℹ️ No chat found with id:", chatId);
-    }
+    // if (result) {
+    //   console.log("✅ Chat found:", result);
+    // } else {
+    //   console.log("ℹ️ No chat found with id:", chatId);
+    // }
 
     return result;
   } catch (error) {

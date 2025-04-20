@@ -10,8 +10,6 @@ import {
 import * as DocumentPicker from 'expo-document-picker';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as Print from 'expo-print';
-import { Screen } from 'react-native-screens';
-import { useNavigation } from '@react-navigation/native';
 import { useFocusEffect } from '@react-navigation/native';
 import { NativeModules } from 'react-native';
 

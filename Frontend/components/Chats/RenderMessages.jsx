@@ -8,8 +8,14 @@ import {
     FlatList,
 } from "react-native";
 import { Video } from 'expo-av';
+import { Ionicons } from '@expo/vector-icons'; // or use any icon library
+import * as Print from 'expo-print';
+import { useFocusEffect } from '@react-navigation/native';
+import { NativeModules } from 'react-native';
 
-export const renderFilePreview = (file) => {
+
+export const renderFilePreview = (file, fileLoading, send) => {
+
     const previewStyles = {
         width: 250,
         height: 150,
@@ -18,25 +24,41 @@ export const renderFilePreview = (file) => {
         justifyContent: 'center',
         alignItems: 'center',
         padding: 10,
+        position: 'relative',
     };
 
+    const handlePrintPDF = async () => {
+        try {
+            await Print.printAsync({ uri: file.uri || file.url });
+        } catch (error) {
+            Alert.alert("Print Error", "Unable to print PDF");
+        }
+    };
+
+    const statusIcon = () => {
+        if (fileLoading && !send) {
+            return <ActivityIndicator size="small" color="limegreen" style={{ position: 'absolute', alignSelf: 'center' }} />;
+        } else if (!fileLoading && send) {
+            return <Ionicons name="checkmark-circle" size={24} color="limegreen" style={{ position: 'absolute', right: 8, top: 8 }} />;
+        } else if (!fileLoading && !send) {
+            return <Ionicons name="alert-circle" size={24} color="red" style={{ position: 'absolute', right: 8, top: 8 }} />;
+        } else {
+            return null;
+        }
+    };
+
+    let content;
     if (file.mimeType.startsWith("image/")) {
-        return (
-            <Image
-                source={{ uri: file.uri || file.url }}
-                style={previewStyles}
-                resizeMode="cover"
-            />
-        );
+        content = <Image source={{ uri: file.uri || file.url }} style={previewStyles} resizeMode="cover" />;
     } else if (file.mimeType.startsWith("audio/")) {
-        return (
+        content = (
             <View style={previewStyles}>
                 <Text style={{ color: 'white' }}>🎵 Audio file</Text>
                 <Text style={{ color: 'white', fontSize: 12 }}>Playback UI can be added</Text>
             </View>
         );
     } else if (file.mimeType.startsWith("video/")) {
-        return (
+        content = (
             <Video
                 source={{ uri: file.uri || file.url }}
                 rate={1.0}
@@ -48,28 +70,28 @@ export const renderFilePreview = (file) => {
             />
         );
     } else if (file.mimeType === "application/pdf") {
-        return (
-            <View style={previewStyles}>
-                <Text style={{ color: 'white' }}>📄 PDF file</Text>
-                <Text style={{ color: 'white', fontSize: 12 }}>Use `react-native-pdf` to render</Text>
-                <Pdf
-                    trustAllCerts={false}
-                    source={PdfResource}
-                    style={styles.pdf}
-                    onLoadComplete={(numberOfPages, filePath) => {
-                        console.log(`number of pages: ${numberOfPages}`);
-                    }}
-                />
-            </View>
+        content = (
+            <TouchableOpacity onPress={handlePrintPDF} style={previewStyles}>
+                <Text style={{ color: 'white' }}>📄 Tap to Print PDF</Text>
+                <Text style={{ color: 'white', fontSize: 12 }}>{file.name || 'PDF File'}</Text>
+            </TouchableOpacity>
         );
     } else {
-        return (
+        content = (
             <View style={previewStyles}>
                 <Text style={{ color: 'white' }}>📎 {file.name || 'Unnamed File'}</Text>
             </View>
         );
     }
+
+    return (
+        <View style={{ position: 'relative' }}>
+            {content}
+            {statusIcon()}
+        </View>
+    );
 };
+
 
 
 const formatTime = (timestamp) => {
@@ -82,7 +104,17 @@ const formatTime = (timestamp) => {
     return `${formattedHours}:${formattedMinutes} ${ampm}`;
 };
 
-export const renderMessage = ({ item, currentUserId,index }) => {
+export const renderMessage = ({ item, currentUserId, index }) => {
+    useFocusEffect(() => {
+        if (Platform.OS === 'android') {
+            NativeModules?.RNPreventScreenshot?.forbid();
+        }
+        return () => {
+            if (Platform.OS === 'android') {
+                NativeModules?.RNPreventScreenshot?.allow();
+            }
+        };
+    });
     const isMyMessage = item.senderId === currentUserId;
     const formattedTime = item.timestamp ? formatTime(item.timestamp) : "";
     const isShortMessage = item.text && item.text.length < 40;
@@ -94,7 +126,7 @@ export const renderMessage = ({ item, currentUserId,index }) => {
                 {Array.isArray(item.files) &&
                     item.files.map((file, index) => (
                         <View key={index} style={{ marginVertical: 4 }}>
-                            {renderFilePreview(file)}
+                            {renderFilePreview(file, Loading, send)}
                         </View>
                     ))}
                 {item.text && (
