@@ -3,14 +3,12 @@ import { useDatabase } from "../context/DbContext";
 import { getDB, initDatabase } from "./AllDatabase";
 import { createChatsTable } from "./tables";
 
+// Add a new user to the 'userinfo' table
 export const addUser = async (user) => {
-  console.log(user)
-
   try {
     console.log("👤 Adding user:", user);
     console.log("📦 DB Instance:", db);
 
-    // Ensure updated table exists
     await db.execAsync(`
       CREATE TABLE IF NOT EXISTS userinfo (
         id TEXT PRIMARY KEY,
@@ -23,12 +21,10 @@ export const addUser = async (user) => {
       );
     `);
 
-
-    // Prepare INSERT statement
-    const insertStatement = await db.prepareAsync(
-      `INSERT INTO userinfo (id, profilePic, userName,fullName, about, Chats)
-       VALUES ($id, $profilePic,$fullName, $userName, $about, $Chats)`
-    );
+    const insertStatement = await db.prepareAsync(`
+      INSERT OR REPLACE INTO userinfo (id, profilePic, userName, fullName, about, Chats)
+      VALUES ($id, $profilePic, $userName, $fullName, $about, $Chats)
+    `);
 
     await insertStatement.executeAsync({
       $id: user._id,
@@ -36,29 +32,33 @@ export const addUser = async (user) => {
       $userName: user.username,
       $fullName: user.fullName,
       $about: user.about || 'Hey there! I am using WhatsApp.',
-      $Chats: JSON.stringify(user.Chats || []),
+      $Chats: JSON.stringify(user.Chats || [])
     });
 
     await insertStatement.finalizeAsync();
-
     console.log("✅ User added to 'userinfo' table successfully.");
   } catch (error) {
     console.error("❌ Failed to add user to 'userinfo':", error);
   }
 };
 
+// Add a new chat/friend to the 'chats' table
+export const addFriends = async (props) => {
+  const {
+    _id,
+    profilePic,
+    description,
+    name,
+    lastMessage,
+    Unseen,
+    isGroup,
+    Ids,
+    db: passedDb
+  } = props;
 
-
-
-export const addfriends = async (props) => {
-  console.log("Hello");
-  const { _id, profilePic, description, name, lastMessage, Unseen, isGroup, Ids,db } = props;
-  console.log(props);
+  const db = passedDb || getDB();
 
   try {
-    console.log("📦 DB Instance:", db);
-
-    // ✅ Create the 'chats' table if it doesn't exist
     await db.execAsync(`
       CREATE TABLE IF NOT EXISTS chats (
         id TEXT PRIMARY KEY,
@@ -72,9 +72,7 @@ export const addfriends = async (props) => {
         members TEXT DEFAULT '[]'
       );
     `);
-    console.log("💬 'chats' table created");
 
-    // ✅ Prepare and insert or replace the chat entry
     const insertStatement = await db.prepareAsync(`
       INSERT OR REPLACE INTO chats (
         id,
@@ -109,21 +107,33 @@ export const addfriends = async (props) => {
     });
 
     await insertStatement.finalizeAsync();
-
     console.log("✅ Friend/chat added successfully.");
   } catch (error) {
     console.error("❌ Failed to add friend to chats:", error);
   }
 };
 
-export const getAllChatsSorted = async (db) => {
+// Fetch all chats sorted by lastUpdated
+export const getAllChatsSorted = async (db = getDB()) => {
   try {
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS chats (
+        id TEXT PRIMARY KEY,
+        profilePic TEXT,
+        name TEXT NOT NULL,
+        description TEXT,
+        unseenCount INTEGER DEFAULT 0,
+        lastMessage TEXT,
+        lastUpdated DATETIME DEFAULT CURRENT_TIMESTAMP,
+        isGroup BOOLEAN DEFAULT 0,
+        members TEXT DEFAULT '[]'
+      );
+    `);
 
     const results = await db.getAllAsync(`
       SELECT * FROM chats
       ORDER BY lastUpdated DESC;
     `);
-
     console.log("✅ Sorted chats retrieved:", results);
     return results;
   } catch (error) {
@@ -132,45 +142,58 @@ export const getAllChatsSorted = async (db) => {
   }
 };
 
-
-export const deleteChat = async(id,db) => {
-
-  console.log(db)
+// Delete a chat/friend by ID
+// Delete a chat/friend by ID
+// Delete a chat/friend by ID
+export const deleteFriend = async (id, db = getDB()) => {
   try {
-    const result = await db.execAsync(`
-    DELETE FROM chats WHERE id = ?;
-  `, [id]);
+    const result = await db.runAsync(
+      `DELETE FROM chats WHERE id = ?;`, [id]
+    );
 
-    console.log("🗑️ Chat deleted:", result);
+    // If result changes is 0, no rows were deleted, so the chat doesn't exist in the database
+    if (result.changes === 0) {
+      console.warn(`No chat with ID ${id} found to delete.`);
+      return false; // Return false if nothing was deleted
+    }
+
+    console.log("🗑️ Friend/chat deleted successfully:", result);
     return true;
   } catch (error) {
     console.error("❌ Delete failed:", error);
-    return false;
+    return false; // Return false on failure
   }
 };
+
 
 
 // Get full user info by userId
-export const getUserInfoById = async (userId,db) => {
-  console.log("Fetching user info for ID:", userId);
-  console.log("📦 DB Instance:", db);
-  return await db.getFirstAsync(`SELECT * FROM userinfo WHERE id = ?`, [userId]);
+export const getUserInfoById = async (userId, db = getDB()) => {
+  try {
+    const result = await db.getFirstAsync(
+      `SELECT * FROM userinfo WHERE id = ?`,
+      [userId]
+    );
+    return result;
+  } catch (error) {
+    console.error("❌ Failed to fetch user info:", error);
+    return null;
+  }
 };
 
-
-// Update username, avatar, or both
-export const updateUserProfile = async (userId, updates = {},db) => {
+// Update username and/or profilePic
+export const updateUserProfile = async (userId, updates = {}, db = getDB()) => {
   const fields = [];
   const values = [];
 
-  if (updates.username) {
-    fields.push("username = ?");
-    values.push(updates.username);
+  if (updates.userName) {
+    fields.push("userName = ?");
+    values.push(updates.userName);
   }
 
-  if (updates.avatar) {
-    fields.push("avatar = ?");
-    values.push(updates.avatar);
+  if (updates.profilePic) {
+    fields.push("profilePic = ?");
+    values.push(updates.profilePic);
   }
 
   if (fields.length === 0) {
@@ -179,24 +202,24 @@ export const updateUserProfile = async (userId, updates = {},db) => {
   }
 
   values.push(userId);
-  const query = `UPDATE userinfo SET ${fields.join(', ')} WHERE userId = ?`;
+  const query = `UPDATE userinfo SET ${fields.join(', ')} WHERE id = ?`;
   await db.runAsync(query, values);
   console.log("✅ User profile updated");
 };
 
-// Update status/about text
-export const updateUserStatus = async (userId, newStatus,db) => {
+// Update user's status/about
+export const updateUserStatus = async (userId, newStatus, db = getDB()) => {
   await db.runAsync(
-    `UPDATE userinfo SET status = ? WHERE userId = ?`,
+    `UPDATE userinfo SET about = ? WHERE id = ?`,
     [newStatus, userId]
   );
   console.log("📝 Status updated");
 };
 
-// Update last seen
-export const updateLastSeen = async (userId,db) => {
+// Update last seen timestamp
+export const updateLastSeen = async (userId, db = getDB()) => {
   await db.runAsync(
-    `UPDATE userinfo SET last_seen = CURRENT_TIMESTAMP WHERE userId = ?`,
+    `UPDATE userinfo SET last_seen = CURRENT_TIMESTAMP WHERE id = ?`,
     [userId]
   );
   console.log("📅 Last seen updated");

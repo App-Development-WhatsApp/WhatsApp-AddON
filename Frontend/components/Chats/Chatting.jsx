@@ -34,7 +34,7 @@ import { renderMessage } from "./RenderMessages";
 import { useNetInfo } from "@react-native-community/netinfo";
 // import OneTimeView from "./OneTimeView";
 import { useSocket } from "../../context/SocketContext";
-import { addfriends } from "../../database/curd";
+import { addFriends } from "../../database/curd";
 
 
 export default function Chatting() {
@@ -89,32 +89,61 @@ export default function Chatting() {
   }, [ netInfo.isConnected]);
 
   const handleSend = async () => {
-    if (!message.trim() && selectedFiles.length === 0) return;
-    if (chats.length === 0) {
-      console.log("Calling addfriends...");
-      try {
-        await addfriends({ _id: friendId, profilePic:image, description: "", name, lastMessage: message, Unseen: 0, isGroup: 0,Ids:[userId] });
-      } catch (err) {
-        console.error("addfriends error:", err);
-      }
-    }
+    if (!message.trim() && selectedFiles.length === 0) return; // Check if there's no message and no files
+  
     try {
+      // Add friend if no chats exist
+      if (chats.length === 0) {
+        console.log("Calling addFriends with:", {
+          _id: friendId,
+          profilePic: image,
+          description: "",
+          name,
+          lastMessage: message,
+          Unseen: 0,
+          isGroup: 0,
+          Ids: [friendId],
+        });
+  
+        await addFriends({
+          _id: friendId,
+          profilePic: image,
+          description: "",
+          name,
+          lastMessage: message,
+          Unseen: 0,
+          isGroup: 0,
+          Ids: [friendId],
+        });
+      }
+  
+      // Create a new message object
       const newMsg = {
         id: Date.now().toString(),
         senderId: currentUserId,
         receiverId: friendId,
         timestamp: new Date().toISOString(),
-        ...(message.trim() && { text: message.trim() }),
-        ...(selectedFiles.length > 0 && { files: selectedFiles }),
-        oneTimeView: oneTimeView,
+        ...(message.trim() && { text: message.trim() }), // Add message text if it exists
+        ...(selectedFiles.length > 0 && { files: selectedFiles }), // Add selected files if they exist
+        oneTimeView: oneTimeView, // Add one-time view setting
       };
-      console.log(newMsg)
-
-      setChats((prev) => [...prev, { ...newMsg }]);
-      sendMessage(newMsg);
-
+  
+      console.log("Sending message:", newMsg);
+  
+      // Update chats state (immutable update)
+      setChats((prev) => {
+        const updatedChats = [...prev, newMsg];
+        return updatedChats;
+      });
+  
+      // Send the message via your messaging service
+      await sendMessage(newMsg);
+  
+      // Clear message and selected files
       setMessage("");
       setSelectedFiles([]);
+  
+      // Scroll to the bottom of the chat list
       setTimeout(() => {
         flatListRef.current?.scrollToEnd({ animated: true });
       }, 100);
@@ -123,6 +152,7 @@ export default function Chatting() {
       Alert.alert("Failed", "Unable to send message. Please try again.");
     }
   };
+  
 
   const handleClearChat = async () => {
     Alert.alert("Clear Chat", "Are you sure you want to delete all messages?", [
