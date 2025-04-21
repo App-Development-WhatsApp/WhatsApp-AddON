@@ -105,7 +105,6 @@ export const SocketProvider = ({ children }) => {
     socket.off("receiveMessage", callback);
   };
   const sendMessage = async (message) => {
-    // await saveChatMessage(message.receiverId, message);
     socket.emit("sendMessage", message);
   };
   const onPendingMessages = (callback) => {

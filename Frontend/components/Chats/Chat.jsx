@@ -66,6 +66,7 @@ export default function Chat() {
       : require('../../assets/images/blank.jpeg');
 
     const handlePress = () => {
+      console.log(id, "id")
       navigation.navigate('Chatting', { userId:id, name, image: profilePic, isGroup });
     };
 

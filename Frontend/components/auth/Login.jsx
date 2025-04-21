@@ -39,7 +39,6 @@ const LoginScreen = ({ navigation }) => {
     const checkAuth = async () => {
       const userId = await localStorage.getItem('userId')
       const user = await getUserInfoById(userId);
-      console.log(userId, user)
       if (user) {
         navigation.replace("Main");
       }

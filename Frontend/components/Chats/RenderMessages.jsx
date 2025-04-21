@@ -10,8 +10,9 @@ import {
 import { Video } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons'; // or use any icon library
 import * as Print from 'expo-print';
-import { useFocusEffect } from '@react-navigation/native';
+// import { useFocusEffect } from '@react-navigation/native';
 import { NativeModules } from 'react-native';
+import { ActivityIndicator } from "react-native";
 
 
 export const renderFilePreview = (file, fileLoading, send) => {
@@ -36,15 +37,51 @@ export const renderFilePreview = (file, fileLoading, send) => {
     };
 
     const statusIcon = () => {
-        if (fileLoading && !send) {
-            return <ActivityIndicator size="small" color="limegreen" style={{ position: 'absolute', alignSelf: 'center' }} />;
-        } else if (!fileLoading && send) {
-            return <Ionicons name="checkmark-circle" size={24} color="limegreen" style={{ position: 'absolute', right: 8, top: 8 }} />;
-        } else if (!fileLoading && !send) {
-            return <Ionicons name="alert-circle" size={24} color="red" style={{ position: 'absolute', right: 8, top: 8 }} />;
-        } else {
-            return null;
+        if (fileLoading) {
+            return (
+                <View
+                    style={{
+                        position: 'absolute',
+                        top: '50%',
+                        left: '50%',
+                        transform: [{ translateX: -12 }, { translateY: -12 }],
+                        zIndex: 1,
+                    }}
+                >
+                    <ActivityIndicator size="small" color="limegreen" />
+                </View>
+            );
         }
+
+        if (send) {
+            return (
+                <Ionicons
+                    name="checkmark-circle"
+                    size={20}
+                    color="limegreen"
+                    style={{
+                        position: 'absolute',
+                        bottom: 6,
+                        right: 6,
+                        zIndex: 1,
+                    }}
+                />
+            );
+        }
+
+        return (
+            <Ionicons
+                name="alert-circle"
+                size={20}
+                color="red"
+                style={{
+                    position: 'absolute',
+                    bottom: 6,
+                    right: 6,
+                    zIndex: 1,
+                }}
+            />
+        );
     };
 
     let content;
@@ -104,17 +141,8 @@ const formatTime = (timestamp) => {
     return `${formattedHours}:${formattedMinutes} ${ampm}`;
 };
 
-export const renderMessage = ({ item, currentUserId, index }) => {
-    useFocusEffect(() => {
-        if (Platform.OS === 'android') {
-            NativeModules?.RNPreventScreenshot?.forbid();
-        }
-        return () => {
-            if (Platform.OS === 'android') {
-                NativeModules?.RNPreventScreenshot?.allow();
-            }
-        };
-    });
+export const renderMessage = (item, currentUserId, index) => {
+    console.log("item", item)
     const isMyMessage = item.senderId === currentUserId;
     const formattedTime = item.timestamp ? formatTime(item.timestamp) : "";
     const isShortMessage = item.text && item.text.length < 40;
@@ -124,16 +152,16 @@ export const renderMessage = ({ item, currentUserId, index }) => {
         <View key={index} style={styles.messageContainer}>
             <View style={[styles.messageBubble, isMyMessage ? styles.myMessage : styles.theirMessage]}>
                 {Array.isArray(item.files) &&
-                    item.files.map((file, index) => (
-                        <View key={index} style={{ marginVertical: 4 }}>
-                            {renderFilePreview(file, Loading, send)}
+                    item.files.map((file, ind) => (
+                        <View key={ind} style={{ marginVertical: 4 }}>
+                            {renderFilePreview(file, item.Loading, item.send)}
                         </View>
                     ))}
                 {item.text && (
                     <View style={{ flexDirection: "row", justifyContent: "space-between", flexWrap: "wrap" }}>
                         <Text style={styles.messageText}>{item.text}</Text>
                         {isShortMessage && (
-                            <Text style={styles.inlineTimestamp}>{formattedTime}</Text>
+                            <Text style={styles.inlineTimestamp}>{formattedTime} {isMyMessage}</Text>
                         )}
                     </View>
                 )}

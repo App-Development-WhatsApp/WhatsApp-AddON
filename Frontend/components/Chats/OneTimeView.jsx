@@ -1,53 +1,142 @@
-import { useEffect } from 'react';
-import { View, Image, Text, TouchableOpacity } from 'react-native';
+import React, { useEffect } from 'react';
+import {
+  View,
+  Image,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Dimensions,
+  Alert,
+  ActivityIndicator,
+} from 'react-native';
 import Video from 'react-native-video';
+import * as Print from 'expo-print';
+import Ionicons from '@expo/vector-icons/Ionicons'; // Make sure to install expo/vector-icons
 import { Audio } from 'expo-av';
-// import Pdf from 'react-native-pdf';
-// import FileViewer from 'react-native-file-viewer';
 
 const OneTimeViewer = ({ route, navigation }) => {
-  const { file, onViewed } = route.params;
+  const { file, text } = route.params;
 
-  useEffect(() => {
-    const unsubscribe = navigation.addListener('beforeRemove', () => {
-      onViewed(); // Mark as viewed
-    });
-    return unsubscribe;
-  }, []);
-
-  const openWithExternalViewer = async () => {
+  const handlePrintPDF = async () => {
     try {
-      // await FileViewer.open(file.uri || file.url, { showOpenWithDialog: true });
+      await Print.printAsync({ uri: file.uri || file.url });
     } catch (error) {
-      console.error('Error opening file:', error);
+      Alert.alert("Print Error", "Unable to print PDF");
     }
   };
 
+
   const renderContent = () => {
-    if (file.mimeType.startsWith("image/")) {
-      return <Image source={{ uri: file.url || file.uri }} style={{ width: '90%', height: '70%' }} resizeMode="contain" />;
+    const uri = file.uri || file.url;
+    const mime = file.mimeType;
+
+    if (mime.startsWith("image/")) {
+      return <Image source={{ uri }} style={styles.fullContent} resizeMode="contain" />;
     }
-    if (file.mimeType.startsWith("video/")) {
-      return <Video source={{ uri: file.url || file.uri }} style={{ width: '90%', height: 300 }} controls resizeMode="contain" />;
+
+    if (mime.startsWith("video/")) {
+      return (
+        <Video
+          source={{ uri }}
+          style={styles.fullContent}
+          resizeMode="contain"
+          controls
+        />
+      );
     }
-    // if (file.mimeType.startsWith("audio/")) {
-    //     return <AudioPlayer uri={file.url || file.uri} />;
+
+    if (mime.startsWith("audio/")) {
+      return (
+        <View style={styles.centered}>
+          <Text style={styles.whiteText}>🎵 Audio file</Text>
+          <Text style={[styles.whiteText, { fontSize: 12 }]}>Playback UI can be added</Text>
+        </View>
+      );
+    }
+
+    if (mime === "application/pdf") {
+      return (
+        <TouchableOpacity onPress={handlePrintPDF} style={styles.centered}>
+          <Text style={styles.whiteText}>📄 Tap to Print PDF</Text>
+          <Text style={[styles.whiteText, { fontSize: 12 }]}>{file.name || 'PDF File'}</Text>
+        </TouchableOpacity>
+      );
+    }
 
     return (
-      <TouchableOpacity onPress={openWithExternalViewer}>
-        <Text style={{ color: '#0af', fontSize: 16 }}>Open in External Viewer</Text>
-      </TouchableOpacity>
+      <View style={styles.centered}>
+        <Text style={styles.whiteText}>📎 {file.name || 'Unnamed File'}</Text>
+      </View>
     );
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: 'black', justifyContent: 'center', alignItems: 'center' }}>
-      {renderContent()}
-      <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginTop: 20 }}>
-        <Text style={{ color: '#0af' }}>Close</Text>
-      </TouchableOpacity>
+    <View style={styles.container}>
+      <View style={styles.contentWrapper}>
+        {renderContent()}
+      </View>
+
+      <View style={styles.footer}>
+        <Text style={styles.footerText}>{text}</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.closeButton}>
+          <Text style={styles.closeText}>Close</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 };
 
 export default OneTimeViewer;
+
+const { height, width } = Dimensions.get('window');
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: 'black',
+  },
+  contentWrapper: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  fullContent: {
+    width: width,
+    height: height * 0.75,
+  },
+  footer: {
+    padding: 16,
+    backgroundColor: '#111',
+    alignItems: 'center',
+  },
+  footerText: {
+    color: 'white',
+    fontSize: 16,
+    textAlign: 'center',
+  },
+  closeButton: {
+    marginTop: 10,
+  },
+  closeText: {
+    color: '#0af',
+    fontSize: 16,
+  },
+  centered: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  whiteText: {
+    color: 'white',
+  },
+  statusIcon: {
+    position: 'absolute',
+    right: 16,
+    top: 16,
+  },
+  statusIconCenter: {
+    position: 'absolute',
+    alignSelf: 'center',
+  },
+});

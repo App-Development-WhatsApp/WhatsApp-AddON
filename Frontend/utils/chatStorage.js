@@ -328,6 +328,7 @@ export const saveChatMessage = async (id, message) => {
     if (!fileInfo.exists) {
       await FileSystem.writeAsStringAsync(path, JSON.stringify([])); // Initialize as empty array
     }
+    console.log("Save file")
     const content = await FileSystem.readAsStringAsync(path);
     existingChats = JSON.parse(content || '[]');
     existingChats.push(message);

@@ -58,29 +58,14 @@ export default function Chatting() {
   const [inputBoxFocus, setinputBoxFocus] = useState(false);
 
   const [chats, setChats] = useState([]);
-  const convertFilesToBase64 = async (files) => {
-    const base64Files = await Promise.all(
-      files.map(async (file) => {
-        const base64 = await FileSystem.readAsStringAsync(file.uri, {
-          encoding: FileSystem.EncodingType.Base64,
-        });
-
-        return {
-          ...file,
-          base64, // attach the actual content
-        };
-      })
-    );
-
-    return base64Files;
-  };
   useEffect(() => {
-    console.log(route.params, "params------------------");
+    // console.log(route.params, "params------------------");
     const setup = async () => {
       try {
         const user = await loadUserInfo();
         setCurrentUserId(user.id);
-        console.log(userId, "userId------------------");
+        console.log(userId, "friendId------------------");
+        console.log(currentUserId, "MyId------------------");
         const chatsdata = await loadChatHistory(userId);
         setChats(chatsdata);
         console.log(chatsdata, "chatsdata------------------");
@@ -91,40 +76,58 @@ export default function Chatting() {
     setup();
   }, []);
 
+  const downloadToLocal = async (url, fileName) => {
+    try {
+      const fileUri = `${FileSystem.cacheDirectory}${fileName}`;
+      const { uri } = await FileSystem.downloadAsync(url, fileUri);
+      return uri;
+    } catch (error) {
+      console.error("Download error:", error);
+      return url; // fallback to cloud URL
+    }
+  };
+
   useEffect(() => {
     const messageListener = async (msg) => {
-      const formatted = {
+      let formatted = {
         ...msg,
         timestamp: Date.now().toString(),
       };
-      setChats((prev) => [...prev, formatted]);
+
+      // If files are present and not one-time-view
+      if (msg.files?.length > 0 && !msg.oneTimeView) {
+        const localFiles = await Promise.all(
+          msg.files.map(async (file) => {
+            const uri = await downloadToLocal(file.url, file.name);
+            return {
+              ...file,
+              uri, // Attach local URI
+            };
+          })
+        );
+
+        formatted = {
+          ...formatted,
+          files: localFiles,
+        };
+      }
+      if (formatted.senderId === userId) {
+        setChats((prev) => [...prev, formatted]);
+      }
       await saveChatMessage(formatted.senderId, formatted);
     };
 
     registerReceiveMessage(messageListener);
-    return () => {
-      unregisterReceiveMessage(messageListener);
-    };
+    return () => unregisterReceiveMessage(messageListener);
   }, [netInfo.isConnected]);
 
+
   const handleSend = async () => {
-    if (!message.trim() && selectedFiles.length === 0) return; // Check if there's no message and no files
+    if (!message.trim() && selectedFiles.length === 0) return;
 
     try {
-      // Add friend if no chats exist
       const existingChat = await getChatById(userId);
       if (!existingChat) {
-        console.log("Calling addFriends with:", {
-          _id: userId,
-          profilePic: image,
-          description: "",
-          name,
-          lastMessage: message,
-          Unseen: 0,
-          isGroup: 0,
-          Ids: [userId],
-        });
-
         await addFriends({
           _id: userId,
           profilePic: image,
@@ -136,60 +139,89 @@ export default function Chatting() {
           Ids: [userId],
         });
       }
+
+      const tempMsgId = Date.now().toString();
       const newMsg = {
-        id: Date.now().toString(),
+        id: tempMsgId,
         senderId: currentUserId,
         receiverId: userId,
-        Loadinig: true,
-        send: false,
+        Loading: selectedFiles.length > 0 ? true : false,
+        send: selectedFiles.length > 0 ? false : true,
         timestamp: new Date().toISOString(),
         ...(message.trim() && { text: message.trim() }),
         ...(selectedFiles.length > 0 && { files: selectedFiles }),
         oneTimeView,
       };
-      setChats((prev) => {
-        const updatedChats = [...prev, newMsg];
-        return updatedChats;
-      });
+
+      setChats((prev) => [...prev, newMsg]);
+      setMessage("");
+      setSelectedFiles([]);
+      setOneTimeView(false);
+
       if (selectedFiles.length > 0) {
-        const result = await sendFiles(selectedFiles)
-      }
-      console.log(result, "result")
-      if (result.success) {
-        // console.log("Sending message:", newMsg);
-        // also Loading=false, send=true
-        setChats((prev) =>
-          prev.map((msg) =>
-            msg.id === newMsg.id
-              ? { ...msg, Loading: false, send: true }
-              : msg
-          )
-        );
-        await sendMessage(newMsg);
+        const result = await sendFiles(selectedFiles);
+        // console.log(result, "result");
+
+        let updatedMsg = { ...newMsg };
+
+        if (result.success && Array.isArray(result.response)) {
+          const files = result.response.map(link => {
+            const fileName = decodeURIComponent(link.split("/").pop());
+            const cleanedName = fileName.replace(/(\.[^/.]+)(?=\.)/, ""); // removes extra middle extension
+            const extension = cleanedName.split(".").pop().toLowerCase();
+
+            let mimeType = "application/octet-stream";
+            if (["jpg", "jpeg", "png", "gif", "webp"].includes(extension)) {
+              mimeType = `image/${extension === "jpg" ? "jpeg" : extension}`;
+            } else if (["mp4", "mov", "avi", "webm"].includes(extension)) {
+              mimeType = `video/${extension}`;
+            } else if (["mp3", "wav", "aac"].includes(extension)) {
+              mimeType = `audio/${extension}`;
+            } else if (extension === "pdf") {
+              mimeType = "application/pdf";
+            }
+
+            return {
+              url: link,
+              mimeType,
+              name: cleanedName,
+            };
+          });
+
+          updatedMsg.files = files;
+        }
+
+        if (result.success) {
+          // console.log("Sending message:", updatedMsg);
+          setChats((prev) =>
+            prev.map((msg) =>
+              msg.id === tempMsgId ? { ...updatedMsg, Loading: false, send: true } : msg
+            )
+          );
+          await sendMessage(updatedMsg);
+        } else {
+          setChats((prev) =>
+            prev.map((msg) =>
+              msg.id === tempMsgId ? { ...msg, Loading: false, send: false } : msg
+            )
+          );
+        }
+        console.log(updatedMsg)
+        await saveChatMessage(updatedMsg.receiverId, updatedMsg);
+        console.log("cahats", chats)
       } else {
-        setChats((prev) =>
-          prev.map((msg) =>
-            msg.id === newMsg.id
-              ? { ...msg, Loading: false, send: false }
-              : msg
-          )
-        );
+        await sendMessage(newMsg);
+        await saveChatMessage(newMsg.receiverId, newMsg);
       }
-
-      // setMessage("");
-      // setSelectedFiles([]);
-      // setOneTimeView(false); // Reset one-time view setting
-
-      // Scroll to the bottom of the chat list
       setTimeout(() => {
         flatListRef.current?.scrollToEnd({ animated: true });
       }, 100);
+
     } catch (err) {
       console.error("Error sending message:", err);
       Alert.alert("Failed", "Unable to send message. Please try again.");
     }
   };
-
 
   const handleClearChat = async () => {
     Alert.alert("Clear Chat", "Are you sure you want to delete all messages?", [
@@ -219,36 +251,29 @@ export default function Chatting() {
       if (!result.canceled) {
         // Directly update the state with the newly selected files
         setSelectedFiles((prev) => {
-          const updatedFiles = [...prev, ...result.assets];
-          // console.log(updatedFiles); // Log the updated list here
-          return updatedFiles;
+          const newFiles = result.assets.filter(
+            newFile => !prev.some(file => file.uri === newFile.uri)
+          );
+          return [...prev, ...newFiles];
         });
+
       }
     } catch (error) {
       console.error("Error selecting files", error);
     }
   };
-  const handleOneTimeView = (messageId, file) => {
+  const handleOneTimeView = (messageId, file, text) => {
     setChats((prev) =>
       prev.map((msg) =>
         msg.id === messageId
-          ? { ...msg, files: [], text: "Message depricated" }
+          ? { ...msg, files: [], text: "Message depricated", oneTimeView: false }
           : msg
       )
     );
     // deete message from chat list
 
     navigation.navigate("OneTimeViewer", {
-      file,
-      onViewed: () => {
-        setChats((prev) =>
-          prev.map((msg) =>
-            msg.id === messageId
-              ? { ...msg, files: [], text: "Message depricated" }
-              : msg
-          )
-        );
-      },
+      file, text
     });
   };
 
@@ -336,17 +361,33 @@ export default function Chatting() {
               return (
                 <TouchableOpacity
                   key={index}
-                  onPress={() => handleOneTimeView(item.id, item.files[0])}
+                  disabled={!item.oneTimeView}
+                  onPress={() =>
+                    handleOneTimeView(
+                      item.id,
+                      item.files[0], // passing the file
+                      item.text     // optional text if needed
+                    )
+                  }
                 >
-                  <View style={[styles.messageBubble, styles.theirMessage]}>
-                    <Text style={styles.messageText}>One Time View</Text>
+                  <View style={[styles.messageBubble, item.senderId == currentUserId ? styles.myMessage : styles.theirMessage]}>
+                    <Text> <Image
+                      style={[
+                        styles.image,
+                        oneTimeView ? { backgroundColor: 'white', borderRadius: 50 } : { borderRadius: 50 }
+                      ]}
+                      source={require('../../assets/icons/onetime.png')}
+                      borderRadius={50}
+                      resizeMode="cover"
+                    /> One Time View</Text>
                   </View>
                 </TouchableOpacity>
               );
             } else {
-              return renderMessage({ item, currentUserId, index });
+              return renderMessage(item, currentUserId, index); // Fallback to normal render
             }
           }}
+
           contentContainerStyle={styles.chatList}
         />
       </KeyboardAvoidingView>
@@ -559,5 +600,20 @@ const styles = StyleSheet.create({
   image: {
     height: 25,
     width: 25,
-  }
+  },
+  messageBubble: {
+    padding: 8,
+    borderRadius: 12,
+    marginVertical: 4,
+    maxWidth: "75%",
+    margin: 5,
+  },
+  myMessage: {
+    alignSelf: "flex-end",
+    backgroundColor: "#005c4b"
+  },
+  theirMessage: {
+    alignSelf: "flex-start",
+    backgroundColor: "#202c33"
+  },
 });

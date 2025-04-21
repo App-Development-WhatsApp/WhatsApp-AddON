@@ -72,7 +72,6 @@ export default function Contacts() {
                 usersFromDB.forEach(user => {
                     const phone = normalizePhoneNumber(user.phoneNumber);
                     if (contactMap[phone]) {
-                        console.log(phone,"-----------kjhgvcf-------")
                         appUserList.push({
                             ...contactMap[phone],
                             ...user,

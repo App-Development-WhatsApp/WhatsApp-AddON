@@ -43,7 +43,6 @@ import Communities from "./components/Communities/Communities";
 import CommunityScreen from "./components/Communities/CommunityScreen";
 import CreateGroupScreen from "./components/AllContacts/CreateGroup";
 
-
 const Stack = createStackNavigator();
 export default function App() {
   const [loading, setLoading] = useState(false);
@@ -104,6 +103,7 @@ export default function App() {
             <Stack.Screen name="AppUpdate" component={AppUpdateScreen} />
             <Stack.Screen name="CreateCommunity" component={CommunityFlow} />
             <Stack.Screen name="Communities" component={Communities} />
+            <Stack.Screen name="OneTimeViewer" component={OneTimeViewer} />
             <Stack.Screen name="CommunityScreen" component={CommunityScreen} />
             <Stack.Screen name="CreateGroup" component={CreateGroupScreen} />
             <Stack.Screen name="callScreen" component={CallScreen} />
