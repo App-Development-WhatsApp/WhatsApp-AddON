@@ -80,10 +80,11 @@ io.on("connection", (socket: Socket) => {
   socket.on("sendMessage", async (message: Message) => {
     message.timestamp = new Date();
     const receiverSocketId = onlineUsers.get(message.receiverId);
+    const senderSocketId = onlineUsers.get(message.senderId);
     console.log(message,"real time cahtting")
 
     if (receiverSocketId) {
-      console.log("Receiver is online, sending message:", message, " ----", receiverSocketId);
+      console.log("Receiver is online, sending message:", message, " ----", receiverSocketId,senderSocketId);
       io.to(receiverSocketId).emit("receiveMessage", message);
     } else {
       console.log("Receiver is offline, message saved as pending.");
@@ -94,10 +95,12 @@ io.on("connection", (socket: Socket) => {
 
   // --------------------------------------------calling--------------------------------------------------------------
   socket.on('call-user', async (props: any) => {
-    console.log("Call user event:", props);
-    const receiverSocketId = onlineUsers.get(props.to);
+    // console.log("Call user event:", props);
+    const receiverSocketId = onlineUsers.get(props.friendId);
+    props.type = "incomingcall";
+    // console.log("Receiver socket IDs:", receiverSocketId);
     if (receiverSocketId) {
-      console.log("Receiver socket IDs:", receiverSocketId, "----", props.to);
+      // console.log("Receiver socket IDs:", receiverSocketId, "----", props.friendId);
       io.to(receiverSocketId).emit("incoming-call", props);
     }
   })
@@ -112,9 +115,9 @@ io.on("connection", (socket: Socket) => {
   })
   socket.on('call-accepted', async (props: any) => {
     console.log("Call accepted event:", props);
-    const receiverSocketId = onlineUsers.get(props.to);
+    const receiverSocketId = onlineUsers.get(props.callerId);
     if (receiverSocketId) {
-      console.log("Receiver socket IDs:", receiverSocketId, "----", props.to);
+      console.log("Receiver socket IDs:", receiverSocketId, "----", props.callerId);
       io.to(receiverSocketId).emit("accepted-call", props);
     }
   })

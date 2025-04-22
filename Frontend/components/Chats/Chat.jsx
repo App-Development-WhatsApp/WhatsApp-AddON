@@ -21,6 +21,7 @@ import { loadGroups } from '../../utils/groupStorage';
 import { deleteChat, deleteFriend, getUserInfoById } from '../../database/curd.js';
 import localStorage from '@react-native-async-storage/async-storage';
 import { getAllChatsSorted } from '../../database/curd.js';
+import { API_URL } from '../../utils/AuthServices.js';
 
 export default function Chat() {
   const netInfo = useNetInfo();
@@ -30,14 +31,14 @@ export default function Chat() {
   const [friends, setFriends] = useState([]);
 
   useEffect(() => {
-    console.log(process.env.EXPO_PUBLIC_BACKEND_URL)
+    console.log(API_URL)
     const fetchData = async () => {
       try {
         const user = await loadUserInfo();
         if (user) setUserData(user);
 
         const sortedChats = await getAllChatsSorted();
-        // console.log(sortedChats, "sortedChats")
+        console.log(sortedChats, "sortedChats")
         setFriends(sortedChats);
       } catch (error) {
         console.error("Error loading data:", error);

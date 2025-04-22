@@ -1,12 +1,26 @@
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSocket } from '../../context/SocketContext';
+import { useRoute } from '@react-navigation/core';
 
 const CallScreen = () => {
-  const [facing, setFacing] = useState<CameraType>('back');
+  const [facing, setFacing] = useState < CameraType > ('back');
   const { status, requestPermission } = useCameraPermissions(); // Corrected destructuring
-  const { incomingCall } = useSocket();
+  const route = useRoute();
+
+  const { callerId, calleeName, calleeProfilePic, type, mode } = route.params;
+  useEffect(() => {
+    console.log(route.params)
+  }, [])
+
+  const cutcall = async () => {
+    await addCallingEntryToChat(callerId, {
+      type: "Accepted",
+      mode: mode,
+      time: new Date(),
+    })
+  }
 
   // Handle if permission status is undefined or not granted yet
   if (status === undefined) {

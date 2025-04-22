@@ -53,7 +53,7 @@ export default function App() {
       await initDatabase();
       console.log('✅ Database initialized and tables created');
     };
-    console.log("creating Instances")
+    // console.log("creating Instances")
     setup();
     setLoading(false)
   }, []);

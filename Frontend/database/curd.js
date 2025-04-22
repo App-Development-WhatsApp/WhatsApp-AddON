@@ -97,7 +97,6 @@ export const getAllChatsSorted = async () => {
     // console.log("✅ Sorted chats retrieved:", results);
     return results;
   } catch (error) {
-    console.error("❌ Failed to fetch sorted chats:", error);
     return [];
   }
 };
@@ -118,8 +117,32 @@ export const getChatById = async (chatId) => {
 
     return result;
   } catch (error) {
-    console.error("❌ Failed to fetch chat by id:", error);
     return null;
+  }
+};
+
+
+
+export const UpdateChatById = async (chatId, message) => {
+  const db = getDB();
+  try {
+    await db.runAsync(
+      `
+      UPDATE chats
+      SET lastMessage = $message
+      WHERE id = $id;
+      `,
+      {
+        $message: message,
+        $id: chatId,
+      }
+    );
+
+    console.log("✅ Chat updated successfully");
+    return true;
+  } catch (error) {
+    console.error("❌ Failed to update chat:", error);
+    return false;
   }
 };
 
@@ -161,7 +184,6 @@ export const getUserInfoById = async (userId) => {
     // console.log("result->",result)
     return result;
   } catch (error) {
-    console.error("❌ Failed to fetch user info:", error);
     return null;
   }
 };

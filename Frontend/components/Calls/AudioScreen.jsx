@@ -4,35 +4,38 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { Audio } from "expo-av";
 import { useSocket } from '../../context/SocketContext';
+import { addCallingEntryToChat, loadUserInfo } from '../../utils/chatStorage';
 const AudioScreen = () => {
-  const { callFriend, RegistercalcelCall, UnRegistercalcelCall, RegisterAcceptCall, UnRegisterAcceptCall } = useSocket();
+  const { incomingCall, setIncomingCall, cancelCalling, callFriend, RegistercalcelCall, UnRegistercalcelCall, RegisterAcceptCall, UnRegisterAcceptCall } = useSocket();
   const navigation = useNavigation();
   const route = useRoute();
   const ringtone = useRef(null);
-  const { callerId, friendId, friendName, Profile } = route.params;
+
+  const { callerId, friendId, type, mode, friendName, callerName, callerProfile, friendProfile } = route.params;
   const [status, setStatus] = useState('Calling...');
   useEffect(() => {
-    // Play ringtone
     playRingtone();
   }, [])
 
   useEffect(() => {
+    callFriend(route.params);
 
-    callFriend({ callerId, friendId });
     RegistercalcelCall((props) => {
-      console.log("Cancel call props:", props);
+      console.log("canceling sun le nsdk",props)
       stopRingtone();
       setStatus('Call cancelled');
-      navigation.replace("Chatting", { userId: friendId, name: friendName, image: Profile }); // Replace with your desired fallback
+      navigation.replace("Chatting", { userId: friendId, name: friendName, image: friendProfile }); // Replace with your desired fallback
     })
     RegisterAcceptCall((props) => {
       console.log("Accept call props:", props);
       setStatus('Call accepted');
       stopRingtone();
       navigation.replace("callScreen", {
-        callerId: props,
-        calleeName: "incomingCall.callerName",
-        calleeProfilePic: "incomingCall.callerProfilePic",
+        callerId: friendId,
+        calleeName: friendName,
+        calleeProfilePic: friendProfile,
+        type: props.type,
+        mode: props.mode,
       });
     })
 
@@ -68,10 +71,23 @@ const AudioScreen = () => {
       ringtone.current = null;
     }
   };
-  const cancelCall = () => {
+  const cancelCall = async () => {
+    // console.log(incomingCall)
+    const props = {
+      to: friendId,
+      from: callerId,
+    };
+    console.log(props)
+    await addCallingEntryToChat(friendId, {
+      type: "Not Accepted",
+      mode: mode,
+      time: new Date(),
+    })
+
+    cancelCalling(props);
     navigation.goBack();
   };
-  const validImage = Profile ? { uri: Profile } : require('../../assets/images/blank.jpeg');
+  const validImage = friendProfile ? { uri: friendProfile } : require('../../assets/images/blank.jpeg');
 
 
   return (

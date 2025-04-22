@@ -17,7 +17,9 @@ export const SocketProvider = ({ children }) => {
   const netInfo = useNetInfo();
   const [socket] = useState(getSocket()); // Initialized once
   const [userData, setUserData] = useState(null);
-  const [incomingCall, setIncomingCall] = useState("");
+  const [incomingCall, setIncomingCall] = useState(null);
+
+
 
   // Load user info
   useEffect(() => {
@@ -33,7 +35,7 @@ export const SocketProvider = ({ children }) => {
     if (!netInfo.isConnected || !userData) return;
 
     if (!socket.connected) {
-      console.log(SOCKET_URL,"🔌 Connecting socket...");
+      console.log(SOCKET_URL, "🔌 Connecting socket...");
       socket.connect();
     }
 
@@ -53,48 +55,57 @@ export const SocketProvider = ({ children }) => {
     };
   }, [netInfo.isConnected, userData]);
   useEffect(() => {
-    const incomingcall=async (props) => {
+    const incomingcall = async (props) => {
       setIncomingCall(props)
       console.log("Incoming call props:", props);
     }
     RegisterIncomingCall(incomingcall);
-    // Register incoming call listener
-      
-    return () => {
-      // Cleanup function to unregister incoming call listeners
-      UnRegisterIncomingCall();
-    }
-   
-  },[])
+      const canceledcall = async () => {
+        console.log("Cancelling")
+        setIncomingCall(null)
+      }
+      RegistercalcelCall(canceledcall);
+      // Register incoming call listener
+
+      return () => {
+        // Cleanup function to unregister incoming call listeners
+        UnRegisterIncomingCall();
+      }
+
+  }, [])
   // Custom socket methods
-  const callFriend = ({ friendId, callerId }) => {
-    socket.emit("call-user", { from: callerId, to: friendId });
+  const callFriend = (props) => {
+    console.log("Calling friend with props:", props);
+    socket.emit("call-user", props);
+    // socket.emit("call-user", { from: callerId, to: friendId });
   }
-  const RegisterIncomingCall=(callback)=>{
+  const RegisterIncomingCall = (callback) => {
     socket.on("incoming-call", callback);
   }
-  const UnRegisterIncomingCall=(callback)=>{
+  const UnRegisterIncomingCall = (callback) => {
     socket.off("incoming-call", callback);
   }
 
-  const cancelCall = ({ friendId, callerId }) => {
-    socket.emit("call-cancel", { from: callerId, to: friendId });
+  const cancelCalling = (props) => {
+    console.log("cancelling call")
+    console.log(props)
+    socket.emit("call-cancel", props);
   }
-  const RegistercalcelCall=(callback)=>{
+  const RegistercalcelCall = (callback) => {
     socket.on("cancel-call", callback);
   }
-  const UnRegistercalcelCall=(callback)=>{
+  const UnRegistercalcelCall = (callback) => {
     socket.on("cancel-call", callback);
   }
 
-  const AcceptCall = ({ friendId, callerId }) => {
-    socket.emit("call-accepted", { from: callerId, to: friendId });
+  const AcceptCall = (props) => {
+    socket.emit("call-accepted", props);
   }
 
-  const RegisterAcceptCall=(callback)=>{
+  const RegisterAcceptCall = (callback) => {
     socket.on("accepted-call", callback);
   }
-  const UnRegisterAcceptCall=(callback)=>{
+  const UnRegisterAcceptCall = (callback) => {
     socket.on("accepted-call", callback);
   }
   // ---------------------MEssage------------------------
@@ -132,7 +143,7 @@ export const SocketProvider = ({ children }) => {
         UnRegisterIncomingCall,
         RegistercalcelCall,
         UnRegistercalcelCall,
-        cancelCall,
+        cancelCalling,
         AcceptCall,
         RegisterAcceptCall,
         UnRegisterAcceptCall

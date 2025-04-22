@@ -6,6 +6,7 @@ import {
     StyleSheet,
     Image,
     FlatList,
+    TouchableOpacity,
 } from "react-native";
 import { Video } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons'; // or use any icon library
@@ -141,11 +142,18 @@ const formatTime = (timestamp) => {
     return `${formattedHours}:${formattedMinutes} ${ampm}`;
 };
 
-export const renderMessage = (item, currentUserId, index) => {
-    console.log("item", item)
+export const renderMessage = (item, currentUserId, index,navigation) => {
+    // console.log("item", item)
     const isMyMessage = item.senderId === currentUserId;
     const formattedTime = item.timestamp ? formatTime(item.timestamp) : "";
     const isShortMessage = item.text && item.text.length < 40;
+    const handleOneTimeView = (file, text) => {
+        console.log("One Time View clicked", file, text);
+        navigation.navigate("OneTimeViewer", {
+            file, text
+        });
+    };
+
     // console.log(item)
 
     return (
@@ -153,9 +161,17 @@ export const renderMessage = (item, currentUserId, index) => {
             <View style={[styles.messageBubble, isMyMessage ? styles.myMessage : styles.theirMessage]}>
                 {Array.isArray(item.files) &&
                     item.files.map((file, ind) => (
-                        <View key={ind} style={{ marginVertical: 4 }}>
-                            {renderFilePreview(file, item.Loading, item.send)}
-                        </View>
+                        <TouchableOpacity onPress={() =>
+                            handleOneTimeView(
+                                file, // passing the file
+                                item.text     // optional text if needed
+                            )
+                        }>
+
+                            <View key={ind} style={{ marginVertical: 4 }}>
+                                {renderFilePreview(file, item.Loading, item.send)}
+                            </View>
+                        </TouchableOpacity>
                     ))}
                 {item.text && (
                     <View style={{ flexDirection: "row", justifyContent: "space-between", flexWrap: "wrap" }}>

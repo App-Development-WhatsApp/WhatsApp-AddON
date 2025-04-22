@@ -16,7 +16,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as VideoThumbnails from 'expo-video-thumbnails';
 import { Ionicons, Entypo, MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 import { Video } from 'expo-av';
-import { uploadStatus } from '../../../Services/AuthServices';
+import { uploadStatus } from '../../../utils/AuthServices';
 import { loadUserInfo } from '../../../utils/chatStorage';
 
 
@@ -53,13 +53,13 @@ const UploadImageStatus = () => {
       console.warn("Missing uri or duration for thumbnail generation.");
       return;
     }
-  
+
     try {
       setLoading(true);
       const numberOfThumbnails = 10;
       const interval = durationInMs / (numberOfThumbnails - 1);
       const thumbs = [];
-  
+
       for (let i = 0; i < numberOfThumbnails; i++) {
         const time = Math.floor(i * interval);
         if (!isNaN(time)) {
@@ -67,7 +67,7 @@ const UploadImageStatus = () => {
           thumbs.push(thumbUri);
         }
       }
-  
+
       setThumbnails(thumbs);
     } catch (e) {
       console.log("Thumbnail generation error:", e);
@@ -75,15 +75,15 @@ const UploadImageStatus = () => {
       setLoading(false);
     }
   };
-  
+
   useEffect(() => {
     const fetchUserData = async () => {
-      // Assuming you have a function to get user data
-      const user = await loadUserInfo(); // Replace with your actual function
+      const user = await loadUserInfo();
+      console.log(user)
       setUserData(user);
     };
-
     fetchUserData();
+    console.log("userData", userData)
   }, [])
   useEffect(() => {
     if (currentMedia.type === 'video') {
@@ -185,28 +185,30 @@ const UploadImageStatus = () => {
 
   const handleUploadStatus = async () => {
     setUploading(true);
-  
+
     const formData = new FormData();
-    formData.append('userId', userData._id); // Assuming you have user data
-  
-    // Instead of appending directly to formData['status'], loop through and append each file separately
+    formData.append('userId', userData.id);
+    
     selectedMedia.forEach((item, index) => {
+      console.log(userData, "-----------------------",item)
       const fileExtension = item.uri.split('.').pop();
       const mimeType = item.type === 'video'
         ? `video/${fileExtension}`
         : `image/${fileExtension}`;
-  
-      // Append each file as a new part in the formData
-      formData.append('status[]', JSON.stringify({
+        console.log(item.uri)
+
+      formData.append('files', {
         uri: item.uri,
-        type: mimeType,
         name: `upload_${index}.${fileExtension}`,
-        caption: item.caption,
-        startTime: item.startTime,
-        endTime: item.endTime,
-      }));
+        type: mimeType,
+      });
+
+      // Optional: if you want to send captions etc., append them as fields
+      formData.append(`caption_${index}`, item.caption || '');
+      formData.append(`startTime_${index}`, item.startTime || 0);
+      formData.append(`endTime_${index}`, item.endTime || 0);
     });
-  
+
     try {
       console.log('Uploading status...');
       const response = await uploadStatus(formData);
@@ -218,16 +220,16 @@ const UploadImageStatus = () => {
       setUploading(false);
     }
   };
-  
+
 
   return (
     <View style={{ flex: 1, backgroundColor: 'black' }}>
       {currentMedia.type.includes('image') ? (
-        <Image source={{ uri: currentMedia.uri }} style={{ flex: 1, resizeMode: 'contain', maxHeight: '90%'}} />
+        <Image source={{ uri: currentMedia.uri }} style={{ flex: 1, resizeMode: 'contain', maxHeight: '90%' }} />
       ) : (
         <View style={{ flex: 1 }}>
           {loading ? (
-            <ActivityIndicator size="large" color="#007BFF" style={{ marginVertical: 20}} />
+            <ActivityIndicator size="large" color="#007BFF" style={{ marginVertical: 20 }} />
           ) : (
             <View style={styles.trimContainer}>
               <View style={styles.trimTrack}>
@@ -257,7 +259,7 @@ const UploadImageStatus = () => {
             <Video
               ref={videoRef}
               source={{ uri: currentMedia.uri }}
-              style={{width: '100%', height: '90%', alignItems: 'center', top: 50}}
+              style={{ width: '100%', height: '90%', alignItems: 'center', top: 50 }}
               resizeMode="contain"
               isLooping
               shouldPlay={false}
@@ -366,7 +368,7 @@ const styles = StyleSheet.create({
     left: '50%',
     transform: [{ translateX: -32 }, { translateY: -32 }],
     zIndex: 2,
-  },  
+  },
   trimContainer: {
     position: 'absolute',
     top: 20,
@@ -374,7 +376,7 @@ const styles = StyleSheet.create({
     right: 0,
     paddingHorizontal: 10,
     zIndex: 5,
-  },  
+  },
   trimTrack: {
     height: 60,
     backgroundColor: '#222',
@@ -433,7 +435,7 @@ const styles = StyleSheet.create({
   },
   icon: {
     marginLeft: 16,
-  },  
+  },
   mediaListWrapper: {
     position: 'absolute',
     bottom: 70,

@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { loadUserInfo } from '../../utils/chatStorage';
-import { getAllUsers } from '../../Services/AuthServices';
+import { getAllUsers } from '../../utils/AuthServices';
 import { saveGroup } from '../../utils/groupStorage'; // Save locally
 import { useNavigation } from '@react-navigation/native';
 

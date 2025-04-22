@@ -69,7 +69,6 @@ export const loadUserInfo = async () => {
       return data ? JSON.parse(data) : null;
     } else {
       const userId = await localStorage.getItem('userId')
-      console.log(userId, "userId")
       const user = await getUserInfoById(userId);
       return user ? user : null;
     }
@@ -338,4 +337,74 @@ export const saveChatMessage = async (id, message) => {
   }
 };
 
+export const deprecateOneTimeMessageInFile = async (messageId) => {
+  try {
+    const chatDirectory = `${FileSystem.documentDirectory}chat/`;
+    const files = await FileSystem.readDirectoryAsync(chatDirectory);
 
+    for (const file of files) {
+      if (file.startsWith("chat_") && file.endsWith(".json")) {
+        const filePath = `${chatDirectory}${file}`;
+        const content = await FileSystem.readAsStringAsync(filePath);
+        let messages = JSON.parse(content || '[]');
+
+        let updated = false;
+        messages = messages.map((msg) => {
+          if (msg.id === messageId) {
+            updated = true;
+            return {
+              ...msg,
+              files: [],
+              text: "Message deprecated",
+              oneTimeView: false,
+            };
+          }
+          return msg;
+        });
+
+        if (updated) {
+          await FileSystem.writeAsStringAsync(filePath, JSON.stringify(messages));
+          break; // No need to check other files once updated
+        }
+      }
+    }
+  } catch (error) {
+    console.error("Error updating one-time view message:", error);
+  }
+};
+
+
+
+const CALL_FOLDER = FileSystem.documentDirectory + 'call/';
+
+export const addCallingEntryToChat = async (chatId, newEntry) => {
+  try {
+    const filePath = `${CALL_FOLDER}${chatId}.json`;
+
+    // Step 1: Ensure the call folder exists
+    const folderInfo = await FileSystem.getInfoAsync(CALL_FOLDER);
+    if (!folderInfo.exists) {
+      await FileSystem.makeDirectoryAsync(CALL_FOLDER, { intermediates: true });
+    }
+
+    // Step 2: Load existing data if available
+    let callingArray = [];
+    const fileInfo = await FileSystem.getInfoAsync(filePath);
+    if (fileInfo.exists) {
+      const fileData = await FileSystem.readAsStringAsync(filePath);
+      callingArray = JSON.parse(fileData || '[]');
+    }
+
+    // Step 3: Add new entry
+    callingArray.push(newEntry);
+
+    // Step 4: Save updated data
+    await FileSystem.writeAsStringAsync(filePath, JSON.stringify(callingArray, null, 2));
+
+    console.log(`✅ Calling entry saved to ${filePath}`);
+    return true;
+  } catch (error) {
+    console.error("❌ Failed to add calling entry:", error);
+    return false;
+  }
+};

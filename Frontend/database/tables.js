@@ -24,7 +24,8 @@ export const createChatsTable = async (db) => {
       lastMessage TEXT,
       lastUpdated DATETIME DEFAULT CURRENT_TIMESTAMP,
       isGroup BOOLEAN DEFAULT 0,
-      members TEXT DEFAULT '[]'
+      members TEXT DEFAULT '[]',
+      calling TEXT DEFAULT '[]'  -- this will store array of { mode, type, time } as a JSON string
     );
   `);
   console.log("💬 'chats' table created");

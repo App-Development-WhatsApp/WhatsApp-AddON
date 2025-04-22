@@ -1,9 +1,18 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
 import jwt from "jsonwebtoken";
 
-// Replace with your actual secret keys
-const ACCESS_TOKEN_SECRET = process.env.ACCESS_TOKEN_SECRET || "your-access-secret";
-const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET || "your-refresh-secret";
+// const ACCESS_TOKEN_SECRET = process.env.ACCESS_TOKEN_SECRET || "your-access-secret";
+// const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET || "your-refresh-secret";
+
+interface IStatusItem {
+  uri: string;
+  type: string;
+  name: string;
+  caption?: string;
+  timestamp?: Date;
+  count: number;
+  array: { startTime: number; endTime: number }[];
+}
 
 interface IUser extends Document {
   _id: mongoose.Types.ObjectId;
@@ -19,7 +28,7 @@ interface IUser extends Document {
   lastSeen: Date;
   online: boolean;
   isVerified: boolean;
-  status: { type: string; uri: string; caption?: string; timestamp?: Date }[];
+  status: IStatusItem[];
   callLogs: mongoose.Types.ObjectId[];
   lastMessage: {
     text: string;
@@ -44,7 +53,22 @@ const userSchema = new Schema<IUser>(
     lastSeen: { type: Date, default: Date.now },
     online: { type: Boolean, default: true },
     isVerified: { type: Boolean, default: false },
-    status: [{ type: String, uri: String, caption: String, timestamp: Date }],
+    status: [
+      {
+        uri: { type: String, required: true },
+        type: { type: String, required: true },
+        name: { type: String, required: true },
+        caption: { type: String },
+        timestamp: { type: Date, default: Date.now },
+        count: { type: Number, required: true },
+        array: [
+          {
+            startTime: { type: Number, required: true },
+            endTime: { type: Number, required: true },
+          },
+        ],
+      },
+    ],
     callLogs: [{ type: mongoose.Schema.Types.ObjectId, ref: "Call" }],
     lastMessage: {
       text: { type: String, default: "" },
@@ -55,7 +79,7 @@ const userSchema = new Schema<IUser>(
   { timestamps: true }
 );
 
-// // Generate access token
+// Generate access token
 // userSchema.methods.generateAccessToken = function (): string {
 //   return jwt.sign(
 //     { id: this._id, phoneNumber: this.phoneNumber },
@@ -75,4 +99,4 @@ const userSchema = new Schema<IUser>(
 
 const User: Model<IUser> = mongoose.model<IUser>("User", userSchema);
 
-export { User, IUser };
+export { User, IUser };

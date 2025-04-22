@@ -23,14 +23,14 @@ import multer from "multer";
 
 const router = Router();
 
-router.route("/login").post(upload.single("profilePic"), registerUser);
+router.route("/login").post(registerUser);
 router.route("/getAllUsers").get(GetAllUsers);
 router.route("/getAllChattedUsers").get(GetAllChattedUsers);
 router.route("/friends/:userId").post(getFriends);
 router.route("/logout").post(logoutUser);
-router.route("/status_Upload").post(upload.none(), UploadStatus)
+router.route("/status_Upload").post(UploadStatus)
 router.route("/current-user").get(verifyJWT, getCurrentUser);
-router.route("/send_Files").post( UploadFiles)
+router.route("/send_Files").post(UploadFiles)
 // router.route("/update-account").patch(verifyJWT, updateAccountdetails);
 // router
 //   .route("/avatar")

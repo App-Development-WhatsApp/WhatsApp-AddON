@@ -11,7 +11,7 @@ import {
   BackHandler
 } from "react-native";
 import * as DocumentPicker from "expo-document-picker";
-import { login } from "../../Services/AuthServices";
+import { login } from "../../utils/AuthServices";
 import { loadUserInfo } from "../../utils/chatStorage";
 import FormData from "form-data";
 import { addUser, getUserInfoById } from "../../database/curd";
@@ -105,6 +105,7 @@ const LoginScreen = ({ navigation }) => {
     } else {
       Alert.alert("Login Failed", result.message || "An error occurred.");
     }
+    setLoading(false);
   };
 
   return (

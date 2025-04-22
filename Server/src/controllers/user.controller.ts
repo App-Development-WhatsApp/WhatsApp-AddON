@@ -14,30 +14,34 @@ import fs from "fs";
 import path from "path";
 
 // --------------------------Register---------------------------
-export const registerUser = asyncHandler(async (req, res) => {
+export const registerUser = asyncHandler(async (req: any, res: Response) => {
   const { username, fullName, phoneNumber } = req.body;
 
   if ([fullName, username, phoneNumber].some((field) => field?.trim() === "")) {
     return new ApiError(400, "All fields are required");
   }
-  // console.log(fullName, username, phoneNumber);
 
   const userId = await User.findOne({ phoneNumber }).select("_id");
 
   if (userId) {
-    throw new ApiError(400, "User Already exist");
+    return res.json(new ApiResponse(
+      400,
+      "User Already Exist"
+    ))
   }
 
   const newUser = await User.create({ username: username, fullName: fullName, phoneNumber });
+  console.log("New User Created:", newUser);
+  if (req.files && req.files.profilePic) {
+    const localFilePath = req.files.profilePic.tempFilePath;
 
-  if (req.file) {
-    const avatarLocalPath = req.file.path;
-    console.log("Avatar Local Path:", avatarLocalPath);
-
-    const avatar = await uploadOnCloudinary(avatarLocalPath, `users/${newUser._id}/profilePic`);
-
-    if (!avatar) {
-      throw new ApiError(400, "Failed to upload avatar on Cloudinary");
+    const avatar = await uploadOnCloudinary(localFilePath, `users/${username}/profilePic`);
+    if (avatar == null) {
+      await User.deleteOne(newUser._id)
+      return res.json(new ApiResponse(
+        400,
+        "User Already Exist"
+      ))
     }
     console.log("Avatar URL:", avatar.secure_url);
 
@@ -51,7 +55,6 @@ export const registerUser = asyncHandler(async (req, res) => {
     httpOnly: true,
     secure: true,
   };
-  // console.log("Logged In User:", loggedInUser);
 
   return res.json(new ApiResponse(
     200,
@@ -87,8 +90,6 @@ export const uploadProfilePic = asyncHandler(async (req: any, res) => {
   return res.status(200).json({ message: "Profile picture updated successfully", avatarUrl: avatar.secure_url });
 });
 
-
-
 // // ----------------------------LOgOut-------------------------
 export const logoutUser = asyncHandler(async (req, res) => {
   try {
@@ -111,7 +112,7 @@ export const getCurrentUser = asyncHandler(async (req, res) => {
 
 export const GetAllUsers = asyncHandler(async (req, res) => {
   const users = await User.find({}, "username profilePic phoneNumber _id");
-  // console.log(users)
+  console.log("users")
   return res
     .status(200)
     .json(new ApiResponse(200, "All users fetched successfully", users));
@@ -164,86 +165,97 @@ export const getFriends = asyncHandler(async (req: Request, res: Response) => {
 
 // ------------------------------Upload Status---------------------------------
 
-export const UploadStatus = asyncHandler(async (req: Request, res: Response) => {
+export const UploadStatus = asyncHandler(async (req: any, res: Response) => {
   try {
     const formData = req.body;
+    // console.log(req.files.files)
     const userId = formData.userId;
     // console.log('UserId:', userId);
-    const UserId = await User.findById(userId);
+    // const UserId = await User.findById(userId);
 
-    const statusArray = formData.status;
-
-    if (statusArray && Array.isArray(statusArray)) {
-      statusArray.forEach(async (stat: any, index: number) => {
-        try {
-          const parsedStat = JSON.parse(stat);
-          console.log('Parsed Status:', parsedStat);
-
-          if (parsedStat) {
-            if (parsedStat.type === 'video') {
-              const startTime = parsedStat.startTime || 0;
-              const endTime = parsedStat.endTime || 1000;
-              const videoPath = parsedStat.uri;
-
-
-              // Split video into 20-second segments
-              const videoSegments = await splitVideo(videoPath, startTime, endTime, 20);
-              console.log('Video segments:', videoSegments);
-              // Upload the trimmed video to Cloudinary
-              for (const segmentPath of videoSegments) {
-                const videoUrl = await uploadOnCloudinary(segmentPath);
-
-                // Use findByIdAndUpdate to add the video status
-                await User.findByIdAndUpdate(
-                  userId,
-                  {
-                    $push: {
-                      status: {
-                        type: 'video',
-                        caption: parsedStat.caption,
-                        url: videoUrl.secure_url,
-                        timeStamp: new Date(),
-                      }
-                    }
-                  }
-                );
-              }
-            } else if (parsedStat.type === 'image' || parsedStat.type === 'image/jpeg' || parsedStat.type === 'iage/png' || parsedStat.type === 'image/jpg' || parsedStat.type === 'image/webp' || parsedStat.type === 'image/gif') {
-              // Handle image upload to Cloudinary
-              const imagePath = parsedStat.uri; // Assuming you have the image URI
-              const imageUrl = await uploadOnCloudinary(imagePath);
-              console.log('Image URL:', imageUrl.secure_url);
-              // Update user with the new image status
-              await User.findByIdAndUpdate(
-                userId,
-                {
-                  $push: {
-                    status: {
-                      type: 'image',
-                      caption: parsedStat.caption,
-                      url: imageUrl.secure_url,
-                      timeStamp: new Date(),
-                    }
-                  }
-                }
-              );
-            }
-
-            // Logging the other status properties
-            console.log('Caption:', parsedStat.caption);
-            console.log('Start Time:', parsedStat.startTime);
-            console.log('End Time:', parsedStat.endTime);
-          } else {
-            console.log(`Status object at index ${index} is empty or undefined.`);
-          }
-        } catch (error) {
-          console.log(`Error processing status at index ${index}:`, error);
-        }
-      })
-    } else {
-      console.log('No status data received or status is not an array.');
+    console.log(formData)
+    if (!req.files || !req.files.files) {
+      return res.status(400).json({ success: false, message: 'No files were uploaded' });
     }
-    res.status(200).json({ message: 'Status uploaded successfully' });
+
+    const files = Array.isArray(req.files.files) ? req.files.files : [req.files.files];
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      // console.log(file)
+      // Now you can upload to Cloudinary
+    }
+
+    // if (statusArray && Array.isArray(statusArray)) {
+    //   statusArray.forEach(async (stat: any, index: number) => {
+    //     try {
+    //       const parsedStat = JSON.parse(stat);
+    //       console.log('Parsed Status:', parsedStat);
+
+    //       if (parsedStat) {
+    //         if (parsedStat.type === 'video') {
+    //           const startTime = parsedStat.startTime || 0;
+    //           const endTime = parsedStat.endTime || 1000;
+    //           const videoPath = parsedStat.uri;
+
+
+    //           // Split video into 20-second segments
+    //           const videoSegments = await splitVideo(videoPath, startTime, endTime, 20);
+    //           console.log('Video segments:', videoSegments);
+    //           // Upload the trimmed video to Cloudinary
+    //           for (const segmentPath of videoSegments) {
+    //             const videoUrl = await uploadOnCloudinary(segmentPath);
+
+    //             // Use findByIdAndUpdate to add the video status
+    //             await User.findByIdAndUpdate(
+    //               userId,
+    //               {
+    //                 $push: {
+    //                   status: {
+    //                     type: 'video',
+    //                     caption: parsedStat.caption,
+    //                     url: videoUrl.secure_url,
+    //                     timeStamp: new Date(),
+    //                   }
+    //                 }
+    //               }
+    //             );
+    //           }
+    //         } else if (parsedStat.type === 'image' || parsedStat.type === 'image/jpeg' || parsedStat.type === 'iage/png' || parsedStat.type === 'image/jpg' || parsedStat.type === 'image/webp' || parsedStat.type === 'image/gif') {
+    //           // Handle image upload to Cloudinary
+    //           const imagePath = parsedStat.uri; // Assuming you have the image URI
+    //           const imageUrl = await uploadOnCloudinary(imagePath);
+    //           console.log('Image URL:', imageUrl.secure_url);
+    //           // Update user with the new image status
+    //           await User.findByIdAndUpdate(
+    //             userId,
+    //             {
+    //               $push: {
+    //                 status: {
+    //                   type: 'image',
+    //                   caption: parsedStat.caption,
+    //                   url: imageUrl.secure_url,
+    //                   timeStamp: new Date(),
+    //                 }
+    //               }
+    //             }
+    //           );
+    //         }
+
+    //         // Logging the other status properties
+    //         console.log('Caption:', parsedStat.caption);
+    //         console.log('Start Time:', parsedStat.startTime);
+    //         console.log('End Time:', parsedStat.endTime);
+    //       } else {
+    //         console.log(`Status object at index ${index} is empty or undefined.`);
+    //       }
+    //     } catch (error) {
+    //       console.log(`Error processing status at index ${index}:`, error);
+    //     }
+    //   })
+    // } else {
+    //   console.log('No status data received or status is not an array.');
+    // }
+    // res.status(200).json({ message: 'Status uploaded successfully' });
 
 
   } catch (error) {
@@ -352,7 +364,7 @@ export const UploadFiles = asyncHandler(async (req: any, res: Response) => {
       ? req.files.files
       : [req.files.files];
     console.log('Uploaded Files:', uploadedFiles);
-    const uploadedUrls:any = [];
+    const uploadedUrls: any = [];
 
     // Upload each file to Cloudinary
     for (const file of uploadedFiles) {

@@ -25,6 +25,7 @@ import {
   loadUserInfo,
   clearChatFile,
   saveChatMessage,
+  deprecateOneTimeMessageInFile,
 } from "../../utils/chatStorage";
 import { loadChatHistory } from "../../utils/chatStorage";
 // import * as DocumentPicker from "expo-document-picker";
@@ -34,9 +35,10 @@ import { renderMessage } from "./RenderMessages";
 import { useNetInfo } from "@react-native-community/netinfo";
 // import OneTimeView from "./OneTimeView";
 import { useSocket } from "../../context/SocketContext";
-import { addFriends, getAllChatsSorted, getChatById } from "../../database/curd";
+import { addFriends, getAllChatsSorted, getChatById, UpdateChatById } from "../../database/curd";
 import * as FileSystem from 'expo-file-system';
-import { sendFiles } from "../../Services/AuthServices";
+import { downloadToLocal } from "../../utils/FileHandling";
+import { sendFiles } from "../../utils/AuthServices";
 
 
 export default function Chatting() {
@@ -51,6 +53,7 @@ export default function Chatting() {
   const { userId: userId, name, image } = route.params;
   const [message, setMessage] = useState("");
   const [currentUserId, setCurrentUserId] = useState(null);
+  const [user, setUser] = useState(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const flatListRef = useRef(null);
   const [selectedFiles, setSelectedFiles] = useState([]);
@@ -64,35 +67,27 @@ export default function Chatting() {
       try {
         const user = await loadUserInfo();
         setCurrentUserId(user.id);
-        console.log(userId, "friendId------------------");
-        console.log(currentUserId, "MyId------------------");
+        setUser(user)
+        // console.log(userId, "friendId------------------");
+        // console.log(currentUserId, "MyId------------------");
         const chatsdata = await loadChatHistory(userId);
         setChats(chatsdata);
-        console.log(chatsdata, "chatsdata------------------");
+        // console.log(chatsdata, "chatsdata------------------");
       } catch (err) {
-        console.error("Error loading user or chats:", err);
+        // console.error("Error loading user or chats:", err);
       }
     };
     setup();
   }, []);
 
-  const downloadToLocal = async (url, fileName) => {
-    try {
-      const fileUri = `${FileSystem.cacheDirectory}${fileName}`;
-      const { uri } = await FileSystem.downloadAsync(url, fileUri);
-      return uri;
-    } catch (error) {
-      console.error("Download error:", error);
-      return url; // fallback to cloud URL
-    }
-  };
 
   useEffect(() => {
     const messageListener = async (msg) => {
       let formatted = {
         ...msg,
-        timestamp: Date.now().toString(),
+        timestamp: Date.now().toString()
       };
+      // console.log("message->",formatted)
 
       // If files are present and not one-time-view
       if (msg.files?.length > 0 && !msg.oneTimeView) {
@@ -109,10 +104,28 @@ export default function Chatting() {
         formatted = {
           ...formatted,
           files: localFiles,
+          Loading: false,
+          send: true,
         };
       }
       if (formatted.senderId === userId) {
         setChats((prev) => [...prev, formatted]);
+      }
+      const existingChat = await getChatById(msg.senderId);
+      if (!existingChat) {
+        await addFriends({
+          _id: msg.senderId,
+          profilePic: msg.profilePic || "",
+          description: "",
+          name: msg.name,
+          lastMessage: message,
+          Unseen: 0,
+          isGroup: 0,
+          Ids: [userId],
+        });
+      }
+      if (msg.text.trim() !== "") {
+        await UpdateChatById(userId, msg.text.trim());
       }
       await saveChatMessage(formatted.senderId, formatted);
     };
@@ -123,6 +136,7 @@ export default function Chatting() {
 
 
   const handleSend = async () => {
+    console.log(name, image, "name,image", currentUserId)
     if (!message.trim() && selectedFiles.length === 0) return;
 
     try {
@@ -147,6 +161,8 @@ export default function Chatting() {
         receiverId: userId,
         Loading: selectedFiles.length > 0 ? true : false,
         send: selectedFiles.length > 0 ? false : true,
+        name: name,
+        profilePic: image,
         timestamp: new Date().toISOString(),
         ...(message.trim() && { text: message.trim() }),
         ...(selectedFiles.length > 0 && { files: selectedFiles }),
@@ -206,12 +222,12 @@ export default function Chatting() {
             )
           );
         }
-        console.log(updatedMsg)
         await saveChatMessage(updatedMsg.receiverId, updatedMsg);
-        console.log("cahats", chats)
+        // console.log("cahats", chats)
       } else {
         await sendMessage(newMsg);
         await saveChatMessage(newMsg.receiverId, newMsg);
+        await UpdateChatById(userId, newMsg.text);
       }
       setTimeout(() => {
         flatListRef.current?.scrollToEnd({ animated: true });
@@ -233,7 +249,7 @@ export default function Chatting() {
             await clearChatFile(userId);
             setChats([]);
           } catch (err) {
-            console.error("Error clearing chat:", err);
+            // console.error("Error clearing chat:", err);
           }
         },
       },
@@ -259,10 +275,11 @@ export default function Chatting() {
 
       }
     } catch (error) {
-      console.error("Error selecting files", error);
+      // console.error("Error selecting files", error);
     }
   };
-  const handleOneTimeView = (messageId, file, text) => {
+  const handleOneTimeView = async (messageId, file, text) => {
+    console.log("One Time View clicked", messageId, file, text);
     setChats((prev) =>
       prev.map((msg) =>
         msg.id === messageId
@@ -271,6 +288,7 @@ export default function Chatting() {
       )
     );
     // deete message from chat list
+    await deprecateOneTimeMessageInFile(messageId);
 
     navigation.navigate("OneTimeViewer", {
       file, text
@@ -278,7 +296,7 @@ export default function Chatting() {
   };
 
   const renderFilePreview = (file) => {
-    console.log(file);
+    // console.log(file);
     if (file.mimeType?.startsWith("image")) {
       return (
         <Image
@@ -326,12 +344,18 @@ export default function Chatting() {
         <View style={styles.iconContainer}>
           <TouchableOpacity
             onPress={() => {
-              navigation.navigate("AudioScreen", {
-                callerId: currentUserId,
-                userId: userId,
-                friendName: name,
-                Profile: image,
-              });
+              navigation.navigate("AudioScreen",
+                {
+                  callerId: currentUserId,
+                  friendId: userId,
+                  type: "outgoingcall",
+                  mode: "voice",
+                  friendName: name,
+                  callerName: user.fullName,
+                  callerProfile: user.profilePic,
+                  friendProfile: image,
+                }
+              );
             }}
           >
             <FontAwesome name="phone" size={22} color="white" />
@@ -384,7 +408,7 @@ export default function Chatting() {
                 </TouchableOpacity>
               );
             } else {
-              return renderMessage(item, currentUserId, index); // Fallback to normal render
+              return renderMessage(item, currentUserId, index, navigation); // Fallback to normal render
             }
           }}
 
@@ -447,11 +471,9 @@ export default function Chatting() {
             value={message}
             onFocus={() => {
               setShowEmojiPicker(false)
-              // console.log("hello")
               setinputBoxFocus(true)
             }}
             onBlur={() => {
-              console.log("hello")
               setinputBoxFocus(false)
             }}
             onChangeText={(text) => setMessage(text)}

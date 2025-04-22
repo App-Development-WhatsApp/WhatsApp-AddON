@@ -13,9 +13,10 @@ import { useSocket } from "../../context/SocketContext";
 import { Ionicons } from "@expo/vector-icons";
 import { Audio } from "expo-av";
 import * as Haptics from "expo-haptics";
+import { addCallingEntryToChat, loadUserInfo } from "../../utils/chatStorage";
 
 const IncomingCallBanner = () => {
-  const { incomingCall, setIncomingCall,cancelCall,AcceptCall } = useSocket();
+  const { incomingCall, RegistercalcelCall, setIncomingCall, cancelCalling, AcceptCall } = useSocket();
   const navigation = useNavigation();
 
   const slideAnim = useRef(new Animated.Value(-100)).current;
@@ -25,6 +26,7 @@ const IncomingCallBanner = () => {
 
   useEffect(() => {
     if (incomingCall) {
+
       // Slide in animation
       Animated.timing(slideAnim, {
         toValue: 0,
@@ -66,6 +68,7 @@ const IncomingCallBanner = () => {
       stopRingtone();
       if (autoDismissTimer.current) clearTimeout(autoDismissTimer.current);
     };
+
   }, [incomingCall]);
 
   const playRingtone = async () => {
@@ -88,26 +91,49 @@ const IncomingCallBanner = () => {
       ringtone.current = null;
     }
   };
+  // { "callerId": "68052a005fc1272b32ee8cbf",
+  //    "callerName": "Shivam",
+  //     "callerProfile": "https://res.cloudinary.com/degeiws8x/image/upload/v1745168947/users/68052a005fc1272b32ee8cbf/profilePic.jpg",\
+  //      "friendId": "6804d6e292f4071bf903886a", 
+  //      "friendName": "Khan",
+  //       "friendProfile": "https://res.cloudinary.com/degeiws8x/image/upload/v1745147626/users/6804d6e292f4071bf903886a/profilePic.jpg",
+  //        "mode": "voice",
+  //        "type": "outgoingcall" }
 
   const handleAccept = () => {
     stopRingtone();
     clearTimeout(autoDismissTimer.current);
-    // socket.emit("call-accepted", { to: incomingCall.from });
-    AcceptCall({ friendId: incomingCall.from, callerId: incomingCall.callerId });
+    setIncomingCall((prev) => ({
+      ...prev,
+      type: "accepted",
+    }));
+
+    AcceptCall(incomingCall);
 
     navigation.navigate("callScreen", {
-      callerId: incomingCall.from,
-      calleeName: "incomingCall.callerName",
-      calleeProfilePic: "incomingCall.callerProfilePic",
+      callerId: incomingCall.callerId,
+      calleeName: incomingCall.callerName,
+      calleeProfilePic: incomingCall.callerProfile,
+      type: incomingCall.type,
+      mode: incomingCall.mode,
     });
 
     setIncomingCall(null);
   };
 
-  const handleReject = () => {
+  const handleReject = async () => {
     stopRingtone();
     clearTimeout(autoDismissTimer.current);
-    cancelCall({ friendId: incomingCall.from, callerId: incomingCall.callerId });
+    const props = {
+      from: incomingCall.friendId,
+      to: incomingCall.callerId,
+    };
+    cancelCalling(props);
+    await addCallingEntryToChat(incomingCall.callerId, {
+      type: "Rejected",
+      mode: incomingCall.mode,
+      time: new Date(),
+    })
     setIncomingCall(null);
   };
 
@@ -122,12 +148,12 @@ const IncomingCallBanner = () => {
     >
       <Image
         source={{
-          uri: incomingCall?.callerProfilePic || "https://i.pravatar.cc/150?img=3",
+          uri: incomingCall?.callerProfile || "https://i.pravatar.cc/150?img=3",
         }}
         style={styles.avatar}
       />
       <View style={{ flex: 1, marginLeft: 10 }}>
-        <Text style={styles.name}>{incomingCall.from}</Text>
+        <Text style={styles.name}>{incomingCall.callerName}</Text>
         <Text style={styles.callText}>Incoming voice call...</Text>
       </View>
       <TouchableOpacity style={styles.iconButtonRed} onPress={handleReject}>

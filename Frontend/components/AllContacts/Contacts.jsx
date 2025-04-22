@@ -11,7 +11,7 @@ import {
     Linking,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { getAllUsers } from '../../Services/AuthServices';
+import { getAllUsers } from '../../utils/AuthServices';
 import { useNetInfo } from '@react-native-community/netinfo';
 import { loadUserInfo } from '../../utils/chatStorage';
 import * as Contact from 'expo-contacts';

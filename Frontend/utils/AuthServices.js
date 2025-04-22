@@ -1,9 +1,10 @@
 import axios from "axios";
 import * as FileSystem from "expo-file-system";
-import { userFilePath, friendsFilePath } from "../utils/chatStorage";
+import { userFilePath, friendsFilePath } from "./chatStorage";
 import { addUser } from "../database/curd";
 
-export const API_URL = `${process.env.EXPO_PUBLIC_BACKEND_URL}/api/v1/users`; // Replace with your backend URL
+export const API_URL = `http://192.168.0.209:5000/api/v1/users`; // Replace with your backend URL
+// export const API_URL = `${process.env.EXPO_PUBLIC_BACKEND_URL}/api/v1/users`; // Replace with your backend URL
 
 
 // -------------------- LOGIN --------------------
@@ -14,8 +15,10 @@ export const login = async (formData) => {
     const response = await axios.post(`${API_URL}/login`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
+        'Accept': 'application/json',
       },
     });
+    console.log(response.data, "response")
 
     if (response.data.success && response.data.data?.user) {
       await addUser(response.data.data.user)
@@ -114,6 +117,7 @@ export const uploadStatus = async (formData) => {
     const response = await axios.post(`${API_URL}/status_Upload`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
+        'Accept':'application/json'
       },
     });
     console.log(response.data, "response")
